@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- เพิ่ม Bootstrap Icons สำหรับปุ่มไมโครโฟน -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f4f7f6; font-family: 'Sarabun', sans-serif; }
+    .container { max-width: 800px; margin-top: 20px; padding-bottom: 80px; /* เว้นที่ให้ปุ่มไมค์ */ }
+    .status-badge { font-size: 1.1rem; padding: 10px; }
+    #data-form { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+    .loader { display: none; margin: 10px auto; border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #3498db; width: 35px; height: 35px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .stat-card { border-radius: 10px; color: #fff; text-align: center; padding: 15px; margin-bottom: 10px;}
+    .bg-total { background-color: #3498db; }
+    .bg-done { background-color: #f39c12; }
+    .bg-pending { background-color: #e74c3c; }
+    .bg-completed { background-color: #2ecc71; }
+    .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 8px; display: none; }
+    .detail-img { width: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; max-height: 400px; }
+    .modal-custom-text { font-size: 1.05rem; color: #222; }
+
+    /* 🤖 J.A.R.V.I.S Floating Button CSS */
+    .jarvis-fab {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #00d2ff;
+      border: 2px solid #00d2ff;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1050;
+      transition: all 0.3s ease;
+    }
+    .jarvis-fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 25px rgba(0, 210, 255, 0.8);
+    }
+    /* เอฟเฟกต์ตอนกำลังฟังเสียง */
+    .jarvis-fab.listening {
+      animation: pulse-ring 1.5s infinite;
+      background: linear-gradient(135deg, #8a2387, #e94057, #f27121);
+      border-color: #fff;
+      color: #fff;
+      box-shadow: 0 0 25px rgba(233, 64, 87, 0.8);
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(233, 64, 87, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ปุ่มไมค์ J.A.R.V.I.S -->
+  <button id="jarvis-btn" class="jarvis-fab" onclick="toggleJarvis()" title="กดเพื่อสั่งการด้วยเสียง">
+    <i class="bi bi-mic-fill"></i>
+  </button>
+
+  <datalist id="details-list">
+    <option value="ชำรุด/ไม่หมุน/ติดขัด"><option value="ช็อตไหม้"><option value="LCD ไม่แสดงค่า">
+    <option value="ขั้วต่อสายชำรุด"><option value="น้ำเข้า"><option value="ชำรุด / ผ้ามัว">
+    <option value="แป้นผุ/คว่ำเอียง/ไม่หมุน">
+  </datalist>
+
+  <datalist id="operator-list"><option value="ผรม."><option value="พนง.ผมต."></datalist>
+
+  <div class="container">
+    <h3 class="text-center text-primary mb-4 fw-bold">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h3>
+    
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-panel" type="button">ส่งงาน ส.ป.มิเตอร์</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-panel" type="button">สถานะใบงาน</button>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+      
+      <!-- แท็บ: ส่งงาน -->
+      <div class="tab-pane fade show active" id="search-panel" role="tabpanel">
+        <div class="card p-3 mb-3 shadow-sm">
+          <label class="form-label fw-bold">รูปแบบการส่งงาน:</label>
+          <select id="work-mode" class="form-select mb-3" onchange="toggleWorkMode()">
+            <option value="ucube">1. จากใบงาน UCUBE</option>
+            <option value="general">2. ส.ป.มิเตอร์ ทั่วไป</option>
+          </select>
+
+          <div id="search-section">
+            <label class="form-label fw-bold">เลือกเดือน (แผ่นงาน):</label>
+            <select id="month-select" class="form-select mb-3"></select>
+            
+            <label class="form-label fw-bold">ค้นหาใบงาน:</label>
+            <div class="input-group">
+              <input type="text" id="search-query" class="form-control" placeholder="ระบุ PEA หรือ ชื่อผู้ใช้ไฟฟ้า">
+              <button class="btn btn-primary" onclick="searchData()">ค้นหา</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="search-loader" class="loader"></div>
+        <div id="form-container" style="display:none;">
+          <div class="text-center mb-3" id="status-badge-container">
+            <span id="status-display" class="badge rounded-pill status-badge"></span>
+          </div>
+          <form id="data-form">
+            <input type="hidden" id="row-index">
+            <div id="dynamic-fields"></div>
+            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-2 fw-bold" onclick="saveData()">บันทึกส่งงาน</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- แท็บ: สถานะใบงาน -->
+      <div class="tab-pane fade" id="status-panel" role="tabpanel">
+        <div class="card p-3 mb-3 shadow-sm">
+          <div class="row">
+            <div class="col-6">
+              <label class="form-label fw-bold">สถานะ:</label>
+              <select id="filter-status" class="form-select" onchange="loadDashboard()">
+                <option value="ทั้งหมด" selected>ทั้งหมด</option>
+                <option value="ส่งงานแล้ว">ส่งงานแล้ว</option>
+                <option value="งานคงเหลือ">งานคงเหลือ</option>
+                <option value="เสร็จสมบูรณ์">เสร็จสมบูรณ์</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold">ประจำเดือน:</label>
+              <select id="filter-month" class="form-select" onchange="loadDashboard()"></select>
+            </div>
+          </div>
+          <!-- ช่องค้นหาแบบ Real-time -->
+          <div class="mt-3">
+            <input type="text" id="dash-search" class="form-control border-primary" placeholder="🔍 ค้นหา PEA, ชื่อ, หรือสถานที่ ในหน้านี้..." onkeyup="filterDashboard()">
+          </div>
+        </div>
+        
+        <div id="dash-loader" class="loader"></div>
+        
+        <div class="row flex-column-reverse flex-md-row">
+          <div class="col-md-8">
+            <div class="list-group" id="dashboard-list"></div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="row">
+              <div class="col-6 col-md-12"><div class="stat-card bg-total shadow-sm"><h6 class="mb-1">ใบงานทั้งหมด</h6><h4 id="stat-total" class="fw-bold mb-0">0</h4></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-pending shadow-sm"><h6 class="mb-1">คงเหลือ</h6><h4 id="stat-pending" class="fw-bold mb-0">0</h4></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-done shadow-sm"><h6 class="mb-1">ส่งงานแล้ว</h6><h4 id="stat-done" class="fw-bold mb-0">0</h4></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-completed shadow-sm"><h6 class="mb-1">เสร็จสมบูรณ์</h6><h4 id="stat-completed" class="fw-bold mb-0">0</h4></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal สำหรับเปิดใบสั่ง -->
+  <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-dark">
+          <h5 class="modal-title fw-bold">ตรวจสอบข้อมูลเพื่อปิดใบสั่ง</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body bg-white" id="orderModalBody"></div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-success fw-bold px-4" id="btn-close-order" onclick="submitCloseOrder()">ปิดใบสั่ง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let globalHeaders = [];
+    let currentOrderRow = null; 
+
+    window.onload = function() {
+      google.script.run.withSuccessHandler(initApp).getInitialData();
+    }
+
+    function initApp(res) {
+      globalHeaders = res.headers;
+      const monthSelect = document.getElementById('month-select');
+      const filterMonth = document.getElementById('filter-month');
+      res.months.forEach(month => {
+        monthSelect.add(new Option(month, month));
+        filterMonth.add(new Option(month, month));
+      });
+      loadDashboard();
+    }
+
+    function getDirectImageUrl(url) {
+      if (!url) return '';
+      let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000';
+      }
+      return url; 
+    }
+
+    function toggleWorkMode() {
+      const mode = document.getElementById('work-mode').value;
+      if (mode === 'general') {
+        document.getElementById('search-section').style.display = 'none';
+        document.getElementById('status-badge-container').style.display = 'none';
+        renderFormUI(new Array(globalHeaders.length).fill(''), 'general');
+        document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-2 fw-bold';
+        document.getElementById('save-btn').innerText = 'บันทึกส่งงาน';
+      } else {
+        document.getElementById('search-section').style.display = 'block';
+        document.getElementById('form-container').style.display = 'none';
+      }
+    }
+
+    function searchData() {
+      const month = document.getElementById('month-select').value;
+      const query = document.getElementById('search-query').value.trim();
+      if(!query) { alert('กรุณาระบุข้อมูลสำหรับค้นหา'); return; }
+      
+      document.getElementById('search-loader').style.display = 'block';
+      document.getElementById('form-container').style.display = 'none';
+      
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('search-loader').style.display = 'none';
+        if (!res.success) { alert(res.message); return; }
+        
+        document.getElementById('row-index').value = res.rowIndex;
+        document.getElementById('status-badge-container').style.display = 'block';
+        
+        const statusBadge = document.getElementById('status-display');
+        statusBadge.innerText = 'สถานะ: ' + res.status;
+        
+        if (res.status === 'รอดำเนินการ') {
+          statusBadge.className = 'badge rounded-pill bg-danger';
+          document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-2 fw-bold';
+          document.getElementById('save-btn').innerText = 'บันทึกส่งงาน';
+        } else if (res.status === 'เสร็จสมบูรณ์') {
+          statusBadge.className = 'badge rounded-pill bg-success';
+          document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-2 fw-bold';
+          document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)';
+        } else {
+          statusBadge.className = 'badge rounded-pill bg-warning text-dark';
+          document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-2 fw-bold';
+          document.getElementById('save-btn').innerText = 'อัปเดตข้อมูล';
+        }
+        renderFormUI(res.data, 'ucube');
+      }).searchWork(month, query);
+    }
+
+    function renderFormUI(dataArray, mode) {
+      let fieldsHtml = '';
+      for (let i = 0; i < globalHeaders.length; i++) {
+        let title = globalHeaders[i] || `คอลัมน์ ${i+1}`;
+        let val = dataArray[i] || '';
+        let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
+        
+        if (i === 7) { 
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control" id="col-${i}" list="details-list" value="${val}"></div>`;
+        } else if (i === 10) { 
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control" id="col-${i}" list="operator-list" value="${val}"></div>`;
+        } else if (i === 8 || i === 9) { 
+          let directUrl = getDirectImageUrl(val); 
+          let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`;
+          fieldsHtml += `<div class="mb-3 p-3 bg-light border rounded"><label class="form-label text-secondary fw-bold">${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`;
+        } else { 
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control" id="col-${i}" value="${val}" ${isReadOnly}></div>`;
+        }
+      }
+      document.getElementById('dynamic-fields').innerHTML = fieldsHtml;
+      document.getElementById('form-container').style.display = 'block';
+    }
+
+    function handleFileUpload(event, index) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById(`col-${index}`).value = e.target.result;
+        let preview = document.getElementById(`preview-${index}`);
+        if(preview) { preview.src = e.target.result; preview.style.display = 'block'; }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveData() {
+      const btn = document.getElementById('save-btn');
+      btn.innerText = 'กำลังบันทึกและอัปโหลดรูปภาพ...';
+      btn.disabled = true;
+
+      const mode = document.getElementById('work-mode').value;
+      const month = document.getElementById('month-select').value;
+      const rowIndex = document.getElementById('row-index').value;
+      
+      let formData = [];
+      for (let i = 0; i < globalHeaders.length; i++) {
+        formData.push(document.getElementById(`col-${i}`).value);
+      }
+
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false;
+        if(res.success) {
+          alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+          if(mode === 'general') {
+             document.getElementById('work-mode').value = 'ucube';
+             toggleWorkMode();
+          } else {
+             document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว';
+             document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark';
+             btn.className = 'btn btn-primary w-100 mt-4 py-2 fw-bold';
+             btn.innerText = 'อัปเดตข้อมูล';
+          }
+          loadDashboard(); 
+        } else {
+          alert('เกิดข้อผิดพลาด: ' + res.message);
+          btn.innerText = 'ลองใหม่';
+        }
+      }).saveData(mode, month, rowIndex, formData);
+    }
+
+    function processPendingWork(peaOrName) {
+      const searchTab = document.querySelector('#search-tab');
+      bootstrap.Tab.getOrCreateInstance(searchTab).show();
+      setTimeout(() => {
+        document.getElementById('work-mode').value = 'ucube';
+        toggleWorkMode();
+        document.getElementById('search-query').value = peaOrName;
+        searchData();
+      }, 250); 
+    }
+
+    function filterDashboard() {
+      const input = document.getElementById('dash-search').value.toLowerCase();
+      const items = document.querySelectorAll('.dash-item'); 
+      
+      items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        if (text.includes(input)) {
+          item.style.setProperty('display', 'block', 'important');
+        } else {
+          item.style.setProperty('display', 'none', 'important');
+        }
+      });
+    }
+
+    function viewCompletedWork(encodedItem) {
+      const item = JSON.parse(decodeURIComponent(encodedItem));
+      currentOrderRow = item.rowIndex;
+
+      let directPic1 = getDirectImageUrl(item.pic1);
+      let directPic2 = getDirectImageUrl(item.pic2);
+
+      let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm" onerror="this.onerror=null; this.src='https://placehold.co/400x500/eeeeee/999999?text=Image+Error'"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายหลัก</div>';
+      let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm" onerror="this.onerror=null; this.src='https://placehold.co/400x500/eeeeee/999999?text=Image+Error'"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายรอง</div>';
+
+      let html = `
+        <div class="p-2 modal-custom-text">
+          <div class="row mb-3">
+            <div class="col-12">
+              <span class="fw-bold me-2">ชื่อผู้ใช้ไฟฟ้า</span> : ${item.name || '-'}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6"><span class="fw-bold me-2">PEA.No.เดิม</span> : ${item.pea || '-'}</div>
+            <div class="col-6"><span class="fw-bold me-2">หน่วย</span> : ${item.colD || '-'}</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-6"><span class="fw-bold me-2">PEA.No.ใหม่</span> : ${item.colF || '-'}</div>
+            <div class="col-6"><span class="fw-bold me-2">หน่วย</span> : ${item.colG || '-'}</div>
+          </div>
+          <div class="row mb-4">
+            <div class="col-6"><span class="fw-bold me-2">สาเหตุ</span> : ${item.reason || '-'}</div>
+            <div class="col-6"><span class="fw-bold me-2">ผู้ดำเนินการ</span> : ${item.operator || '-'}</div>
+          </div>
+          <div class="row text-center mt-2">
+            <div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายหลัก</p>${pic1Html}</div>
+            <div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายรอง</p>${pic2Html}</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('orderModalBody').innerHTML = html;
+      new bootstrap.Modal(document.getElementById('orderModal')).show();
+    }
+
+    function submitCloseOrder() {
+      const btn = document.getElementById('btn-close-order');
+      btn.innerText = 'กำลังประมวลผล...';
+      btn.disabled = true;
+
+      const month = document.getElementById('filter-month').value;
+      google.script.run.withSuccessHandler(res => {
+        btn.innerText = 'ปิดใบสั่ง';
+        btn.disabled = false;
+        if(res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+          loadDashboard(); 
+        } else {
+          alert('ผิดพลาด: ' + res.message);
+        }
+      }).closeOrder(month, currentOrderRow);
+    }
+
+    function loadDashboard() {
+      const month = document.getElementById('filter-month').value;
+      const statusFilter = document.getElementById('filter-status').value;
+      if(!month) return; 
+      
+      document.getElementById('dash-search').value = '';
+
+      document.getElementById('dash-loader').style.display = 'block';
+      document.getElementById('dashboard-list').innerHTML = '';
+
+      google.script.run.withSuccessHandler(function(res) {
+        document.getElementById('dash-loader').style.display = 'none';
+        
+        document.getElementById('stat-total').innerText = res.stats.total;
+        document.getElementById('stat-done').innerText = res.stats.done;
+        document.getElementById('stat-pending').innerText = res.stats.pending;
+        document.getElementById('stat-completed').innerText = res.stats.completed;
+
+        let html = '';
+        if(res.results.length === 0) {
+          html = '<div class="alert alert-secondary text-center">ไม่พบรายการงาน</div>';
+        } else {
+          res.results.forEach(item => {
+            let actionHtml = '';
+            
+            if (item.status === 'งานคงเหลือ') {
+               actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-2" onclick="processPendingWork('${item.pea}')">งานคงเหลือ/ดำเนินการ</button>`;
+            } else if (item.status === 'ส่งงานแล้ว') {
+               let encoded = encodeURIComponent(JSON.stringify(item));
+               actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-2 shadow-sm" onclick="viewCompletedWork('${encoded}')">ส่งงานแล้ว/รอเปิดใบสั่ง</button>`;
+            } else if (item.status === 'เสร็จสมบูรณ์') {
+               actionHtml = `<span class="badge bg-success w-100 p-2 mt-2 fs-6 shadow-sm"><i class="bi bi-check-circle"></i> เสร็จสมบูรณ์</span>`;
+            }
+
+            html += `
+              <div class="list-group-item mb-3 rounded shadow-sm border-0 bg-white dash-item">
+                <div class="d-flex justify-content-between">
+                  <h6 class="mb-1 fw-bold text-primary">PEA: ${item.pea || '-'}</h6>
+                </div>
+                <div class="text-muted small mb-1">
+                  <strong>ชื่อ:</strong> ${item.name || '-'} <br>
+                  <strong>สถานที่:</strong> ${item.location || '-'} <br>
+                  <strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}
+                </div>
+                ${actionHtml}
+              </div>
+            `;
+          });
+        }
+        document.getElementById('dashboard-list').innerHTML = html;
+      }).getDashboardData(month, statusFilter);
+    }
+
+    // ==========================================
+    // 🤖 J.A.R.V.I.S VOICE ASSISTANT SYSTEM (อัปเดตแก้ปุ่มไม่กระเพื่อม)
+    // ==========================================
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    
+    if(recognition) {
+      recognition.lang = 'th-TH'; // กำหนดภาษาเป็นภาษาไทย
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      // เมื่อเริ่มฟัง
+      recognition.onstart = function() {
+        document.getElementById('jarvis-btn').classList.add('listening');
+        window.speechSynthesis.cancel(); 
+      };
+
+      // เมื่อได้ผลลัพธ์ (แปลงเสียงเป็นข้อความสำเร็จ)
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        console.log("J.A.R.V.I.S ได้ยินว่า: ", transcript);
+        processVoiceCommand(transcript);
+      };
+
+      // เมื่อเกิดข้อผิดพลาด
+      recognition.onerror = function(event) {
+        console.error("Speech error: ", event.error);
+        // ถ้าระบบพัง หรือไมค์ถูกบล็อก ให้หยุดกระเพื่อม
+        document.getElementById('jarvis-btn').classList.remove('listening');
+        
+        // ดักจับการบล็อกไมค์
+        if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+           alert("⚠️ บอสต้องกด 'อนุญาต (Allow)' ให้เบราว์เซอร์เข้าถึงไมโครโฟนก่อนนะครับ ถึงจะสั่งงานด้วยเสียงได้");
+        }
+      };
+
+      // เมื่อสิ้นสุดการฟัง
+      recognition.onend = function() {
+        document.getElementById('jarvis-btn').classList.remove('listening');
+      };
+    }
+
+    // ฟังก์ชันเปิด/ปิดไมค์
+    function toggleJarvis() {
+      const btn = document.getElementById('jarvis-btn');
+      
+      if(!recognition) {
+        alert("เบราว์เซอร์นี้ไม่รองรับระบบสั่งงานด้วยเสียง แนะนำให้เปิดผ่านแอป Google Chrome หรือ Safari ครับบอส");
+        return;
+      }
+
+      // 🌟 สั่งให้ปุ่มกระเพื่อม "ทันที" ที่นิ้วสัมผัส เพื่อให้รู้ว่าแอปตอบสนองแล้ว
+      btn.classList.add('listening');
+      
+      try {
+        recognition.start();
+      } catch(e) {
+        // กรณีบอสกดปุ่มเบิ้ลรัวๆ ระบบจะดักไว้ไม่ให้พัง
+        console.log("J.A.R.V.I.S กำลังฟังอยู่แล้วครับ");
+      }
+    }
+
+    // ฟังก์ชันเปล่งเสียงพูด
+    function speak(text) {
+      if('speechSynthesis' in window) {
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'th-TH';
+        msg.rate = 1.1; 
+        msg.pitch = 1.0; 
+        window.speechSynthesis.speak(msg);
+      }
+    }
+
+    // ฟังก์ชันประมวลผลคำสั่งและสุ่มคำตอบแบบอัจฉริยะ
+    function processVoiceCommand(text) {
+      // 1. NLP เบื้องต้น: ตัดคำขยะ
+      let keyword = text.replace(/ช่วย/g, '')
+                        .replace(/กรอง/g, '')
+                        .replace(/หา/g, '')
+                        .replace(/ค้นหา/g, '')
+                        .replace(/ใบงาน/g, '')
+                        .replace(/ที่อยู่/g, '')
+                        .replace(/ในโซน/g, '')
+                        .replace(/ให้หน่อย/g, '')
+                        .replace(/หน่อย/g, '')
+                        .replace(/ครับ/g, '')
+                        .replace(/ค่ะ/g, '')
+                        .replace(/สิ/g, '')
+                        .trim();
+                        
+      if(keyword === "") keyword = text.trim();
+
+      // 2. สลับไปแท็บ "สถานะใบงาน" อัตโนมัติ
+      const statusTab = document.querySelector('#status-tab');
+      bootstrap.Tab.getOrCreateInstance(statusTab).show();
+
+      // 3. นำ Keyword ไปยัดใส่ช่องค้นหา
+      const searchBox = document.getElementById('dash-search');
+      searchBox.value = keyword;
+      filterDashboard(); 
+
+      // 4. หน่วงเวลาเล็กน้อยให้นับผลลัพธ์
+      setTimeout(() => {
+        const items = document.querySelectorAll('.dash-item');
+        let count = 0;
+        
+        items.forEach(item => {
+          if (item.style.getPropertyValue('display') !== 'none') {
+            count++;
+          }
+        });
+
+        // 5. สุ่มประโยคตอบกลับ
+        let reply = "";
+        if (count > 0) {
+          const successReplies = [
+            `เรียบร้อยครับบอส เจอใบงานในโซน ${keyword} ทั้งหมด ${count} รายการ`,
+            `ค้นหาเสร็จสิ้น พบข้อมูล ${keyword} จำนวน ${count} ใบงานครับ`,
+            `จัดให้ครับ พบ ${count} ใบงานที่ตรงกับ ${keyword}`,
+            `สแกนข้อมูลเรียบร้อย มีงานในเขต ${keyword} อยู่ ${count} งานครับบอส`
+          ];
+          reply = successReplies[Math.floor(Math.random() * successReplies.length)];
+        } else {
+          const failReplies = [
+            `ผมตรวจสอบแล้ว ไม่พบข้อมูลของ ${keyword} ในเดือนนี้เลยครับบอส`,
+            `ไม่มีใบงานในโซน ${keyword} ในระบบตอนนี้ครับ`,
+            `ค้นหาจนทั่วแล้ว แต่ไม่เจอข้อมูล ${keyword} เลยครับบอส`
+          ];
+          reply = failReplies[Math.floor(Math.random() * failReplies.length)];
+        }
+        
+        speak(reply);
+      }, 350); 
+    }
