@@ -7,22 +7,103 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
-    body { background-color: #f4f7f6; font-family: 'Sarabun', sans-serif; }
+    /* ==========================================
+       🌟 GLASSMORPHISM & WARM THEME CSS
+       ========================================== */
+    body { 
+      /* พื้นหลังไล่สีโทนอุ่น สบายตา */
+      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      background-attachment: fixed;
+      font-family: 'Sarabun', sans-serif; 
+      color: #333;
+    }
+    
     .container { max-width: 800px; margin-top: 20px; padding-bottom: 80px; }
-    .status-badge { font-size: 1.1rem; padding: 10px; }
-    #data-form { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-    .loader { display: none; margin: 10px auto; border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #3498db; width: 35px; height: 35px; animation: spin 1s linear infinite; }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .stat-card { border-radius: 10px; color: #fff; text-align: center; padding: 15px; margin-bottom: 10px;}
-    .bg-total { background-color: #3498db; }
-    .bg-done { background-color: #f39c12; }
-    .bg-pending { background-color: #e74c3c; }
-    .bg-completed { background-color: #2ecc71; }
-    .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 8px; display: none; }
-    .detail-img { width: 100%; object-fit: cover; border-radius: 8px; border: 1px solid #ddd; max-height: 400px; }
-    .modal-custom-text { font-size: 1.05rem; color: #222; }
+    
+    /* สไตล์กล่องกระจก (Glass Card) */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
 
-    /* 🤖 J.A.R.V.I.S Floating Button CSS */
+    /* ตกแต่ง Input Form ให้เข้ากับกระจก */
+    .form-control, .form-select {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(200, 200, 200, 0.5);
+      border-radius: 10px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .form-control:focus, .form-select:focus {
+      background: #fff;
+      border-color: #a8c0ff;
+      box-shadow: 0 0 8px rgba(168, 192, 255, 0.6);
+    }
+
+    /* ตกแต่ง Tabs */
+    .nav-tabs { border-bottom: none; justify-content: center; gap: 10px; margin-bottom: 15px; }
+    .nav-tabs .nav-link {
+      border: none;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 30px;
+      color: #666;
+      padding: 10px 25px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .nav-tabs .nav-link.active {
+      background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+      color: #fff;
+      font-weight: bold;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(63, 43, 150, 0.3);
+    }
+
+    /* ตกแต่งโลโก้ */
+    .app-logo {
+      max-height: 140px;
+      border-radius: 20px;
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15));
+      margin-bottom: 15px;
+    }
+    .app-title {
+      font-weight: 800;
+      background: -webkit-linear-gradient(45deg, #3f2b96, #a8c0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Stat Cards กระจก */
+    .stat-card {
+      border-radius: 15px;
+      color: #fff;
+      text-align: center;
+      padding: 15px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255,255,255,0.4);
+      backdrop-filter: blur(5px);
+    }
+    .bg-total { background: linear-gradient(135deg, rgba(52, 152, 219, 0.8), rgba(41, 128, 185, 0.9)); box-shadow: 0 4px 15px rgba(52,152,219,0.3); }
+    .bg-pending { background: linear-gradient(135deg, rgba(231, 76, 60, 0.8), rgba(192, 57, 43, 0.9)); box-shadow: 0 4px 15px rgba(231,76,60,0.3); }
+    .bg-done { background: linear-gradient(135deg, rgba(243, 156, 18, 0.8), rgba(211, 84, 0, 0.9)); box-shadow: 0 4px 15px rgba(243,156,18,0.3); }
+    .bg-completed { background: linear-gradient(135deg, rgba(46, 204, 113, 0.8), rgba(39, 174, 96, 0.9)); box-shadow: 0 4px 15px rgba(46,204,113,0.3); }
+
+    /* ปุ่มและโหลดเดอร์ */
+    .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4); }
+    .loader { display: none; margin: 10px auto; border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #764ba2; width: 35px; height: 35px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 400px; }
+
+    /* 🤖 J.A.R.V.I.S Floating Button (ไฮเทคเหมือนเดิม) */
     .jarvis-fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #00d2ff; border: 2px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.5); font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1050; transition: all 0.3s ease; }
     .jarvis-fab:hover { transform: scale(1.1); box-shadow: 0 0 25px rgba(0, 210, 255, 0.8); }
     .jarvis-fab.listening { animation: pulse-ring 1.5s infinite; background: linear-gradient(135deg, #8a2387, #e94057, #f27121); border-color: #fff; color: #fff; box-shadow: 0 0 25px rgba(233, 64, 87, 0.8); }
@@ -44,54 +125,64 @@
   <datalist id="operator-list"><option value="ผรม."><option value="พนง.ผมต."></datalist>
 
   <div class="container">
-    <h3 class="text-center text-primary mb-4 fw-bold">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h3>
+    
+    <!-- ส่วนหัวแอป และ โลโก้ -->
+    <div class="text-center mb-4 mt-2">
+      <!-- รูปโลโก้ เรียกใช้ไฟล์ที่อัปโหลด -->
+      <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
+      <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
+      <p class="text-muted small">PEA Smart Operation by J.A.R.V.I.S</p>
+    </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
-      <li class="nav-item" role="presentation"><button class="nav-link active fw-bold" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-panel" type="button">ส่งงาน ส.ป.มิเตอร์</button></li>
-      <li class="nav-item" role="presentation"><button class="nav-link fw-bold" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-panel" type="button">สถานะใบงาน</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link active" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-panel" type="button">ส่งงาน ส.ป.มิเตอร์</button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-panel" type="button">สถานะใบงาน</button></li>
     </ul>
 
     <div class="tab-content mt-3">
       <!-- แท็บ: ส่งงาน -->
       <div class="tab-pane fade show active" id="search-panel" role="tabpanel">
-        <div class="card p-3 mb-3 shadow-sm">
-          <label class="form-label fw-bold">รูปแบบการส่งงาน:</label>
+        <div class="glass-card">
+          <label class="form-label fw-bold text-secondary">รูปแบบการส่งงาน:</label>
           <select id="work-mode" class="form-select mb-3" onchange="toggleWorkMode()">
             <option value="ucube">1. จากใบงาน UCUBE</option>
             <option value="general">2. ส.ป.มิเตอร์ ทั่วไป</option>
           </select>
 
           <div id="search-section">
-            <label class="form-label fw-bold">เลือกเดือน (แผ่นงาน):</label>
+            <label class="form-label fw-bold text-secondary">เลือกเดือน (แผ่นงาน):</label>
             <select id="month-select" class="form-select mb-3"></select>
             
-            <label class="form-label fw-bold">ค้นหาใบงาน:</label>
+            <label class="form-label fw-bold text-secondary">ค้นหาใบงาน:</label>
             <div class="input-group">
               <input type="text" id="search-query" class="form-control" placeholder="ระบุ PEA หรือ ชื่อผู้ใช้ไฟฟ้า">
-              <button class="btn btn-primary" onclick="searchData()">ค้นหา</button>
+              <button class="btn btn-primary px-4" onclick="searchData()"><i class="bi bi-search"></i> ค้นหา</button>
             </div>
           </div>
         </div>
 
         <div id="search-loader" class="loader"></div>
+        
         <div id="form-container" style="display:none;">
           <div class="text-center mb-3" id="status-badge-container">
-            <span id="status-display" class="badge rounded-pill status-badge"></span>
+            <span id="status-display" class="badge rounded-pill fs-6 px-4 py-2 shadow-sm"></span>
           </div>
-          <form id="data-form">
+          <form id="data-form" class="glass-card">
             <input type="hidden" id="row-index">
             <div id="dynamic-fields"></div>
-            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-2 fw-bold" onclick="saveData()">บันทึกส่งงาน</button>
+            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow" onclick="saveData()">
+              <i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน
+            </button>
           </form>
         </div>
       </div>
 
       <!-- แท็บ: สถานะใบงาน -->
       <div class="tab-pane fade" id="status-panel" role="tabpanel">
-        <div class="card p-3 mb-3 shadow-sm">
+        <div class="glass-card">
           <div class="row">
             <div class="col-6">
-              <label class="form-label fw-bold">สถานะ:</label>
+              <label class="form-label fw-bold text-secondary">สถานะ:</label>
               <select id="filter-status" class="form-select" onchange="loadDashboard()">
                 <option value="ทั้งหมด" selected>ทั้งหมด</option>
                 <option value="ส่งงานแล้ว">ส่งงานแล้ว</option>
@@ -100,12 +191,12 @@
               </select>
             </div>
             <div class="col-6">
-              <label class="form-label fw-bold">ประจำเดือน:</label>
+              <label class="form-label fw-bold text-secondary">ประจำเดือน:</label>
               <select id="filter-month" class="form-select" onchange="loadDashboard()"></select>
             </div>
           </div>
-          <div class="mt-3">
-            <input type="text" id="dash-search" class="form-control border-primary" placeholder="🔍 ค้นหา PEA, ชื่อ, หรือสถานที่ ในหน้านี้..." onkeyup="filterDashboard()">
+          <div class="mt-4">
+            <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหา PEA, ชื่อ, สถานที่..." onkeyup="filterDashboard()">
           </div>
         </div>
         
@@ -117,10 +208,10 @@
           </div>
           <div class="col-md-4 mb-3">
             <div class="row">
-              <div class="col-6 col-md-12"><div class="stat-card bg-total shadow-sm"><h6 class="mb-1">ใบงานทั้งหมด</h6><h4 id="stat-total" class="fw-bold mb-0">0</h4></div></div>
-              <div class="col-6 col-md-12"><div class="stat-card bg-pending shadow-sm"><h6 class="mb-1">คงเหลือ</h6><h4 id="stat-pending" class="fw-bold mb-0">0</h4></div></div>
-              <div class="col-6 col-md-12"><div class="stat-card bg-done shadow-sm"><h6 class="mb-1">ส่งงานแล้ว</h6><h4 id="stat-done" class="fw-bold mb-0">0</h4></div></div>
-              <div class="col-6 col-md-12"><div class="stat-card bg-completed shadow-sm"><h6 class="mb-1">เสร็จสมบูรณ์</h6><h4 id="stat-completed" class="fw-bold mb-0">0</h4></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-total"><h6 class="mb-1 text-white-50">ใบงานทั้งหมด</h6><h3 id="stat-total" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-pending"><h6 class="mb-1 text-white-50">คงเหลือ</h6><h3 id="stat-pending" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-done"><h6 class="mb-1 text-white-50">ส่งงานแล้ว</h6><h3 id="stat-done" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6 col-md-12"><div class="stat-card bg-completed"><h6 class="mb-1 text-white-50">เสร็จสมบูรณ์</h6><h3 id="stat-completed" class="fw-bold mb-0">0</h3></div></div>
             </div>
           </div>
         </div>
@@ -131,15 +222,15 @@
   <!-- Modal ปิดใบสั่ง -->
   <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header bg-info text-dark">
-          <h5 class="modal-title fw-bold">ตรวจสอบข้อมูลเพื่อปิดใบสั่ง</h5>
+      <div class="modal-content glass-card border-0" style="background: rgba(255, 255, 255, 0.95);">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold text-primary"><i class="bi bi-clipboard-check"></i> ตรวจสอบข้อมูลเพื่อปิดใบสั่ง</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body bg-white" id="orderModalBody"></div>
-        <div class="modal-footer bg-light">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" class="btn btn-success fw-bold px-4" id="btn-close-order" onclick="submitCloseOrder()">ปิดใบสั่ง</button>
+        <div class="modal-body" id="orderModalBody"></div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-success rounded-pill px-5 fw-bold shadow" id="btn-close-order" onclick="submitCloseOrder()">ปิดใบสั่ง</button>
         </div>
       </div>
     </div>
@@ -147,17 +238,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // 🌐 นำลิงก์ Web App API ของคุณมาวางที่นี่
+    // 🌐 ลิงก์ Web App API 
     const API_URL = "https://script.google.com/macros/s/AKfycbxV5LU6BkYkodydL4g8ajf6jxZVACRxXOARt7K0poJ08RLT8YIbSzNiJdcOIP6WB62g/exec";
 
     let globalHeaders = [];
     let currentOrderRow = null; 
 
-    // 🚀 ฟังก์ชันหลักสำหรับยิงข้อมูลผ่าน API
     function callAPI(action, params, onSuccess) {
       fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ใช้ text/plain เลี่ยงปัญหา CORS 
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
         body: JSON.stringify({ action: action, params: params })
       })
       .then(response => response.json())
@@ -169,13 +259,12 @@
         document.getElementById('dash-loader').style.display = 'none';
         if(document.getElementById('save-btn')) {
            document.getElementById('save-btn').disabled = false;
-           document.getElementById('save-btn').innerText = 'บันทึกส่งงาน';
+           document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
         }
       });
     }
 
     window.onload = function() {
-      // ดึงข้อมูลตั้งต้น (แทนที่ google.script.run)
       callAPI('getInitialData', {}, initApp);
     }
 
@@ -205,8 +294,8 @@
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('status-badge-container').style.display = 'none';
         renderFormUI(new Array(globalHeaders.length).fill(''), 'general');
-        document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-2 fw-bold';
-        document.getElementById('save-btn').innerText = 'บันทึกส่งงาน';
+        document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+        document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
       } else {
         document.getElementById('search-section').style.display = 'block';
         document.getElementById('form-container').style.display = 'none';
@@ -232,17 +321,17 @@
         statusBadge.innerText = 'สถานะ: ' + res.status;
         
         if (res.status === 'รอดำเนินการ') {
-          statusBadge.className = 'badge rounded-pill bg-danger';
-          document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-2 fw-bold';
-          document.getElementById('save-btn').innerText = 'บันทึกส่งงาน';
+          statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm';
+          document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+          document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
         } else if (res.status === 'เสร็จสมบูรณ์') {
-          statusBadge.className = 'badge rounded-pill bg-success';
-          document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-2 fw-bold';
+          statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm';
+          document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
           document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)';
         } else {
-          statusBadge.className = 'badge rounded-pill bg-warning text-dark';
-          document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-2 fw-bold';
-          document.getElementById('save-btn').innerText = 'อัปเดตข้อมูล';
+          statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
+          document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+          document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
         }
         renderFormUI(res.data, 'ucube');
       });
@@ -256,15 +345,15 @@
         let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
         
         if (i === 7) { 
-          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control" id="col-${i}" list="details-list" value="${val}"></div>`;
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="details-list" value="${val}"></div>`;
         } else if (i === 10) { 
-          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control" id="col-${i}" list="operator-list" value="${val}"></div>`;
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`;
         } else if (i === 8 || i === 9) { 
           let directUrl = getDirectImageUrl(val); 
           let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`;
-          fieldsHtml += `<div class="mb-3 p-3 bg-light border rounded"><label class="form-label text-secondary fw-bold">${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`;
+          fieldsHtml += `<div class="mb-3 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px;"><label class="form-label text-secondary fw-bold"><i class="bi bi-camera"></i> ${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`;
         } else { 
-          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control" id="col-${i}" value="${val}" ${isReadOnly}></div>`;
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" value="${val}" ${isReadOnly}></div>`;
         }
       }
       document.getElementById('dynamic-fields').innerHTML = fieldsHtml;
@@ -285,7 +374,7 @@
 
     function saveData() {
       const btn = document.getElementById('save-btn');
-      btn.innerText = 'กำลังบันทึกและอัปโหลดรูปภาพ...';
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึกข้อมูล...';
       btn.disabled = true;
 
       const mode = document.getElementById('work-mode').value;
@@ -306,9 +395,9 @@
              toggleWorkMode();
           } else {
              document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว';
-             document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark';
-             btn.className = 'btn btn-primary w-100 mt-4 py-2 fw-bold';
-             btn.innerText = 'อัปเดตข้อมูล';
+             document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
+             btn.className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+             btn.innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
           }
           loadDashboard(); 
         } else {
@@ -332,7 +421,6 @@
     function filterDashboard() {
       const input = document.getElementById('dash-search').value.toLowerCase();
       const items = document.querySelectorAll('.dash-item'); 
-      
       items.forEach(item => {
         const text = item.innerText.toLowerCase();
         if (text.includes(input)) {
@@ -355,10 +443,10 @@
 
       let html = `
         <div class="p-2 modal-custom-text">
-          <div class="row mb-3"><div class="col-12"><span class="fw-bold me-2">ชื่อผู้ใช้ไฟฟ้า</span> : ${item.name || '-'}</div></div>
-          <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2">PEA.No.เดิม</span> : ${item.pea || '-'}</div><div class="col-6"><span class="fw-bold me-2">หน่วย</span> : ${item.colD || '-'}</div></div>
-          <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2">PEA.No.ใหม่</span> : ${item.colF || '-'}</div><div class="col-6"><span class="fw-bold me-2">หน่วย</span> : ${item.colG || '-'}</div></div>
-          <div class="row mb-4"><div class="col-6"><span class="fw-bold me-2">สาเหตุ</span> : ${item.reason || '-'}</div><div class="col-6"><span class="fw-bold me-2">ผู้ดำเนินการ</span> : ${item.operator || '-'}</div></div>
+          <div class="row mb-3"><div class="col-12"><span class="fw-bold me-2 text-primary">ชื่อผู้ใช้ไฟฟ้า</span> : ${item.name || '-'}</div></div>
+          <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.No.เดิม</span> : ${item.pea || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colD || '-'}</div></div>
+          <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.No.ใหม่</span> : ${item.colF || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colG || '-'}</div></div>
+          <div class="row mb-4"><div class="col-6"><span class="fw-bold me-2 text-primary">สาเหตุ</span> : ${item.reason || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">ผู้ดำเนินการ</span> : ${item.operator || '-'}</div></div>
           <div class="row text-center mt-2"><div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายหลัก</p>${pic1Html}</div><div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายรอง</p>${pic2Html}</div></div>
         </div>
       `;
@@ -403,22 +491,22 @@
 
         let html = '';
         if(res.results.length === 0) {
-          html = '<div class="alert alert-secondary text-center">ไม่พบรายการงาน</div>';
+          html = '<div class="alert alert-secondary text-center rounded-pill">ไม่พบรายการงาน</div>';
         } else {
           res.results.forEach(item => {
             let actionHtml = '';
             if (item.status === 'งานคงเหลือ') {
-               actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-2" onclick="processPendingWork('${item.pea}')">งานคงเหลือ/ดำเนินการ</button>`;
+               actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}')">ดำเนินการเปลี่ยนมิเตอร์</button>`;
             } else if (item.status === 'ส่งงานแล้ว') {
                let encoded = encodeURIComponent(JSON.stringify(item));
-               actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-2 shadow-sm" onclick="viewCompletedWork('${encoded}')">ส่งงานแล้ว/รอเปิดใบสั่ง</button>`;
+               actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${encoded}')">ตรวจสอบ / ปิดใบสั่ง</button>`;
             } else if (item.status === 'เสร็จสมบูรณ์') {
-               actionHtml = `<span class="badge bg-success w-100 p-2 mt-2 fs-6 shadow-sm"><i class="bi bi-check-circle"></i> เสร็จสมบูรณ์</span>`;
+               actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์</div>`;
             }
 
             html += `
-              <div class="list-group-item mb-3 rounded shadow-sm border-0 bg-white dash-item">
-                <div class="d-flex justify-content-between"><h6 class="mb-1 fw-bold text-primary">PEA: ${item.pea || '-'}</h6></div>
+              <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(5px);">
+                <div class="d-flex justify-content-between"><h6 class="mb-2 fw-bold text-primary"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'}</h6></div>
                 <div class="text-muted small mb-1"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}</div>
                 ${actionHtml}
               </div>
@@ -471,11 +559,7 @@
         return;
       }
       btn.classList.add('listening');
-      try {
-        recognition.start();
-      } catch(e) {
-        console.log("J.A.R.V.I.S กำลังฟังอยู่แล้วครับ");
-      }
+      try { recognition.start(); } catch(e) {}
     }
 
     function speak(text) {
@@ -483,7 +567,6 @@
         const msg = new SpeechSynthesisUtterance(text);
         msg.lang = 'th-TH';
         msg.rate = 1.1; 
-        msg.pitch = 1.0; 
         window.speechSynthesis.speak(msg);
       }
     }
@@ -502,24 +585,20 @@
       setTimeout(() => {
         const items = document.querySelectorAll('.dash-item');
         let count = 0;
-        items.forEach(item => {
-          if (item.style.getPropertyValue('display') !== 'none') count++;
-        });
+        items.forEach(item => { if (item.style.getPropertyValue('display') !== 'none') count++; });
 
         let reply = "";
         if (count > 0) {
           const successReplies = [
-            `เรียบร้อยครับบอส เจอใบงานในโซน ${keyword} ทั้งหมด ${count} รายการ`,
+            `เรียบร้อยครับบอส เจอใบงานที่ตรงกับ ${keyword} ทั้งหมด ${count} รายการ`,
             `ค้นหาเสร็จสิ้น พบข้อมูล ${keyword} จำนวน ${count} ใบงานครับ`,
-            `จัดให้ครับ พบ ${count} ใบงานที่ตรงกับ ${keyword}`,
-            `สแกนข้อมูลเรียบร้อย มีงานในเขต ${keyword} อยู่ ${count} งานครับบอส`
+            `จัดให้ครับ พบ ${count} ใบงานที่ตรงกับ ${keyword}`
           ];
           reply = successReplies[Math.floor(Math.random() * successReplies.length)];
         } else {
           const failReplies = [
             `ผมตรวจสอบแล้ว ไม่พบข้อมูลของ ${keyword} ในเดือนนี้เลยครับบอส`,
-            `ไม่มีใบงานในโซน ${keyword} ในระบบตอนนี้ครับ`,
-            `ค้นหาจนทั่วแล้ว แต่ไม่เจอข้อมูล ${keyword} เลยครับบอส`
+            `ไม่มีใบงาน ${keyword} ในระบบตอนนี้ครับ`
           ];
           reply = failReplies[Math.floor(Math.random() * failReplies.length)];
         }
