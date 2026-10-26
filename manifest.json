@@ -1,0 +1,17 @@
+{
+  "name": "ระบบเปลี่ยนมิเตอร์ PEA",
+  "short_name": "ส.ป.มิเตอร์",
+  "description": "แอปรับ-ส่งงานเปลี่ยนมิเตอร์ PEA Smart Operation by J.A.R.V.I.S",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fdfbfb",
+  "theme_color": "#3f2b96",
+  "icons": [
+    {
+      "src": "1000002294.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
