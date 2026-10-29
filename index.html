@@ -10,9 +10,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
-    /* ==========================================
-       🌟 GLASSMORPHISM & WARM THEME CSS
-       ========================================== */
     body { background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); background-attachment: fixed; font-family: 'Sarabun', sans-serif; color: #333; }
     .container { max-width: 800px; margin-top: 20px; padding-bottom: 80px; }
     
@@ -41,7 +38,6 @@
     .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 400px; }
 
-    /* 🤖 J.A.R.V.I.S Floating Button */
     .jarvis-fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #00d2ff; border: 2px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.5); font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1050; transition: all 0.3s ease; }
     .jarvis-fab:hover { transform: scale(1.1); box-shadow: 0 0 25px rgba(0, 210, 255, 0.8); }
     .jarvis-fab.listening { animation: pulse-ring 1.5s infinite; background: linear-gradient(135deg, #8a2387, #e94057, #f27121); border-color: #fff; color: #fff; box-shadow: 0 0 25px rgba(233, 64, 87, 0.8); }
@@ -50,7 +46,6 @@
 </head>
 <body>
 
-  <!-- ปุ่มไมค์ J.A.R.V.I.S -->
   <button id="jarvis-btn" class="jarvis-fab" onclick="toggleJarvis()" title="กดเพื่อสั่งการด้วยเสียง">
     <i class="bi bi-mic-fill"></i>
   </button>
@@ -131,7 +126,6 @@
             </div>
           </div>
           <div class="mt-4">
-            <!-- 🔍 ช่องค้นหาแบบ Multi-Keyword -->
             <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหา (พิมพ์หลายคำได้ เช่น 'หนองผือ ช็อตไหม้')..." onkeyup="filterDashboard()">
           </div>
         </div>
@@ -155,7 +149,6 @@
     </div>
   </div>
 
-  <!-- Modal ปิดใบสั่ง -->
   <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content glass-card border-0" style="background: rgba(255, 255, 255, 0.95);">
@@ -176,12 +169,12 @@
   <script>
     if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => console.log('✅ SW OK')).catch(err => console.error('❌ SW Fail:', err)); }); }
     
-    // 🌐 นำลิงก์จาก Apps Script อันใหม่มาใส่ตรงนี้นะครับ
+    // 🌐 ลิงก์ API ตัวเดิมของบอส
     const API_URL = "https://script.google.com/macros/s/AKfycbxV5LU6BkYkodydL4g8ajf6jxZVACRxXOARt7K0poJ08RLT8YIbSzNiJdcOIP6WB62g/exec";
 
     let globalHeaders = [];
     let currentOrderRow = null; 
-    let currentOrderSheetName = null; // เก็บชื่อชีตจริงของออเดอร์นั้นๆ
+    let currentOrderSheetName = null; 
 
     function callAPI(action, params, onSuccess) {
       fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, params: params }) })
@@ -192,19 +185,19 @@
 
     window.onload = function() { callAPI('getInitialData', {}, initApp); }
 
+    // 🚀 เพิ่ม "แสดงทั้งหมด" ไว้บนสุด
     function initApp(res) {
       globalHeaders = res.headers;
       const monthSelect = document.getElementById('month-select');
       const filterMonth = document.getElementById('filter-month');
       
+      monthSelect.add(new Option("-- แสดงทั้งหมด --", "ALL"));
+      filterMonth.add(new Option("-- แสดงทั้งหมด --", "ALL"));
+
       res.months.forEach(month => {
         monthSelect.add(new Option(month, month));
         filterMonth.add(new Option(month, month));
       });
-      
-      // 🚀 เพิ่มตัวเลือก "แสดงทั้งหมด" ไว้ล่างสุด
-      filterMonth.add(new Option("-- แสดงทั้งหมด --", "ALL"));
-
       loadDashboard();
     }
 
@@ -230,11 +223,18 @@
         document.getElementById('row-index').value = res.rowIndex;
         document.getElementById('status-badge-container').style.display = 'block';
         const statusBadge = document.getElementById('status-display');
-        statusBadge.innerText = 'สถานะ: ' + res.status;
+        
+        // 🚀 แสดงชื่อชีตที่ค้นหาเจอด้วย ถ้าเลือกแสดงทั้งหมด
+        let foundTxt = res.foundMonth ? ` (พบใน: ${res.foundMonth})` : '';
+        statusBadge.innerText = 'สถานะ: ' + res.status + foundTxt;
         
         if (res.status === 'รอดำเนินการ') { statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน'; } 
         else if (res.status === 'เสร็จสมบูรณ์') { statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)'; } 
         else { statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล'; }
+        
+        // เซ็ต month-select กลับไปยังชีตที่หาเจอ เพื่อให้ส่งงานถูกที่
+        if(res.foundMonth) document.getElementById('month-select').value = res.foundMonth;
+        
         renderFormUI(res.data, 'ucube');
       });
     }
@@ -274,37 +274,44 @@
       });
     }
 
-    // 🚀 ฟังก์ชันตัวกรองแบบอัจฉริยะ (Multi-keyword Search)
+    // 🚀 อัปเกรด: รับค่า sheetName มาค้นหาเลย
+    function processPendingWork(peaOrName, sheetName) {
+      const searchTab = document.querySelector('#search-tab');
+      bootstrap.Tab.getOrCreateInstance(searchTab).show();
+      setTimeout(() => {
+        document.getElementById('work-mode').value = 'ucube';
+        toggleWorkMode();
+        document.getElementById('month-select').value = sheetName || "ALL";
+        document.getElementById('search-query').value = peaOrName;
+        searchData();
+      }, 300); 
+    }
+
+    // 🚀 อัปเกรด: Multi-keyword กรองทีละหลายคำ (เว้นวรรค)
     function filterDashboard() {
       const input = document.getElementById('dash-search').value.toLowerCase();
-      // แตกคำค้นหาด้วยช่องว่าง เช่น "หนองผือ ช็อตไหม้" จะกลายเป็น ["หนองผือ", "ช็อตไหม้"]
       const searchTerms = input.split(/\s+/).filter(k => k.length > 0);
       const items = document.querySelectorAll('.dash-item'); 
       
       items.forEach(item => {
         const text = item.innerText.toLowerCase();
-        // ตรวจสอบว่าทุกคำที่พิมพ์เว้นวรรคมา (every) มีอยู่ในบรรทัดนั้นหรือไม่
         const isMatch = searchTerms.every(term => text.includes(term));
-        
-        if (isMatch) {
-          item.style.setProperty('display', 'block', 'important');
-        } else {
-          item.style.setProperty('display', 'none', 'important');
-        }
+        if (isMatch) item.style.setProperty('display', 'block', 'important');
+        else item.style.setProperty('display', 'none', 'important');
       });
     }
 
     function viewCompletedWork(encodedItem) {
       const item = JSON.parse(decodeURIComponent(encodedItem));
       currentOrderRow = item.rowIndex;
-      currentOrderSheetName = item.sheetName; // เก็บชื่อชีตที่แท้จริง
+      currentOrderSheetName = item.sheetName; 
 
       let directPic1 = getDirectImageUrl(item.pic1); let directPic2 = getDirectImageUrl(item.pic2);
       let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายหลัก</div>';
       let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายรอง</div>';
 
-      // 🕒 แสดงเวลาส่งงาน (Timestamp) ด้วย
-      let timeHtml = item.timestamp ? `<div class="mt-3 text-center"><span class="badge bg-secondary rounded-pill py-2 px-3"><i class="bi bi-clock-history"></i> ส่งงานเมื่อ: ${item.timestamp}</span></div>` : '';
+      // 🕒 อัปเกรด: แสดงผลเวลาส่งงานที่ดึงมาจากคอลัมน์ N
+      let timeHtml = item.timestamp ? `<div class="mt-3 text-center"><span class="badge bg-secondary rounded-pill py-2 px-3 shadow-sm"><i class="bi bi-clock-history"></i> ส่งงานเมื่อ: ${item.timestamp}</span></div>` : '';
 
       let html = `
         <div class="p-2 modal-custom-text">
@@ -344,7 +351,8 @@
         else {
           res.results.forEach(item => {
             let actionHtml = '';
-            if (item.status === 'งานคงเหลือ') { actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}')">ดำเนินการเปลี่ยนมิเตอร์</button>`; } 
+            // 🚀 อัปเกรด: ส่ง item.sheetName ไปด้วยเพื่อให้ระบบรู้ว่าต้องค้นหาจากชีตไหน
+            if (item.status === 'งานคงเหลือ') { actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}', '${item.sheetName}')">งานคงเหลือ/คลิกเข้าดำเนินการ</button>`; } 
             else if (item.status === 'ส่งงานแล้ว') { actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${encodeURIComponent(JSON.stringify(item))}')">ตรวจสอบ / ปิดใบสั่ง</button>`; } 
             else if (item.status === 'เสร็จสมบูรณ์') { actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์</div>`; }
 
@@ -373,9 +381,19 @@
     function toggleJarvis() { if(!recognition) { alert("เบราว์เซอร์ไม่รองรับครับ"); return; } document.getElementById('jarvis-btn').classList.add('listening'); try { recognition.start(); } catch(e) {} }
     function speak(text) { if('speechSynthesis' in window) { const msg = new SpeechSynthesisUtterance(text); msg.lang = 'th-TH'; msg.rate = 1.1; window.speechSynthesis.speak(msg); } }
 
+    // 🚀 อัปเกรด: ระบบ Voice Command Auto-Spacing Injector ตัดและแยกคำอัตโนมัติ
     function processVoiceCommand(text) {
       let keyword = text.replace(/ช่วย/g, '').replace(/กรอง/g, '').replace(/หา/g, '').replace(/ค้นหา/g, '').replace(/ใบงาน/g, '').replace(/ที่อยู่/g, '').replace(/ในโซน/g, '').replace(/ให้หน่อย/g, '').replace(/หน่อย/g, '').replace(/ครับ/g, '').replace(/ค่ะ/g, '').replace(/สิ/g, '').trim();
-      if(keyword === "") keyword = text.trim();
+      
+      keyword = keyword.replace(/กับ|และ|เว้นวรรค/g, ' ');
+      const knownReasons = ["ช็อตไหม้", "น้ำเข้า", "ผ้ามัว", "ไม่หมุน", "ติดขัด", "ชำรุด", "ขั้วต่อ"];
+      knownReasons.forEach(reason => {
+        if (keyword.includes(reason)) {
+          keyword = keyword.replace(new RegExp(reason, 'g'), ' ' + reason + ' ');
+        }
+      });
+      keyword = keyword.replace(/\s+/g, ' ').trim();
+      if(keyword === "") return;
 
       const statusTab = document.querySelector('#status-tab'); bootstrap.Tab.getOrCreateInstance(statusTab).show();
       const searchBox = document.getElementById('dash-search'); searchBox.value = keyword; filterDashboard(); 
