@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</title>
-  <!-- PWA Settings -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#3f2b96">
   <link rel="apple-touch-icon" href="1000002294.png">
@@ -14,91 +13,26 @@
     /* ==========================================
        🌟 GLASSMORPHISM & WARM THEME CSS
        ========================================== */
-    body { 
-      /* พื้นหลังไล่สีโทนอุ่น สบายตา */
-      background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-      background-attachment: fixed;
-      font-family: 'Sarabun', sans-serif; 
-      color: #333;
-    }
-    
+    body { background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); background-attachment: fixed; font-family: 'Sarabun', sans-serif; color: #333; }
     .container { max-width: 800px; margin-top: 20px; padding-bottom: 80px; }
     
-    /* สไตล์กล่องกระจก (Glass Card) */
-    .glass-card {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      border-radius: 16px;
-      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-      padding: 25px;
-      margin-bottom: 20px;
-    }
+    .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); padding: 25px; margin-bottom: 20px; }
+    .form-control, .form-select { background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(200, 200, 200, 0.5); border-radius: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+    .form-control:focus, .form-select:focus { background: #fff; border-color: #a8c0ff; box-shadow: 0 0 8px rgba(168, 192, 255, 0.6); }
 
-    /* ตกแต่ง Input Form ให้เข้ากับกระจก */
-    .form-control, .form-select {
-      background: rgba(255, 255, 255, 0.8);
-      border: 1px solid rgba(200, 200, 200, 0.5);
-      border-radius: 10px;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .form-control:focus, .form-select:focus {
-      background: #fff;
-      border-color: #a8c0ff;
-      box-shadow: 0 0 8px rgba(168, 192, 255, 0.6);
-    }
-
-    /* ตกแต่ง Tabs */
     .nav-tabs { border-bottom: none; justify-content: center; gap: 10px; margin-bottom: 15px; }
-    .nav-tabs .nav-link {
-      border: none;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 30px;
-      color: #666;
-      padding: 10px 25px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    .nav-tabs .nav-link.active {
-      background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
-      color: #fff;
-      font-weight: bold;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(63, 43, 150, 0.3);
-    }
+    .nav-tabs .nav-link { border: none; background: rgba(255, 255, 255, 0.5); border-radius: 30px; color: #666; padding: 10px 25px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .nav-tabs .nav-link.active { background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%); color: #fff; font-weight: bold; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(63, 43, 150, 0.3); }
 
-    /* ตกแต่งโลโก้ */
-    .app-logo {
-      max-height: 140px;
-      border-radius: 20px;
-      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15));
-      margin-bottom: 15px;
-    }
-    .app-title {
-      font-weight: 800;
-      background: -webkit-linear-gradient(45deg, #3f2b96, #a8c0ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
-    }
+    .app-logo { max-height: 140px; border-radius: 20px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15)); margin-bottom: 15px; }
+    .app-title { font-weight: 800; background: -webkit-linear-gradient(45deg, #3f2b96, #a8c0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 2px 2px 4px rgba(0,0,0,0.05); }
 
-    /* Stat Cards กระจก */
-    .stat-card {
-      border-radius: 15px;
-      color: #fff;
-      text-align: center;
-      padding: 15px;
-      margin-bottom: 10px;
-      border: 1px solid rgba(255,255,255,0.4);
-      backdrop-filter: blur(5px);
-    }
+    .stat-card { border-radius: 15px; color: #fff; text-align: center; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(5px); }
     .bg-total { background: linear-gradient(135deg, rgba(52, 152, 219, 0.8), rgba(41, 128, 185, 0.9)); box-shadow: 0 4px 15px rgba(52,152,219,0.3); }
     .bg-pending { background: linear-gradient(135deg, rgba(231, 76, 60, 0.8), rgba(192, 57, 43, 0.9)); box-shadow: 0 4px 15px rgba(231,76,60,0.3); }
     .bg-done { background: linear-gradient(135deg, rgba(243, 156, 18, 0.8), rgba(211, 84, 0, 0.9)); box-shadow: 0 4px 15px rgba(243,156,18,0.3); }
     .bg-completed { background: linear-gradient(135deg, rgba(46, 204, 113, 0.8), rgba(39, 174, 96, 0.9)); box-shadow: 0 4px 15px rgba(46,204,113,0.3); }
 
-    /* ปุ่มและโหลดเดอร์ */
     .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4); }
     .loader { display: none; margin: 10px auto; border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid #764ba2; width: 35px; height: 35px; animation: spin 1s linear infinite; }
@@ -107,7 +41,7 @@
     .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 400px; }
 
-    /* 🤖 J.A.R.V.I.S Floating Button (ไฮเทคเหมือนเดิม) */
+    /* 🤖 J.A.R.V.I.S Floating Button */
     .jarvis-fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #00d2ff; border: 2px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.5); font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1050; transition: all 0.3s ease; }
     .jarvis-fab:hover { transform: scale(1.1); box-shadow: 0 0 25px rgba(0, 210, 255, 0.8); }
     .jarvis-fab.listening { animation: pulse-ring 1.5s infinite; background: linear-gradient(135deg, #8a2387, #e94057, #f27121); border-color: #fff; color: #fff; box-shadow: 0 0 25px rgba(233, 64, 87, 0.8); }
@@ -129,10 +63,7 @@
   <datalist id="operator-list"><option value="ผรม."><option value="พนง.ผมต."></datalist>
 
   <div class="container">
-    
-    <!-- ส่วนหัวแอป และ โลโก้ -->
     <div class="text-center mb-4 mt-2">
-      <!-- รูปโลโก้ เรียกใช้ไฟล์ที่อัปโหลด -->
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
       <p class="text-muted small">PEA Smart Operation by J.A.R.V.I.S</p>
@@ -200,7 +131,8 @@
             </div>
           </div>
           <div class="mt-4">
-            <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหา PEA, ชื่อ, สถานที่..." onkeyup="filterDashboard()">
+            <!-- 🔍 ช่องค้นหาแบบ Multi-Keyword -->
+            <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหา (พิมพ์หลายคำได้ เช่น 'หนองผือ ช็อตไหม้')..." onkeyup="filterDashboard()">
           </div>
         </div>
         
@@ -242,85 +174,54 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // 🚀 ลงทะเบียน Service Worker สำหรับ PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('✅ Service Worker ลงทะเบียนสำเร็จ!'))
-          .catch(err => console.error('❌ Service Worker ล้มเหลว:', err));
-      });
-    }
-    // 🌐 ลิงก์ Web App API 
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').then(reg => console.log('✅ SW OK')).catch(err => console.error('❌ SW Fail:', err)); }); }
+    
+    // 🌐 นำลิงก์จาก Apps Script อันใหม่มาใส่ตรงนี้นะครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbxV5LU6BkYkodydL4g8ajf6jxZVACRxXOARt7K0poJ08RLT8YIbSzNiJdcOIP6WB62g/exec";
 
     let globalHeaders = [];
     let currentOrderRow = null; 
+    let currentOrderSheetName = null; // เก็บชื่อชีตจริงของออเดอร์นั้นๆ
 
     function callAPI(action, params, onSuccess) {
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-        body: JSON.stringify({ action: action, params: params })
-      })
+      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, params: params }) })
       .then(response => response.json())
       .then(data => onSuccess(data))
-      .catch(error => {
-        console.error('API Error:', error);
-        alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
-        document.getElementById('search-loader').style.display = 'none';
-        document.getElementById('dash-loader').style.display = 'none';
-        if(document.getElementById('save-btn')) {
-           document.getElementById('save-btn').disabled = false;
-           document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
-        }
-      });
+      .catch(error => { alert('เชื่อมต่อล้มเหลว'); document.getElementById('search-loader').style.display = 'none'; document.getElementById('dash-loader').style.display = 'none'; if(document.getElementById('save-btn')) { document.getElementById('save-btn').disabled = false; }});
     }
 
-    window.onload = function() {
-      callAPI('getInitialData', {}, initApp);
-    }
+    window.onload = function() { callAPI('getInitialData', {}, initApp); }
 
     function initApp(res) {
       globalHeaders = res.headers;
       const monthSelect = document.getElementById('month-select');
       const filterMonth = document.getElementById('filter-month');
+      
       res.months.forEach(month => {
         monthSelect.add(new Option(month, month));
         filterMonth.add(new Option(month, month));
       });
+      
+      // 🚀 เพิ่มตัวเลือก "แสดงทั้งหมด" ไว้ล่างสุด
+      filterMonth.add(new Option("-- แสดงทั้งหมด --", "ALL"));
+
       loadDashboard();
     }
 
-    function getDirectImageUrl(url) {
-      if (!url) return '';
-      let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (match && match[1]) {
-        return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000';
-      }
-      return url; 
-    }
+    function getDirectImageUrl(url) { if (!url) return ''; let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return (match && match[1]) ? 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000' : url; }
 
     function toggleWorkMode() {
       const mode = document.getElementById('work-mode').value;
-      if (mode === 'general') {
-        document.getElementById('search-section').style.display = 'none';
-        document.getElementById('status-badge-container').style.display = 'none';
-        renderFormUI(new Array(globalHeaders.length).fill(''), 'general');
-        document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-        document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
-      } else {
-        document.getElementById('search-section').style.display = 'block';
-        document.getElementById('form-container').style.display = 'none';
-      }
+      if (mode === 'general') { document.getElementById('search-section').style.display = 'none'; document.getElementById('status-badge-container').style.display = 'none'; renderFormUI(new Array(globalHeaders.length).fill(''), 'general'); document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน'; } 
+      else { document.getElementById('search-section').style.display = 'block'; document.getElementById('form-container').style.display = 'none'; }
     }
 
     function searchData() {
       const month = document.getElementById('month-select').value;
       const query = document.getElementById('search-query').value.trim();
-      if(!query) { alert('กรุณาระบุข้อมูลสำหรับค้นหา'); return; }
+      if(!query) { alert('กรุณาระบุข้อมูล'); return; }
       
-      document.getElementById('search-loader').style.display = 'block';
-      document.getElementById('form-container').style.display = 'none';
+      document.getElementById('search-loader').style.display = 'block'; document.getElementById('form-container').style.display = 'none';
       
       callAPI('searchWork', { month: month, query: query }, function(res) {
         document.getElementById('search-loader').style.display = 'none';
@@ -328,23 +229,12 @@
         
         document.getElementById('row-index').value = res.rowIndex;
         document.getElementById('status-badge-container').style.display = 'block';
-        
         const statusBadge = document.getElementById('status-display');
         statusBadge.innerText = 'สถานะ: ' + res.status;
         
-        if (res.status === 'รอดำเนินการ') {
-          statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm';
-          document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-          document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
-        } else if (res.status === 'เสร็จสมบูรณ์') {
-          statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm';
-          document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-          document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)';
-        } else {
-          statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
-          document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-          document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
-        }
+        if (res.status === 'รอดำเนินการ') { statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน'; } 
+        else if (res.status === 'เสร็จสมบูรณ์') { statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)'; } 
+        else { statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล'; }
         renderFormUI(res.data, 'ucube');
       });
     }
@@ -352,90 +242,51 @@
     function renderFormUI(dataArray, mode) {
       let fieldsHtml = '';
       for (let i = 0; i < globalHeaders.length; i++) {
-        let title = globalHeaders[i] || `คอลัมน์ ${i+1}`;
-        let val = dataArray[i] || '';
-        let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
-        
-        if (i === 7) { 
-          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="details-list" value="${val}"></div>`;
-        } else if (i === 10) { 
-          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`;
-        } else if (i === 8 || i === 9) { 
-          let directUrl = getDirectImageUrl(val); 
-          let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`;
-          fieldsHtml += `<div class="mb-3 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px;"><label class="form-label text-secondary fw-bold"><i class="bi bi-camera"></i> ${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`;
-        } else { 
-          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" value="${val}" ${isReadOnly}></div>`;
-        }
+        let title = globalHeaders[i] || `คอลัมน์ ${i+1}`; let val = dataArray[i] || ''; let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
+        if (i === 7) { fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="details-list" value="${val}"></div>`; } 
+        else if (i === 10) { fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`; } 
+        else if (i === 8 || i === 9) { let directUrl = getDirectImageUrl(val); let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`; fieldsHtml += `<div class="mb-3 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px;"><label class="form-label text-secondary fw-bold"><i class="bi bi-camera"></i> ${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`; } 
+        else { fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" value="${val}" ${isReadOnly}></div>`; }
       }
-      document.getElementById('dynamic-fields').innerHTML = fieldsHtml;
-      document.getElementById('form-container').style.display = 'block';
+      document.getElementById('dynamic-fields').innerHTML = fieldsHtml; document.getElementById('form-container').style.display = 'block';
     }
 
     function handleFileUpload(event, index) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById(`col-${index}`).value = e.target.result;
-        let preview = document.getElementById(`preview-${index}`);
-        if(preview) { preview.src = e.target.result; preview.style.display = 'block'; }
-      };
-      reader.readAsDataURL(file);
+      const file = event.target.files[0]; if (!file) return;
+      const reader = new FileReader(); reader.onload = function(e) { document.getElementById(`col-${index}`).value = e.target.result; let preview = document.getElementById(`preview-${index}`); if(preview) { preview.src = e.target.result; preview.style.display = 'block'; } }; reader.readAsDataURL(file);
     }
 
     function saveData() {
-      const btn = document.getElementById('save-btn');
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึกข้อมูล...';
-      btn.disabled = true;
-
-      const mode = document.getElementById('work-mode').value;
-      const month = document.getElementById('month-select').value;
-      const rowIndex = document.getElementById('row-index').value;
-      
-      let formData = [];
-      for (let i = 0; i < globalHeaders.length; i++) {
-        formData.push(document.getElementById(`col-${i}`).value);
-      }
+      const btn = document.getElementById('save-btn'); btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึกข้อมูล...'; btn.disabled = true;
+      const mode = document.getElementById('work-mode').value; const month = document.getElementById('month-select').value; const rowIndex = document.getElementById('row-index').value;
+      let formData = []; for (let i = 0; i < globalHeaders.length; i++) { formData.push(document.getElementById(`col-${i}`).value); }
 
       callAPI('saveData', { mode: mode, month: month, rowIndex: rowIndex, formData: formData }, function(res) {
         btn.disabled = false;
         if(res.success) {
           alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
-          if(mode === 'general') {
-             document.getElementById('work-mode').value = 'ucube';
-             toggleWorkMode();
-          } else {
-             document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว';
-             document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
-             btn.className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-             btn.innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
-          }
+          if(mode === 'general') { document.getElementById('work-mode').value = 'ucube'; toggleWorkMode(); } 
+          else { document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว'; document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm'; btn.className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; btn.innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล'; }
+          
+          if(res.updatedMonth) document.getElementById('filter-month').value = res.updatedMonth;
           loadDashboard(); 
-        } else {
-          alert('เกิดข้อผิดพลาด: ' + res.message);
-          btn.innerText = 'ลองใหม่';
-        }
+        } else { alert('ผิดพลาด: ' + res.message); btn.innerText = 'ลองใหม่'; }
       });
     }
 
-    function processPendingWork(peaOrName) {
-      const searchTab = document.querySelector('#search-tab');
-      bootstrap.Tab.getOrCreateInstance(searchTab).show();
-      setTimeout(() => {
-        document.getElementById('work-mode').value = 'ucube';
-        toggleWorkMode();
-        document.getElementById('search-query').value = peaOrName;
-        searchData();
-      }, 250); 
-    }
-
+    // 🚀 ฟังก์ชันตัวกรองแบบอัจฉริยะ (Multi-keyword Search)
     function filterDashboard() {
       const input = document.getElementById('dash-search').value.toLowerCase();
+      // แตกคำค้นหาด้วยช่องว่าง เช่น "หนองผือ ช็อตไหม้" จะกลายเป็น ["หนองผือ", "ช็อตไหม้"]
+      const searchTerms = input.split(/\s+/).filter(k => k.length > 0);
       const items = document.querySelectorAll('.dash-item'); 
+      
       items.forEach(item => {
         const text = item.innerText.toLowerCase();
-        if (text.includes(input)) {
+        // ตรวจสอบว่าทุกคำที่พิมพ์เว้นวรรคมา (every) มีอยู่ในบรรทัดนั้นหรือไม่
+        const isMatch = searchTerms.every(term => text.includes(term));
+        
+        if (isMatch) {
           item.style.setProperty('display', 'block', 'important');
         } else {
           item.style.setProperty('display', 'none', 'important');
@@ -446,12 +297,14 @@
     function viewCompletedWork(encodedItem) {
       const item = JSON.parse(decodeURIComponent(encodedItem));
       currentOrderRow = item.rowIndex;
+      currentOrderSheetName = item.sheetName; // เก็บชื่อชีตที่แท้จริง
 
-      let directPic1 = getDirectImageUrl(item.pic1);
-      let directPic2 = getDirectImageUrl(item.pic2);
+      let directPic1 = getDirectImageUrl(item.pic1); let directPic2 = getDirectImageUrl(item.pic2);
+      let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายหลัก</div>';
+      let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายรอง</div>';
 
-      let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm" onerror="this.onerror=null; this.src='https://placehold.co/400x500/eeeeee/999999?text=Image+Error'"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายหลัก</div>';
-      let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm" onerror="this.onerror=null; this.src='https://placehold.co/400x500/eeeeee/999999?text=Image+Error'"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายรอง</div>';
+      // 🕒 แสดงเวลาส่งงาน (Timestamp) ด้วย
+      let timeHtml = item.timestamp ? `<div class="mt-3 text-center"><span class="badge bg-secondary rounded-pill py-2 px-3"><i class="bi bi-clock-history"></i> ส่งงานเมื่อ: ${item.timestamp}</span></div>` : '';
 
       let html = `
         <div class="p-2 modal-custom-text">
@@ -460,6 +313,7 @@
           <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.No.ใหม่</span> : ${item.colF || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colG || '-'}</div></div>
           <div class="row mb-4"><div class="col-6"><span class="fw-bold me-2 text-primary">สาเหตุ</span> : ${item.reason || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">ผู้ดำเนินการ</span> : ${item.operator || '-'}</div></div>
           <div class="row text-center mt-2"><div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายหลัก</p>${pic1Html}</div><div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายรอง</p>${pic2Html}</div></div>
+          ${timeHtml}
         </div>
       `;
       document.getElementById('orderModalBody').innerHTML = html;
@@ -467,20 +321,10 @@
     }
 
     function submitCloseOrder() {
-      const btn = document.getElementById('btn-close-order');
-      btn.innerText = 'กำลังประมวลผล...';
-      btn.disabled = true;
-
-      const month = document.getElementById('filter-month').value;
-      callAPI('closeOrder', { month: month, currentOrderRow: currentOrderRow }, function(res) {
-        btn.innerText = 'ปิดใบสั่ง';
-        btn.disabled = false;
-        if(res.success) {
-          bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
-          loadDashboard(); 
-        } else {
-          alert('ผิดพลาด: ' + res.message);
-        }
+      const btn = document.getElementById('btn-close-order'); btn.innerText = 'กำลังประมวลผล...'; btn.disabled = true;
+      callAPI('closeOrder', { sheetName: currentOrderSheetName, currentOrderRow: currentOrderRow }, function(res) {
+        btn.innerText = 'ปิดใบสั่ง'; btn.disabled = false;
+        if(res.success) { bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide(); loadDashboard(); } else { alert('ผิดพลาด: ' + res.message); }
       });
     }
 
@@ -489,36 +333,24 @@
       const statusFilter = document.getElementById('filter-status').value;
       if(!month) return; 
       
-      document.getElementById('dash-search').value = '';
-      document.getElementById('dash-loader').style.display = 'block';
-      document.getElementById('dashboard-list').innerHTML = '';
+      document.getElementById('dash-search').value = ''; document.getElementById('dash-loader').style.display = 'block'; document.getElementById('dashboard-list').innerHTML = '';
 
       callAPI('getDashboardData', { month: month, statusFilter: statusFilter }, function(res) {
         document.getElementById('dash-loader').style.display = 'none';
-        
-        document.getElementById('stat-total').innerText = res.stats.total;
-        document.getElementById('stat-done').innerText = res.stats.done;
-        document.getElementById('stat-pending').innerText = res.stats.pending;
-        document.getElementById('stat-completed').innerText = res.stats.completed;
+        document.getElementById('stat-total').innerText = res.stats.total; document.getElementById('stat-done').innerText = res.stats.done; document.getElementById('stat-pending').innerText = res.stats.pending; document.getElementById('stat-completed').innerText = res.stats.completed;
 
         let html = '';
-        if(res.results.length === 0) {
-          html = '<div class="alert alert-secondary text-center rounded-pill">ไม่พบรายการงาน</div>';
-        } else {
+        if(res.results.length === 0) { html = '<div class="alert alert-secondary text-center rounded-pill">ไม่พบรายการงาน</div>'; } 
+        else {
           res.results.forEach(item => {
             let actionHtml = '';
-            if (item.status === 'งานคงเหลือ') {
-               actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}')">ดำเนินการเปลี่ยนมิเตอร์</button>`;
-            } else if (item.status === 'ส่งงานแล้ว') {
-               let encoded = encodeURIComponent(JSON.stringify(item));
-               actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${encoded}')">ตรวจสอบ / ปิดใบสั่ง</button>`;
-            } else if (item.status === 'เสร็จสมบูรณ์') {
-               actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์</div>`;
-            }
+            if (item.status === 'งานคงเหลือ') { actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}')">ดำเนินการเปลี่ยนมิเตอร์</button>`; } 
+            else if (item.status === 'ส่งงานแล้ว') { actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${encodeURIComponent(JSON.stringify(item))}')">ตรวจสอบ / ปิดใบสั่ง</button>`; } 
+            else if (item.status === 'เสร็จสมบูรณ์') { actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์</div>`; }
 
             html += `
               <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(5px);">
-                <div class="d-flex justify-content-between"><h6 class="mb-2 fw-bold text-primary"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'}</h6></div>
+                <div class="d-flex justify-content-between"><h6 class="mb-2 fw-bold text-primary"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} <span class="badge bg-light text-secondary ms-2 border" style="font-size: 0.7em;">${item.sheetName}</span></h6></div>
                 <div class="text-muted small mb-1"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}</div>
                 ${actionHtml}
               </div>
@@ -529,91 +361,29 @@
       });
     }
 
-    // ==========================================
-    // 🤖 J.A.R.V.I.S VOICE ASSISTANT SYSTEM
-    // ==========================================
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; const recognition = SpeechRecognition ? new SpeechRecognition() : null;
     if(recognition) {
-      recognition.lang = 'th-TH'; 
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = function() {
-        document.getElementById('jarvis-btn').classList.add('listening');
-        window.speechSynthesis.cancel(); 
-      };
-
-      recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript;
-        console.log("J.A.R.V.I.S ได้ยินว่า: ", transcript);
-        processVoiceCommand(transcript);
-      };
-
-      recognition.onerror = function(event) {
-        console.error("Speech error: ", event.error);
-        document.getElementById('jarvis-btn').classList.remove('listening');
-        if (event.error === 'not-allowed' || event.error === 'audio-capture') {
-           alert("⚠️ บอสต้องกด 'อนุญาต (Allow)' ให้เบราว์เซอร์เข้าถึงไมโครโฟนก่อนนะครับ");
-        }
-      };
-
-      recognition.onend = function() {
-        document.getElementById('jarvis-btn').classList.remove('listening');
-      };
+      recognition.lang = 'th-TH'; recognition.interimResults = false; recognition.maxAlternatives = 1;
+      recognition.onstart = function() { document.getElementById('jarvis-btn').classList.add('listening'); window.speechSynthesis.cancel(); };
+      recognition.onresult = function(event) { processVoiceCommand(event.results[0][0].transcript); };
+      recognition.onerror = function(event) { document.getElementById('jarvis-btn').classList.remove('listening'); };
+      recognition.onend = function() { document.getElementById('jarvis-btn').classList.remove('listening'); };
     }
 
-    function toggleJarvis() {
-      const btn = document.getElementById('jarvis-btn');
-      if(!recognition) {
-        alert("เบราว์เซอร์นี้ไม่รองรับระบบสั่งงานด้วยเสียง แนะนำให้ใช้ Google Chrome หรือ Safari ครับบอส");
-        return;
-      }
-      btn.classList.add('listening');
-      try { recognition.start(); } catch(e) {}
-    }
-
-    function speak(text) {
-      if('speechSynthesis' in window) {
-        const msg = new SpeechSynthesisUtterance(text);
-        msg.lang = 'th-TH';
-        msg.rate = 1.1; 
-        window.speechSynthesis.speak(msg);
-      }
-    }
+    function toggleJarvis() { if(!recognition) { alert("เบราว์เซอร์ไม่รองรับครับ"); return; } document.getElementById('jarvis-btn').classList.add('listening'); try { recognition.start(); } catch(e) {} }
+    function speak(text) { if('speechSynthesis' in window) { const msg = new SpeechSynthesisUtterance(text); msg.lang = 'th-TH'; msg.rate = 1.1; window.speechSynthesis.speak(msg); } }
 
     function processVoiceCommand(text) {
       let keyword = text.replace(/ช่วย/g, '').replace(/กรอง/g, '').replace(/หา/g, '').replace(/ค้นหา/g, '').replace(/ใบงาน/g, '').replace(/ที่อยู่/g, '').replace(/ในโซน/g, '').replace(/ให้หน่อย/g, '').replace(/หน่อย/g, '').replace(/ครับ/g, '').replace(/ค่ะ/g, '').replace(/สิ/g, '').trim();
       if(keyword === "") keyword = text.trim();
 
-      const statusTab = document.querySelector('#status-tab');
-      bootstrap.Tab.getOrCreateInstance(statusTab).show();
-
-      const searchBox = document.getElementById('dash-search');
-      searchBox.value = keyword;
-      filterDashboard(); 
+      const statusTab = document.querySelector('#status-tab'); bootstrap.Tab.getOrCreateInstance(statusTab).show();
+      const searchBox = document.getElementById('dash-search'); searchBox.value = keyword; filterDashboard(); 
 
       setTimeout(() => {
-        const items = document.querySelectorAll('.dash-item');
-        let count = 0;
+        const items = document.querySelectorAll('.dash-item'); let count = 0;
         items.forEach(item => { if (item.style.getPropertyValue('display') !== 'none') count++; });
-
-        let reply = "";
-        if (count > 0) {
-          const successReplies = [
-            `เรียบร้อยครับบอส เจอใบงานที่ตรงกับ ${keyword} ทั้งหมด ${count} รายการ`,
-            `ค้นหาเสร็จสิ้น พบข้อมูล ${keyword} จำนวน ${count} ใบงานครับ`,
-            `จัดให้ครับ พบ ${count} ใบงานที่ตรงกับ ${keyword}`
-          ];
-          reply = successReplies[Math.floor(Math.random() * successReplies.length)];
-        } else {
-          const failReplies = [
-            `ผมตรวจสอบแล้ว ไม่พบข้อมูลของ ${keyword} ในเดือนนี้เลยครับบอส`,
-            `ไม่มีใบงาน ${keyword} ในระบบตอนนี้ครับ`
-          ];
-          reply = failReplies[Math.floor(Math.random() * failReplies.length)];
-        }
+        let reply = count > 0 ? `พบ ${count} ใบงานที่เกี่ยวข้องกับ ${keyword} ครับบอส` : `ไม่พบใบงานเกี่ยวกับ ${keyword} เลยครับ`;
         speak(reply);
       }, 350); 
     }
