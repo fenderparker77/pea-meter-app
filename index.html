@@ -9,6 +9,8 @@
   <link rel="apple-touch-icon" href="1000002294.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <!-- 🚀 เพิ่มไลบรารี SheetJS สำหรับ Export Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); background-attachment: fixed; font-family: 'Sarabun', sans-serif; color: #333; }
     .container { max-width: 800px; margin-top: 20px; padding-bottom: 120px; }
@@ -124,7 +126,6 @@
           <div class="row">
             <div class="col-6">
               <label class="form-label fw-bold text-secondary">สถานะ:</label>
-              <!-- 🚀 อัปเดต Dropdown Options ให้ตรงเป๊ะ -->
               <select id="filter-status" class="form-select" onchange="loadDashboard()">
                 <option value="ทั้งหมด" selected>ทั้งหมด</option>
                 <option value="งานคงเหลือ">งานคงเหลือ</option>
@@ -154,7 +155,6 @@
               <div class="col-12"><div class="stat-card bg-total" onclick="showTableModal('ทั้งหมด')"><h6 class="mb-1 text-white-50">ใบงานทั้งหมด <i class="bi bi-table ms-1"></i></h6><h3 id="stat-total" class="fw-bold mb-0">0</h3></div></div>
               <div class="col-6"><div class="stat-card bg-pending" onclick="showTableModal('งานคงเหลือ')"><h6 class="mb-1 text-white-50">คงเหลือ <i class="bi bi-table ms-1"></i></h6><h3 id="stat-pending" class="fw-bold mb-0">0</h3></div></div>
               <div class="col-6"><div class="stat-card bg-completed" onclick="showTableModal('เสร็จสมบูรณ์')"><h6 class="mb-1 text-white-50">เสร็จสมบูรณ์ <i class="bi bi-table ms-1"></i></h6><h3 id="stat-completed" class="fw-bold mb-0">0</h3></div></div>
-              <!-- 🚀 อัปเดตพารามิเตอร์ onClick ให้ตรงกับสถานะใหม่ -->
               <div class="col-6"><div class="stat-card bg-contractor" onclick="showTableModal('ผรม. ส่งงานแล้ว')"><h6 class="mb-1 text-white-50">ผรม. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-contractor" class="fw-bold mb-0 text-dark">0</h3></div></div>
               <div class="col-6"><div class="stat-card bg-emp" onclick="showTableModal('พนง. ดำเนินการ')"><h6 class="mb-1 text-white-50">พนง. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-emp" class="fw-bold mb-0">0</h3></div></div>
             </div>
@@ -180,16 +180,22 @@
     </div>
   </div>
 
+  <!-- 🚀 Modal ตาราง พร้อมปุ่ม Export Excel -->
   <div class="modal fade" id="tableModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header bg-dark text-white">
+        <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center">
           <h5 class="modal-title fw-bold" id="tableModalTitle"><i class="bi bi-table"></i> รายละเอียดข้อมูล</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <div>
+            <button type="button" class="btn btn-sm btn-success me-2 rounded-pill px-3 shadow-sm" onclick="exportTableToExcel()">
+              <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
         </div>
         <div class="modal-body p-0">
           <div class="table-container">
-            <table class="table table-bordered table-striped table-hover mb-0">
+            <table class="table table-bordered table-striped table-hover mb-0" id="detailDataTreeTable">
               <thead id="tableModalHead"></thead>
               <tbody id="tableModalBody"></tbody>
             </table>
@@ -402,7 +408,6 @@
             let gpsBadgeHtml = item.gps && item.gps.trim() !== '' ? `<span class="badge bg-info text-dark ms-2 shadow-sm border border-light"><i class="bi bi-geo-alt-fill text-danger"></i> พิกัด</span>` : '';
             let checkboxHtml = item.gps && item.gps.trim() !== '' ? `<input class="form-check-input route-cb me-3 fs-4 shadow-sm border-secondary" type="checkbox" value="${item.gps}" onchange="updateRouteCount()">` : '';
             
-            // 🚀 อัปเดตป้ายกำกับสถานะในกล่อง List (ตรวจสอบให้ตรงกับคำใหม่)
             let statusBadgeList = '';
             if(item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
             if(item.status === 'พนง. ดำเนินการ') statusBadgeList = '<span class="badge text-white float-end" style="background:#9b59b6;">พนง.ส่งงาน</span>';
@@ -413,7 +418,6 @@
                   ${checkboxHtml}
                   <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${gpsBadgeHtml} ${statusBadgeList}</h6>
                 </div>
-                <!-- 🚀 นำป้ายบอกเดือน/ปี กลับมาและทำให้เห็นเด่นชัดขึ้น -->
                 <div class="mb-2">
                   <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-calendar-event"></i> รอบเดือน: ${item.sheetName}</span>
                 </div>
@@ -446,7 +450,6 @@
            tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td>${filterStatus==='ทั้งหมด'?`<td>${item.status}</td>`:''}</tr>`;
         });
       } 
-      // 🚀 เช็กเงื่อนไขให้ตรงกับสถานะใหม่
       else if (filterStatus === 'ผรม. ส่งงานแล้ว' || filterStatus === 'พนง. ดำเนินการ') {
         thead = `<tr><th>PEA เก่า</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th><th>หน่วย PEA เก่า</th><th>PEA ใหม่</th><th>หน่วย PEA ใหม่</th><th>ผู้ดำเนินการ</th><th>วันที่ดำเนินการ</th></tr>`;
         filteredData.forEach(item => {
@@ -463,6 +466,21 @@
       document.getElementById('tableModalHead').innerHTML = thead;
       document.getElementById('tableModalBody').innerHTML = tbody;
       new bootstrap.Modal(document.getElementById('tableModal')).show();
+    }
+
+    // 🚀 ฟังก์ชัน Export Excel
+    function exportTableToExcel() {
+      const table = document.getElementById("detailDataTreeTable");
+      if (!table || table.rows.length <= 1) {
+        alert("ไม่มีข้อมูลสำหรับ Export");
+        return;
+      }
+      const currentStatusTitle = document.getElementById('tableModalTitle').innerText.replace('รายละเอียดสถานะ: ', '').trim();
+      const monthFilter = document.getElementById('filter-month').value;
+      const fileName = `รายงานใบงาน_${currentStatusTitle}_เดือน_${monthFilter}.xlsx`;
+      
+      const wb = XLSX.utils.table_to_book(table, {sheet: "Sheet1"});
+      XLSX.writeFile(wb, fileName);
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; const recognition = SpeechRecognition ? new SpeechRecognition() : null;
