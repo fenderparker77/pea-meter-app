@@ -9,17 +9,43 @@
   <link rel="apple-touch-icon" href="1000002294.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <!-- 🚀 เพิ่มไลบรารี SheetJS สำหรับ Export Excel -->
+  <!-- ไลบรารี SheetJS สำหรับ Export Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); background-attachment: fixed; font-family: 'Sarabun', sans-serif; color: #333; }
-    .container { max-width: 800px; margin-top: 20px; padding-bottom: 120px; }
+    .container { max-width: 800px; margin-top: 20px; padding-bottom: 135px; }
     
-    .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); padding: 25px; margin-bottom: 20px; }
-    .form-control, .form-select { background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(200, 200, 200, 0.5); border-radius: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+    /* ปุ่ม Admin มุมขวาบน */
+    .admin-corner-btn {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      z-index: 1060;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(63, 43, 150, 0.25);
+      color: #3f2b96;
+      border-radius: 30px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.25s ease;
+    }
+    .admin-corner-btn:hover { background: #3f2b96; color: #fff; transform: translateY(-1px); }
+    .admin-corner-btn.is-admin {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #00d2ff;
+      border-color: #00d2ff;
+      box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+    }
+
+    .glass-card { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); padding: 25px; margin-bottom: 20px; }
+    .form-control, .form-select { background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(200, 200, 200, 0.5); border-radius: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
 
     .nav-tabs { border-bottom: none; justify-content: center; gap: 10px; margin-bottom: 15px; }
-    .nav-tabs .nav-link { border: none; background: rgba(255, 255, 255, 0.5); border-radius: 30px; color: #666; padding: 10px 25px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .nav-tabs .nav-link { border: none; background: rgba(255, 255, 255, 0.55); border-radius: 30px; color: #666; padding: 10px 25px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     .nav-tabs .nav-link.active { background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%); color: #fff; font-weight: bold; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(63, 43, 150, 0.3); }
 
     .app-logo { max-height: 140px; border-radius: 20px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15)); margin-bottom: 15px; }
@@ -41,12 +67,73 @@
     .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 400px; }
 
-    .jarvis-fab { position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #00d2ff; border: 2px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.5); font-size: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1050; transition: all 0.3s ease; }
-    .jarvis-fab.listening { animation: pulse-ring 1.5s infinite; border-color: #fff; color: #fff; box-shadow: 0 0 25px rgba(233, 64, 87, 0.8); }
-    @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(233, 64, 87, 0); } 100% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0); } }
+    /* J.A.R.V.I.S Smart Voice UI (ซ่อนเป็นค่าเริ่มต้น จนกว่า Admin จะล็อกอิน) */
+    .jarvis-fab {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #00d2ff;
+      border: 2px solid #00d2ff;
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+      font-size: 28px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 1050;
+      transition: all 0.3s ease;
+    }
+    .jarvis-fab.listening {
+      animation: pulse-ring 1.5s infinite;
+      border-color: #fff;
+      color: #fff;
+      background: linear-gradient(135deg, #8e0e00, #e94057);
+      box-shadow: 0 0 25px rgba(233, 64, 87, 0.85);
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(233, 64, 87, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0); }
+    }
+
+    /* กล่องข้อความสนทนาสดของ J.A.R.V.I.S */
+    .jarvis-subtitle-box {
+      position: fixed;
+      bottom: 105px;
+      right: 25px;
+      max-width: 340px;
+      background: rgba(15, 32, 39, 0.94);
+      color: #e0f7fa;
+      border: 1px solid #00d2ff;
+      border-radius: 16px;
+      padding: 13px 16px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+      z-index: 1055;
+      display: none;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ปุ่มลัดคำสั่งเสียงที่ใช้บ่อย (Admin Only) */
+    .voice-chip {
+      font-size: 0.78rem;
+      border-radius: 20px;
+      padding: 4px 12px;
+      background: rgba(63, 43, 150, 0.08);
+      color: #3f2b96;
+      border: 1px solid rgba(63, 43, 150, 0.25);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .voice-chip:hover { background: #3f2b96; color: #fff; }
 
     .route-cb { width: 25px; height: 25px; cursor: pointer; }
-    .route-panel { position: fixed; bottom: 110px; right: 30px; z-index: 1040; display: none; }
+    .route-panel { position: fixed; bottom: 110px; left: 25px; z-index: 1040; display: none; }
     
     .table-container { max-height: 60vh; overflow: auto; background: #fff; border-radius: 8px; }
     .table-container table { white-space: nowrap; margin-bottom: 0; }
@@ -56,8 +143,20 @@
 </head>
 <body>
 
-  <button id="jarvis-btn" class="jarvis-fab" onclick="toggleJarvis()" title="กดเพื่อสั่งการด้วยเสียง"><i class="bi bi-mic-fill"></i></button>
+  <!-- 🔐 ปุ่มเข้าใช้งานในฐานะ Admin มุมขวาบน -->
+  <button id="admin-toggle-btn" class="admin-corner-btn" onclick="handleAdminButtonClick()" title="เข้าสู่ระบบผู้ดูแล">
+    <i class="bi bi-shield-lock-fill me-1"></i> แอดมิน
+  </button>
 
+  <!-- 🎙️ ปุ่ม J.A.R.V.I.S Smart Voice (แสดงเฉพาะเมื่อยืนยันตัวตน Admin แล้ว) -->
+  <button id="jarvis-btn" class="jarvis-fab" onclick="toggleJarvis()" title="J.A.R.V.I.S Smart Voice (กดเพื่อสั่งการด้วยเสียง)">
+    <i class="bi bi-mic-fill"></i>
+  </button>
+
+  <!-- 💬 กล่องแสดงคำพูดโต้ตอบของ J.A.R.V.I.S -->
+  <div id="jarvis-subtitle" class="jarvis-subtitle-box"></div>
+
+  <!-- 🗺️ ปุ่มนำทางงาน -->
   <div id="route-panel" class="route-panel">
     <button class="btn btn-primary rounded-pill px-4 py-3 shadow-lg fw-bold" onclick="startRouting()">
       <i class="bi bi-geo-alt-fill fs-5 me-2"></i> นำทางงาน (<span id="route-count">0</span>)
@@ -71,10 +170,10 @@
   <datalist id="operator-list"><option value="ผรม."><option value="พนง.ผมต."></datalist>
 
   <div class="container">
-    <div class="text-center mb-4 mt-2">
+    <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation by J.A.R.V.I.S</p>
+      <p class="text-muted small">PEA Smart Operation System</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -83,7 +182,7 @@
     </ul>
 
     <div class="tab-content mt-3">
-      <!-- แท็บ: ส่งงาน -->
+      <!-- แท็บที่ 1: ส่งงาน -->
       <div class="tab-pane fade show active" id="search-panel" role="tabpanel">
         <div class="glass-card">
           <label class="form-label fw-bold text-secondary">รูปแบบการส่งงาน:</label>
@@ -120,7 +219,7 @@
         </div>
       </div>
 
-      <!-- แท็บ: สถานะใบงาน -->
+      <!-- แท็บที่ 2: สถานะใบงาน -->
       <div class="tab-pane fade" id="status-panel" role="tabpanel">
         <div class="glass-card">
           <div class="row">
@@ -141,6 +240,11 @@
           </div>
           <div class="mt-4">
             <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหาแบบตรงตัวใส่ฟันหนู (เช่น &quot;ครั้งที่ 3&quot;)" onkeyup="filterDashboard()">
+          </div>
+
+          <!-- 🧠 แผงคำสั่งอัจฉริยะที่ใช้บ่อย (แสดงเฉพาะโหมด Admin) -->
+          <div id="admin-voice-chips-panel" class="mt-3 pt-2 border-top" style="display:none;">
+            <div class="d-flex align-items-center flex-wrap gap-2" id="admin-voice-chips-list"></div>
           </div>
         </div>
         
@@ -164,6 +268,7 @@
     </div>
   </div>
 
+  <!-- Modal ตรวจสอบข้อมูลเพื่อปิดใบสั่ง -->
   <div class="modal fade" id="orderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content glass-card border-0">
@@ -180,7 +285,7 @@
     </div>
   </div>
 
-  <!-- 🚀 Modal ตาราง พร้อมปุ่ม Export Excel -->
+  <!-- Modal ตารางรายละเอียด + Export Excel -->
   <div class="modal fade" id="tableModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
@@ -205,26 +310,139 @@
     </div>
   </div>
 
+  <!-- 🔐 Modal ยืนยันตัวตนเข้าใช้งาน Admin -->
+  <div class="modal fade" id="adminLoginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 18px;">
+        <div class="modal-header bg-dark text-white" style="border-radius: 18px 18px 0 0;">
+          <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock text-info me-2"></i>เข้าสู่ระบบ Admin</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <label class="form-label small text-muted fw-bold">กรุณาระบุรหัสผ่านผู้ดูแลระบบ:</label>
+          <input type="password" id="admin-password-input" class="form-control text-center fw-bold" placeholder="••••••••••••" onkeyup="if(event.key==='Enter') verifyAdminLogin()">
+          <div id="admin-login-error" class="text-danger small text-center mt-2" style="display:none;">รหัสผ่านไม่ถูกต้องครับ</div>
+        </div>
+        <div class="modal-footer border-0 pt-0 px-4 pb-4">
+          <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold" onclick="verifyAdminLogin()">
+            <i class="bi bi-unlock-fill me-1"></i> ยืนยันสิทธิ์
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(err => console.error(err)); }); }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.error(err));
+      });
+    }
     
-    // ⚠️ ลิงก์ API ตัวเดิมของบอสนะครับ
     const API_URL = "https://script.google.com/macros/s/AKfycbxV5LU6BkYkodydL4g8ajf6jxZVACRxXOARt7K0poJ08RLT8YIbSzNiJdcOIP6WB62g/exec";
+    const ADMIN_SECRET = "fenderparker";
+    const ADMIN_SESSION_KEY = "pea_jarvis_admin_authenticated";
 
     let globalHeaders = [];
     let currentOrderRow = null; 
     let currentOrderSheetName = null; 
     let globalDashResults = []; 
+    let isAdminUser = false;
 
-    function callAPI(action, params, onSuccess) {
-      fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, params: params }) })
-      .then(response => response.json())
-      .then(data => onSuccess(data))
-      .catch(error => { alert('เชื่อมต่อล้มเหลว'); document.getElementById('search-loader').style.display = 'none'; document.getElementById('dash-loader').style.display = 'none'; if(document.getElementById('save-btn')) { document.getElementById('save-btn').disabled = false; }});
+    // =========================================================================
+    // 🔐 ระบบจัดการสิทธิ์ Admin (Default = ปิด Smart Voice / Admin = เปิด)
+    // =========================================================================
+    function checkAdminSessionOnLoad() {
+      if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+        enableAdminMode(false);
+      }
     }
 
-    window.onload = function() { callAPI('getInitialData', {}, initApp); }
+    function handleAdminButtonClick() {
+      if (isAdminUser) {
+        if (confirm("ต้องการออกจากโหมด Admin และปิดระบบ J.A.R.V.I.S Smart Voice ใช่หรือไม่?")) {
+          disableAdminMode();
+        }
+      } else {
+        document.getElementById('admin-password-input').value = '';
+        document.getElementById('admin-login-error').style.display = 'none';
+        const modalEl = document.getElementById('adminLoginModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        modalEl.addEventListener('shown.bs.modal', () => {
+          document.getElementById('admin-password-input').focus();
+        }, { once: true });
+      }
+    }
+
+    function verifyAdminLogin() {
+      const inputVal = document.getElementById('admin-password-input').value.trim();
+      if (inputVal === ADMIN_SECRET) {
+        bootstrap.Modal.getInstance(document.getElementById('adminLoginModal')).hide();
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        enableAdminMode(true);
+      } else {
+        const errEl = document.getElementById('admin-login-error');
+        errEl.style.display = 'block';
+        document.getElementById('admin-password-input').value = '';
+        document.getElementById('admin-password-input').focus();
+      }
+    }
+
+    function enableAdminMode(announceVoice = true) {
+      isAdminUser = true;
+      const btn = document.getElementById('admin-toggle-btn');
+      btn.classList.add('is-admin');
+      btn.innerHTML = '<i class="bi bi-cpu-fill me-1"></i> Admin (J.A.R.V.I.S)';
+
+      document.getElementById('jarvis-btn').style.display = 'flex';
+      document.getElementById('admin-voice-chips-panel').style.display = 'block';
+      jarvisBrain.renderFrequentChips();
+
+      if (announceVoice) {
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เรียบร้อยครับ", false);
+      }
+    }
+
+    function disableAdminMode() {
+      isAdminUser = false;
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      window.speechSynthesis.cancel();
+      jarvisBrain.resetConversation();
+
+      const btn = document.getElementById('admin-toggle-btn');
+      btn.classList.remove('is-admin');
+      btn.innerHTML = '<i class="bi bi-shield-lock-fill me-1"></i> แอดมิน';
+
+      document.getElementById('jarvis-btn').style.display = 'none';
+      document.getElementById('jarvis-subtitle').style.display = 'none';
+      document.getElementById('admin-voice-chips-panel').style.display = 'none';
+    }
+
+    // =========================================================================
+    // 📡 ระบบเชื่อมต่อ Google Apps Script API และการทำงานหลักของแอป
+    // =========================================================================
+    function callAPI(action, params, onSuccess) {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, params: params })
+      })
+      .then(response => response.json())
+      .then(data => onSuccess(data))
+      .catch(error => {
+        alert('เชื่อมต่อล้มเหลว');
+        document.getElementById('search-loader').style.display = 'none';
+        document.getElementById('dash-loader').style.display = 'none';
+        if (document.getElementById('save-btn')) document.getElementById('save-btn').disabled = false;
+      });
+    }
+
+    window.onload = function() {
+      checkAdminSessionOnLoad();
+      callAPI('getInitialData', {}, initApp);
+    };
 
     function initApp(res) {
       globalHeaders = res.headers;
@@ -239,20 +457,33 @@
       loadDashboard();
     }
 
-    function getDirectImageUrl(url) { if (!url) return ''; let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return (match && match[1]) ? 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000' : url; }
+    function getDirectImageUrl(url) {
+      if (!url) return '';
+      let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      return (match && match[1]) ? 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000' : url;
+    }
 
     function toggleWorkMode() {
       const mode = document.getElementById('work-mode').value;
-      if (mode === 'general') { document.getElementById('search-section').style.display = 'none'; document.getElementById('status-badge-container').style.display = 'none'; renderFormUI(new Array(globalHeaders.length).fill(''), 'general'); document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน'; } 
-      else { document.getElementById('search-section').style.display = 'block'; document.getElementById('form-container').style.display = 'none'; }
+      if (mode === 'general') {
+        document.getElementById('search-section').style.display = 'none';
+        document.getElementById('status-badge-container').style.display = 'none';
+        renderFormUI(new Array(globalHeaders.length).fill(''), 'general');
+        document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+        document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
+      } else {
+        document.getElementById('search-section').style.display = 'block';
+        document.getElementById('form-container').style.display = 'none';
+      }
     }
 
     function searchData() {
       const month = document.getElementById('month-select').value;
       const query = document.getElementById('search-query').value.trim();
-      if(!query) { alert('กรุณาระบุข้อมูล'); return; }
+      if (!query) { alert('กรุณาระบุข้อมูล'); return; }
       
-      document.getElementById('search-loader').style.display = 'block'; document.getElementById('form-container').style.display = 'none';
+      document.getElementById('search-loader').style.display = 'block';
+      document.getElementById('form-container').style.display = 'none';
       callAPI('searchWork', { month: month, query: query }, function(res) {
         document.getElementById('search-loader').style.display = 'none';
         if (!res.success) { alert(res.message); return; }
@@ -263,11 +494,21 @@
         let foundTxt = res.foundMonth ? ` (พบใน: ${res.foundMonth})` : '';
         statusBadge.innerText = 'สถานะ: ' + res.status + foundTxt;
         
-        if (res.status === 'รอดำเนินการ') { statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน'; } 
-        else if (res.status === 'เสร็จสมบูรณ์') { statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)'; } 
-        else { statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm'; document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล'; }
+        if (res.status === 'รอดำเนินการ') {
+          statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm';
+          document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+          document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
+        } else if (res.status === 'เสร็จสมบูรณ์') {
+          statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm';
+          document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+          document.getElementById('save-btn').innerText = 'ปิดใบสั่งเรียบร้อยแล้ว (แก้ไขได้)';
+        } else {
+          statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
+          document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+          document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
+        }
         
-        if(res.foundMonth) document.getElementById('month-select').value = res.foundMonth;
+        if (res.foundMonth) document.getElementById('month-select').value = res.foundMonth;
         renderFormUI(res.data, 'ucube');
       });
     }
@@ -275,75 +516,123 @@
     function renderFormUI(dataArray, mode) {
       let fieldsHtml = '';
       for (let i = 0; i < globalHeaders.length; i++) {
-        let title = globalHeaders[i] || `คอลัมน์ ${i+1}`; let val = dataArray[i] || ''; let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
-        if (i === 7) { fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="details-list" value="${val}"></div>`; } 
-        else if (i === 10) { fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`; } 
-        else if (i === 8 || i === 9) { let directUrl = getDirectImageUrl(val); let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`; fieldsHtml += `<div class="mb-3 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px;"><label class="form-label text-secondary fw-bold"><i class="bi bi-camera"></i> ${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`; } 
-        else { fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" value="${val}" ${isReadOnly}></div>`; }
+        let title = globalHeaders[i] || `คอลัมน์ ${i+1}`;
+        let val = dataArray[i] || '';
+        let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
+        if (i === 7) {
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="details-list" value="${val}"></div>`;
+        } else if (i === 10) {
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`;
+        } else if (i === 8 || i === 9) {
+          let directUrl = getDirectImageUrl(val);
+          let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`;
+          fieldsHtml += `<div class="mb-3 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px;"><label class="form-label text-secondary fw-bold"><i class="bi bi-camera"></i> ${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`;
+        } else {
+          fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" value="${val}" ${isReadOnly}></div>`;
+        }
       }
-      document.getElementById('dynamic-fields').innerHTML = fieldsHtml; document.getElementById('form-container').style.display = 'block';
+      document.getElementById('dynamic-fields').innerHTML = fieldsHtml;
+      document.getElementById('form-container').style.display = 'block';
     }
 
     function handleFileUpload(event, index) {
-      const file = event.target.files[0]; if (!file) return;
-      const reader = new FileReader(); reader.onload = function(e) { document.getElementById(`col-${index}`).value = e.target.result; let preview = document.getElementById(`preview-${index}`); if(preview) { preview.src = e.target.result; preview.style.display = 'block'; } }; reader.readAsDataURL(file);
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById(`col-${index}`).value = e.target.result;
+        let preview = document.getElementById(`preview-${index}`);
+        if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
+      };
+      reader.readAsDataURL(file);
     }
 
     function saveData() {
       if (!confirm("⚠️ ยืนยันการบันทึกส่งงานสับเปลี่ยนมิเตอร์ ใช่หรือไม่?")) return;
-      const btn = document.getElementById('save-btn'); btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...'; btn.disabled = true;
-      const mode = document.getElementById('work-mode').value; const month = document.getElementById('month-select').value; const rowIndex = document.getElementById('row-index').value;
-      let formData = []; for (let i = 0; i < globalHeaders.length; i++) { formData.push(document.getElementById(`col-${i}`).value); }
+      const btn = document.getElementById('save-btn');
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+      btn.disabled = true;
+      const mode = document.getElementById('work-mode').value;
+      const month = document.getElementById('month-select').value;
+      const rowIndex = document.getElementById('row-index').value;
+      let formData = [];
+      for (let i = 0; i < globalHeaders.length; i++) {
+        formData.push(document.getElementById(`col-${i}`).value);
+      }
 
       callAPI('saveData', { mode: mode, month: month, rowIndex: rowIndex, formData: formData }, function(res) {
         btn.disabled = false;
-        if(res.success) {
+        if (res.success) {
           alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
-          if(mode === 'general') { document.getElementById('work-mode').value = 'ucube'; toggleWorkMode(); } 
-          else { document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว'; document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm'; btn.className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow'; btn.innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล'; }
-          if(res.updatedMonth) document.getElementById('filter-month').value = res.updatedMonth;
+          if (mode === 'general') {
+            document.getElementById('work-mode').value = 'ucube';
+            toggleWorkMode();
+          } else {
+            document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว';
+            document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
+            btn.className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
+            btn.innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
+          }
+          if (res.updatedMonth) document.getElementById('filter-month').value = res.updatedMonth;
           loadDashboard(); 
-        } else { alert('ผิดพลาด: ' + res.message); btn.innerText = 'ลองใหม่'; }
+        } else {
+          alert('ผิดพลาด: ' + res.message);
+          btn.innerText = 'ลองใหม่';
+        }
       });
     }
 
     function processPendingWork(peaOrName, sheetName) {
-      const searchTab = document.querySelector('#search-tab'); bootstrap.Tab.getOrCreateInstance(searchTab).show();
-      setTimeout(() => { document.getElementById('work-mode').value = 'ucube'; toggleWorkMode(); document.getElementById('month-select').value = sheetName || "ALL"; document.getElementById('search-query').value = peaOrName; searchData(); }, 300); 
+      const searchTab = document.querySelector('#search-tab');
+      bootstrap.Tab.getOrCreateInstance(searchTab).show();
+      setTimeout(() => {
+        document.getElementById('work-mode').value = 'ucube';
+        toggleWorkMode();
+        document.getElementById('month-select').value = sheetName || "ALL";
+        document.getElementById('search-query').value = peaOrName;
+        searchData();
+      }, 300); 
     }
 
     function filterDashboard() {
       let input = document.getElementById('dash-search').value.toLowerCase();
       const items = document.querySelectorAll('.dash-item'); 
       let isExactMatch = false;
-      if (input.startsWith('"') && input.endsWith('"')) { isExactMatch = true; input = input.substring(1, input.length - 1); }
+      if (input.startsWith('"') && input.endsWith('"')) {
+        isExactMatch = true;
+        input = input.substring(1, input.length - 1);
+      }
       const searchTerms = input.split(/\s+/).filter(k => k.length > 0);
 
       items.forEach(item => {
         const text = item.innerText.toLowerCase();
         if (isExactMatch) {
-            if (text.includes(input)) item.style.setProperty('display', 'block', 'important'); else item.style.setProperty('display', 'none', 'important');
+          item.style.setProperty('display', text.includes(input) ? 'block' : 'none', 'important');
         } else {
-            const isMatch = searchTerms.every(term => text.includes(term));
-            if (isMatch) item.style.setProperty('display', 'block', 'important'); else item.style.setProperty('display', 'none', 'important');
+          const isMatch = searchTerms.every(term => text.includes(term));
+          item.style.setProperty('display', isMatch ? 'block' : 'none', 'important');
         }
       });
     }
 
     function updateRouteCount() {
-      const checkboxes = document.querySelectorAll('.route-cb:checked'); const count = checkboxes.length; const panel = document.getElementById('route-panel');
+      const checkboxes = document.querySelectorAll('.route-cb:checked');
+      const count = checkboxes.length;
+      const panel = document.getElementById('route-panel');
       document.getElementById('route-count').innerText = count;
-      if(count > 0) panel.style.display = 'block'; else panel.style.display = 'none';
+      panel.style.display = count > 0 ? 'block' : 'none';
     }
 
     function startRouting() {
-      const checkboxes = document.querySelectorAll('.route-cb:checked'); if (checkboxes.length === 0) return;
-      let url = "https://www.google.com/maps/dir/Current+Location/"; let hasUrlError = false;
+      const checkboxes = document.querySelectorAll('.route-cb:checked');
+      if (checkboxes.length === 0) return;
+      let url = "https://www.google.com/maps/dir/Current+Location/";
+      let hasUrlError = false;
       checkboxes.forEach(cb => {
-        if(cb.value && cb.value.trim() !== '') {
-           let cleanGps = cb.value.trim(); 
-           if(cleanGps.toLowerCase().includes("http") || cleanGps.toLowerCase().includes("goo.gl")) hasUrlError = true;
-           else { cleanGps = cleanGps.replace(/\s/g, ''); url += cleanGps + "/"; }
+        if (cb.value && cb.value.trim() !== '') {
+          let cleanGps = cb.value.trim(); 
+          if (cleanGps.toLowerCase().includes("http") || cleanGps.toLowerCase().includes("goo.gl")) hasUrlError = true;
+          else { cleanGps = cleanGps.replace(/\s/g, ''); url += cleanGps + "/"; }
         }
       });
       if (hasUrlError) { alert("⚠️ พิกัดบางอันเป็นลิงก์ (URL) รบกวนแก้ใน Google Sheets ครับ"); return; }
@@ -352,9 +641,11 @@
 
     function viewCompletedWork(encodedItem) {
       const item = JSON.parse(decodeURIComponent(encodedItem));
-      currentOrderRow = item.rowIndex; currentOrderSheetName = item.sheetName; 
+      currentOrderRow = item.rowIndex;
+      currentOrderSheetName = item.sheetName; 
 
-      let directPic1 = getDirectImageUrl(item.pic1); let directPic2 = getDirectImageUrl(item.pic2);
+      let directPic1 = getDirectImageUrl(item.pic1);
+      let directPic2 = getDirectImageUrl(item.pic2);
       let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายหลัก</div>';
       let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายรอง</div>';
 
@@ -374,17 +665,69 @@
 
     function submitCloseOrder() {
       if (!confirm("⚠️ ยืนยันการปิดใบสั่งงานนี้ ใช่หรือไม่?")) return;
-      const btn = document.getElementById('btn-close-order'); btn.innerText = 'กำลังประมวลผล...'; btn.disabled = true;
+      const btn = document.getElementById('btn-close-order');
+      btn.innerText = 'กำลังประมวลผล...';
+      btn.disabled = true;
       callAPI('closeOrder', { sheetName: currentOrderSheetName, currentOrderRow: currentOrderRow }, function(res) {
-        btn.innerText = 'ปิดใบสั่ง'; btn.disabled = false;
-        if(res.success) { bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide(); loadDashboard(); } else { alert('ผิดพลาด: ' + res.message); }
+        btn.innerText = 'ปิดใบสั่ง';
+        btn.disabled = false;
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+          loadDashboard();
+        } else {
+          alert('ผิดพลาด: ' + res.message);
+        }
       });
     }
 
+    function renderCardsList(itemsArray, headerBannerHtml = '') {
+      let html = headerBannerHtml;
+      if (!itemsArray || itemsArray.length === 0) {
+        html += '<div class="alert alert-secondary text-center rounded-pill">ไม่พบรายการงาน</div>';
+      } else {
+        itemsArray.forEach(item => {
+          let actionHtml = '';
+          if (item.status === 'งานคงเหลือ') {
+            actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}', '${item.sheetName}')">คลิกเข้าดำเนินการ (งานคงเหลือ)</button>`;
+          } else if (item.status === 'ผรม. ส่งงานแล้ว' || item.status === 'พนง. ดำเนินการ') {
+            actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${encodeURIComponent(JSON.stringify(item))}')">ตรวจสอบ / ปิดใบสั่ง</button>`;
+          } else if (item.status === 'เสร็จสมบูรณ์') {
+            actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์แล้ว</div>`;
+          }
+
+          let gpsBadgeHtml = item.gps && item.gps.trim() !== '' ? `<span class="badge bg-info text-dark ms-2 shadow-sm border border-light"><i class="bi bi-geo-alt-fill text-danger"></i> พิกัด</span>` : '';
+          let checkboxHtml = item.gps && item.gps.trim() !== '' ? `<input class="form-check-input route-cb me-3 fs-4 shadow-sm border-secondary" type="checkbox" value="${item.gps}" onchange="updateRouteCount()">` : '';
+          
+          let statusBadgeList = '';
+          if (item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
+          if (item.status === 'พนง. ดำเนินการ') statusBadgeList = '<span class="badge text-white float-end" style="background:#9b59b6;">พนง.ส่งงาน</span>';
+
+          html += `
+            <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" style="background: rgba(255,255,255,0.88); backdrop-filter: blur(5px);">
+              <div class="d-flex align-items-center mb-2 border-bottom pb-2">
+                ${checkboxHtml}
+                <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${gpsBadgeHtml} ${statusBadgeList}</h6>
+              </div>
+              <div class="mb-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-calendar-event"></i> รอบเดือน: ${item.sheetName}</span>
+              </div>
+              <div class="text-muted small mb-1 ps-2"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}</div>
+              ${actionHtml}
+            </div>
+          `;
+        });
+      }
+      document.getElementById('dashboard-list').innerHTML = html;
+    }
+
     function loadDashboard() {
-      const month = document.getElementById('filter-month').value; const statusFilter = document.getElementById('filter-status').value;
-      if(!month) return; 
-      document.getElementById('dash-search').value = ''; document.getElementById('dash-loader').style.display = 'block'; document.getElementById('dashboard-list').innerHTML = ''; document.getElementById('route-panel').style.display = 'none';
+      const month = document.getElementById('filter-month').value;
+      const statusFilter = document.getElementById('filter-status').value;
+      if (!month) return; 
+      document.getElementById('dash-search').value = '';
+      document.getElementById('dash-loader').style.display = 'block';
+      document.getElementById('dashboard-list').innerHTML = '';
+      document.getElementById('route-panel').style.display = 'none';
 
       callAPI('getDashboardData', { month: month, statusFilter: statusFilter }, function(res) {
         document.getElementById('dash-loader').style.display = 'none';
@@ -396,70 +739,38 @@
         document.getElementById('stat-emp').innerText = res.stats.employee; 
         document.getElementById('stat-completed').innerText = res.stats.completed;
 
-        let html = '';
-        if(res.results.length === 0) { html = '<div class="alert alert-secondary text-center rounded-pill">ไม่พบรายการงาน</div>'; } 
-        else {
-          res.results.forEach(item => {
-            let actionHtml = '';
-            if (item.status === 'งานคงเหลือ') { actionHtml = `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-3 rounded-pill" onclick="processPendingWork('${item.pea}', '${item.sheetName}')">คลิกเข้าดำเนินการ (งานคงเหลือ)</button>`; } 
-            else if (item.status === 'ผรม. ส่งงานแล้ว' || item.status === 'พนง. ดำเนินการ') { actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${encodeURIComponent(JSON.stringify(item))}')">ตรวจสอบ / ปิดใบสั่ง</button>`; } 
-            else if (item.status === 'เสร็จสมบูรณ์') { actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์แล้ว</div>`; }
-
-            let gpsBadgeHtml = item.gps && item.gps.trim() !== '' ? `<span class="badge bg-info text-dark ms-2 shadow-sm border border-light"><i class="bi bi-geo-alt-fill text-danger"></i> พิกัด</span>` : '';
-            let checkboxHtml = item.gps && item.gps.trim() !== '' ? `<input class="form-check-input route-cb me-3 fs-4 shadow-sm border-secondary" type="checkbox" value="${item.gps}" onchange="updateRouteCount()">` : '';
-            
-            let statusBadgeList = '';
-            if(item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
-            if(item.status === 'พนง. ดำเนินการ') statusBadgeList = '<span class="badge text-white float-end" style="background:#9b59b6;">พนง.ส่งงาน</span>';
-
-            html += `
-              <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(5px);">
-                <div class="d-flex align-items-center mb-2 border-bottom pb-2">
-                  ${checkboxHtml}
-                  <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${gpsBadgeHtml} ${statusBadgeList}</h6>
-                </div>
-                <div class="mb-2">
-                  <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-calendar-event"></i> รอบเดือน: ${item.sheetName}</span>
-                </div>
-                <div class="text-muted small mb-1 ps-2"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}</div>
-                ${actionHtml}
-              </div>
-            `;
-          });
-        }
-        document.getElementById('dashboard-list').innerHTML = html;
+        renderCardsList(res.results);
       });
     }
 
     function showTableModal(filterStatus) {
       document.getElementById('tableModalTitle').innerText = `รายละเอียดสถานะ: ${filterStatus}`;
-      let thead = ''; let tbody = '';
+      let thead = '';
+      let tbody = '';
       
       let filteredData = (filterStatus === 'ทั้งหมด') ? globalDashResults : globalDashResults.filter(item => item.status === filterStatus);
       
       if (filteredData.length === 0) {
-          document.getElementById('tableModalHead').innerHTML = '';
-          document.getElementById('tableModalBody').innerHTML = '<tr><td class="text-center py-4">ไม่มีข้อมูลในสถานะนี้ครับบอส</td></tr>';
-          new bootstrap.Modal(document.getElementById('tableModal')).show();
-          return;
+        document.getElementById('tableModalHead').innerHTML = '';
+        document.getElementById('tableModalBody').innerHTML = '<tr><td class="text-center py-4">ไม่มีข้อมูลในสถานะนี้ครับบอส</td></tr>';
+        new bootstrap.Modal(document.getElementById('tableModal')).show();
+        return;
       }
 
       if (filterStatus === 'งานคงเหลือ' || filterStatus === 'ทั้งหมด') {
         thead = `<tr><th>PEA</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th>${filterStatus==='ทั้งหมด'?'<th>สถานะ</th>':''}</tr>`;
         filteredData.forEach(item => {
-           tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td>${filterStatus==='ทั้งหมด'?`<td>${item.status}</td>`:''}</tr>`;
+          tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td>${filterStatus==='ทั้งหมด'?`<td>${item.status}</td>`:''}</tr>`;
         });
-      } 
-      else if (filterStatus === 'ผรม. ส่งงานแล้ว' || filterStatus === 'พนง. ดำเนินการ') {
+      } else if (filterStatus === 'ผรม. ส่งงานแล้ว' || filterStatus === 'พนง. ดำเนินการ') {
         thead = `<tr><th>PEA เก่า</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th><th>หน่วย PEA เก่า</th><th>PEA ใหม่</th><th>หน่วย PEA ใหม่</th><th>ผู้ดำเนินการ</th><th>วันที่ดำเนินการ</th></tr>`;
         filteredData.forEach(item => {
-           tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td><td class="text-center">${item.colD}</td><td>${item.colF}</td><td class="text-center">${item.colG}</td><td class="text-center">${item.operator}</td><td>${item.timestamp}</td></tr>`;
+          tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td><td class="text-center">${item.colD}</td><td>${item.colF}</td><td class="text-center">${item.colG}</td><td class="text-center">${item.operator}</td><td>${item.timestamp}</td></tr>`;
         });
-      }
-      else if (filterStatus === 'เสร็จสมบูรณ์') {
+      } else if (filterStatus === 'เสร็จสมบูรณ์') {
         thead = `<tr><th>ชื่อ</th><th>PEA เก่า</th><th>PEA ใหม่</th><th>สาเหตุ</th><th>ผู้ดำเนินการ</th><th>วันที่ปิดใบสั่ง</th></tr>`;
         filteredData.forEach(item => {
-           tbody += `<tr><td>${item.name}</td><td>${item.pea}</td><td>${item.colF}</td><td>${item.reason}</td><td class="text-center">${item.operator}</td><td>${item.closeTime || '-'}</td></tr>`;
+          tbody += `<tr><td>${item.name}</td><td>${item.pea}</td><td>${item.colF}</td><td>${item.reason}</td><td class="text-center">${item.operator}</td><td>${item.closeTime || '-'}</td></tr>`;
         });
       }
 
@@ -468,7 +779,6 @@
       new bootstrap.Modal(document.getElementById('tableModal')).show();
     }
 
-    // 🚀 ฟังก์ชัน Export Excel
     function exportTableToExcel() {
       const table = document.getElementById("detailDataTreeTable");
       if (!table || table.rows.length <= 1) {
@@ -483,30 +793,701 @@
       XLSX.writeFile(wb, fileName);
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-    if(recognition) {
-      recognition.lang = 'th-TH'; recognition.interimResults = false; recognition.maxAlternatives = 1;
-      recognition.onstart = function() { document.getElementById('jarvis-btn').classList.add('listening'); window.speechSynthesis.cancel(); };
-      recognition.onresult = function(event) { processVoiceCommand(event.results[0][0].transcript); };
-      recognition.onerror = function(event) { document.getElementById('jarvis-btn').classList.remove('listening'); };
-      recognition.onend = function() { document.getElementById('jarvis-btn').classList.remove('listening'); };
+    // =========================================================================
+    // 🤖 J.A.R.V.I.S Smart Voice Brain v3.0 (12 หมวดคำถาม-ตอบอัจฉริยะหน้างาน)
+    // =========================================================================
+    class JarvisVoiceBrain {
+      constructor() {
+        this.state = {
+          mode: 'IDLE',              // IDLE | AWAITING_FILTER | AWAITING_CONFIRM | AWAITING_INTENT | AWAITING_CUSTOM_LIST | AWAITING_OPEN_FORM
+          lastKeywords: [],
+          lastMatchedItems: [],
+          customItems: [],
+          pendingAction: null
+        };
+        this.STORAGE_KEY = 'jarvis_pea_voice_memory_v1';
+        this.memory = this.loadMemory();
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = SpeechRecognition ? new SpeechRecognition() : null;
+        this.subtitleTimer = null;
+        this.initSpeech();
+      }
+
+      // --- ระบบความจำระยะยาว (Long-term Habit Memory) ---
+      loadMemory() {
+        try {
+          const saved = localStorage.getItem(this.STORAGE_KEY);
+          return saved ? JSON.parse(saved) : { frequentCommands: {}, lastVisit: null };
+        } catch (e) {
+          return { frequentCommands: {}, lastVisit: null };
+        }
+      }
+
+      saveCommandToMemory(cleanCommand) {
+        if (!cleanCommand || cleanCommand.length < 2) return;
+        const count = this.memory.frequentCommands[cleanCommand] || 0;
+        this.memory.frequentCommands[cleanCommand] = count + 1;
+        this.memory.lastVisit = new Date().toISOString();
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.memory));
+        this.renderFrequentChips();
+      }
+
+      getTopFrequentCommands(limit = 3) {
+        return Object.entries(this.memory.frequentCommands)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit)
+          .map(entry => entry[0]);
+      }
+
+      renderFrequentChips() {
+        const container = document.getElementById('admin-voice-chips-list');
+        if (!container) return;
+
+        const top = this.getTopFrequentCommands(3);
+        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S ด่วน:</span>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeAndSummarize()">📊 สรุปภาพรวม</button>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeCrossMonthDuplicates()">🔁 เช็กซ้ำข้ามเดือน</button>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.recommendBestRoute()">🧭 แนะนำจุดเริ่มงาน</button>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeTopReasons()">🔧 สาเหตุพบบ่อย</button>`;
+
+        top.forEach(cmd => {
+          const safeCmd = cmd.replace(/'/g, "\\'");
+          html += `<button type="button" class="voice-chip" onclick="jarvisBrain.runQuickChip('${safeCmd}')">🕒 ${cmd}</button>`;
+        });
+
+        container.innerHTML = html;
+      }
+
+      runQuickChip(cmd) {
+        if (!isAdminUser) return;
+        this.saveCommandToMemory(cmd);
+        this.state.lastKeywords = [cmd];
+        this.performSearchAndThink(cmd, false);
+      }
+
+      // --- ระบบแสดงข้อความและเสียงพูด ---
+      showSubtitle(speaker, text, autoHideMs = 8000) {
+        if (!isAdminUser) return;
+        const box = document.getElementById('jarvis-subtitle');
+        if (!box) return;
+        clearTimeout(this.subtitleTimer);
+        box.innerHTML = `<div class="fw-bold text-info small mb-1">${speaker}</div><div>${text}</div>`;
+        box.style.display = 'block';
+        if (autoHideMs > 0) {
+          this.subtitleTimer = setTimeout(() => { box.style.display = 'none'; }, autoHideMs);
+        }
+      }
+
+      initSpeech() {
+        if (!this.recognition) return;
+        this.recognition.lang = 'th-TH';
+        this.recognition.interimResults = false;
+        this.recognition.maxAlternatives = 1;
+
+        this.recognition.onstart = () => {
+          document.getElementById('jarvis-btn')?.classList.add('listening');
+          window.speechSynthesis.cancel();
+          this.showSubtitle('🎙️ J.A.R.V.I.S กำลังฟัง...', 'เชิญสั่งการได้เลยครับบอส', 0);
+        };
+
+        this.recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript.trim();
+          this.showSubtitle('🗣️ บอสสั่งว่า:', `"${transcript}"`, 5000);
+          this.handleInput(transcript);
+        };
+
+        this.recognition.onerror = (event) => {
+          document.getElementById('jarvis-btn')?.classList.remove('listening');
+          if (event.error === 'no-speech' && this.state.mode !== 'IDLE') {
+            this.resetConversation();
+            this.speak("หากต้องการสั่งการเพิ่มเติม กดปุ่มไมค์ได้ตลอดครับบอส", false);
+          } else {
+            document.getElementById('jarvis-subtitle').style.display = 'none';
+          }
+        };
+
+        this.recognition.onend = () => {
+          document.getElementById('jarvis-btn')?.classList.remove('listening');
+        };
+      }
+
+      startListening() {
+        if (!isAdminUser) return;
+        if (!this.recognition) {
+          alert("เบราว์เซอร์นี้ไม่รองรับการสั่งงานด้วยเสียงครับ");
+          return;
+        }
+        window.speechSynthesis.cancel();
+        try {
+          this.recognition.start();
+        } catch (e) {}
+      }
+
+      speak(htmlText, expectReply = false) {
+        if (!isAdminUser) return;
+        this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 8500);
+
+        // แปลง HTML เป็นข้อความล้วนก่อนพูดออกเสียง จะได้ไม่อ่านแท็ก
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+
+        const msg = new SpeechSynthesisUtterance(cleanSpeech);
+        msg.lang = 'th-TH';
+        msg.rate = 1.1;
+
+        msg.onend = () => {
+          if (expectReply && isAdminUser) {
+            setTimeout(() => this.startListening(), 400);
+          }
+        };
+
+        window.speechSynthesis.speak(msg);
+      }
+
+      resetConversation() {
+        this.state = {
+          mode: 'IDLE',
+          lastKeywords: [],
+          lastMatchedItems: [],
+          customItems: [],
+          pendingAction: null
+        };
+      }
+
+      //Helper: ดึงข้อมูลล่าสุดให้มั่นใจว่ามีข้อมูลครบ (ดึง ALL เมื่อต้องเทียบข้ามเดือน)
+      ensureData(requireAllMonths, callback) {
+        const currentFilterMonth = document.getElementById('filter-month')?.value;
+        const needFetch = !globalDashResults || globalDashResults.length === 0 || (requireAllMonths && currentFilterMonth !== 'ALL');
+        if (needFetch) {
+          callAPI('getDashboardData', { month: requireAllMonths ? 'ALL' : (currentFilterMonth || 'ALL'), statusFilter: 'ทั้งหมด' }, (res) => {
+            if (requireAllMonths) {
+              const fm = document.getElementById('filter-month');
+              if (fm) fm.value = 'ALL';
+            }
+            globalDashResults = res.results || [];
+            document.getElementById('stat-total').innerText = res.stats.total;
+            document.getElementById('stat-pending').innerText = res.stats.pending;
+            document.getElementById('stat-contractor').innerText = res.stats.contractor;
+            document.getElementById('stat-emp').innerText = res.stats.employee;
+            document.getElementById('stat-completed').innerText = res.stats.completed;
+            callback(globalDashResults);
+          });
+        } else {
+          callback(globalDashResults);
+        }
+      }
+
+      //Helper: แสดงชุดรายการเฉพาะกิจบนหน้า Dashboard
+      displayCustomListOnDashboard(items, bannerTitle) {
+        const statusTab = document.querySelector('#status-tab');
+        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
+        const searchBox = document.getElementById('dash-search');
+        if (searchBox) searchBox.value = '';
+        const banner = `<div class="alert alert-info rounded-4 shadow-sm mb-3 fw-bold"><i class="bi bi-cpu-fill me-2"></i>${bannerTitle} (${items.length} รายการ)</div>`;
+        renderCardsList(items, banner);
+      }
+
+      // =======================================================================
+      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (12 หมวดคำถาม-ตอบ)
+      // =======================================================================
+      handleInput(rawText) {
+        if (!isAdminUser) return;
+        const text = rawText.toLowerCase().trim();
+        const affirmative = /(ใช่|เอา|เปิด|แสดง|ตกลง|จัดไป|ได้เลย|ดู|นำทาง|ครับ|ค่ะ)/;
+
+        // 0. คำสั่งยกเลิก / เริ่มใหม่ ใช้ได้ทุกจังหวะ
+        if (/(ยกเลิก|เริ่มใหม่|พอแค่นี้|ไม่ต้องแล้ว)/.test(text)) {
+          this.resetConversation();
+          this.speak("รับทราบครับบอส ยกเลิกคำสั่งเรียบร้อยครับ", false);
+          return;
+        }
+
+        // --- จัดการการสนทนาต่อเนื่อง (Multi-turn Follow-up) ---
+        if (this.state.mode === 'AWAITING_CONFIRM') {
+          if (affirmative.test(text)) {
+            if (this.state.pendingAction === 'OPEN_MAP') {
+              this.speak("กำลังเปิดแผนที่นำทางให้ครับบอส", false);
+              this.executeMapRouting(this.state.lastMatchedItems);
+            }
+          } else {
+            this.speak("รับทราบครับบอส แสดงรายการไว้บนหน้าจอก่อนนะครับ", false);
+          }
+          this.resetConversation();
+          return;
+        }
+
+        if (this.state.mode === 'AWAITING_CUSTOM_LIST') {
+          if (affirmative.test(text)) {
+            const items = this.state.customItems || [];
+            const title = this.state.pendingAction || 'รายการที่ J.A.R.V.I.S คัดกรอง';
+            this.displayCustomListOnDashboard(items, title);
+            this.speak(`ดึงรายการทั้งหมด ${items.length} รายการ มาแสดงบนหน้าจอเรียบร้อยครับบอส`, false);
+          } else {
+            this.speak("รับทราบครับบอส หากต้องการดูเมื่อไหร่สั่งได้เลยครับ", false);
+          }
+          this.resetConversation();
+          return;
+        }
+
+        if (this.state.mode === 'AWAITING_OPEN_FORM') {
+          if (affirmative.test(text) && this.state.customItems.length > 0) {
+            const target = this.state.customItems[0];
+            this.resetConversation();
+            this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${target.pea} ให้ครับบอส`, false);
+            processPendingWork(target.pea, target.sheetName);
+          } else {
+            this.resetConversation();
+            this.speak("รับทราบครับบอส", false);
+          }
+          return;
+        }
+
+        if (this.state.mode === 'AWAITING_FILTER') {
+          const extraKeyword = this.cleanText(text);
+          if (affirmative.test(text) && extraKeyword.length < 2 && this.state.lastKeywords.length > 0) {
+            const combinedQuery = this.state.lastKeywords.join(' ');
+            this.performSearchAndThink(combinedQuery, true);
+            return;
+          }
+          this.state.lastKeywords.push(extraKeyword);
+          const combinedQuery = this.state.lastKeywords.join(' ');
+          this.saveCommandToMemory(combinedQuery);
+          this.performSearchAndThink(combinedQuery, true);
+          return;
+        }
+
+        if (this.state.mode === 'AWAITING_INTENT') {
+          this.resetConversation();
+          if (/(สรุป|ภาพรวม|ยอด)/.test(text)) { this.analyzeAndSummarize(); return; }
+          if (/(ซ้ำ)/.test(text)) { this.analyzeCrossMonthDuplicates(); return; }
+          if (/(แนะนำ|ไปไหน|เริ่มตรงไหน)/.test(text)) { this.recommendBestRoute(); return; }
+          if (/(ด่วน|สำคัญ|ช็อต)/.test(text)) { this.analyzeImportantWork(false); return; }
+          if (/(สาเหตุ|เสียบ่อย|พัง)/.test(text)) { this.analyzeTopReasons(); return; }
+        }
+
+        // --- วิเคราะห์เจตนาใหม่ทั้ง 12 หมวด ---
+
+        // หมวด 12: คู่มือคำสั่งเสียง (Help)
+        if (/(ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
+          this.state.mode = 'AWAITING_INTENT';
+          this.speak("บอสสามารถสั่งให้ผม <b>สรุปภาพรวม</b>, <b>เช็กรายการซ้ำข้ามเดือน</b>, <b>เช็กงานสำคัญหรืองานด่วน</b>, <b>วิเคราะห์สาเหตุเสียบ่อย</b>, <b>แนะนำจุดเริ่มงานพร้อมนำทาง</b> หรือ <b>ส่งออกไฟล์ Excel</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนดีครับ?", true);
+          return;
+        }
+
+        // หมวด 10: ส่งออกไฟล์ Excel ด้วยเสียง
+        if (/(export|เอ็กซ์เซล|ส่งออก|ดาวน์โหลดตาราง|โหลดตาราง)/i.test(text)) {
+          this.speak("กำลังเปิดตารางและส่งออกไฟล์ Excel ให้ครับบอส", false);
+          showTableModal(document.getElementById('filter-status')?.value || 'ทั้งหมด');
+          setTimeout(() => exportTableToExcel(), 500);
+          return;
+        }
+
+        // หมวด 11: ประวัติคำสั่งที่ใช้บ่อย / ล้างความจำ
+        if (/(ล้างความจำ|ลบประวัติคำสั่ง)/.test(text)) {
+          localStorage.removeItem(this.STORAGE_KEY);
+          this.memory = { frequentCommands: {}, lastVisit: null };
+          this.renderFrequentChips();
+          this.speak("ล้างประวัติคำสั่งที่ใช้บ่อยเรียบร้อยครับบอส", false);
+          return;
+        }
+        if (/(คำถามที่ถามบ่อย|ใช้บ่อย|ประจำ|ค้นหาอะไรบ้าง)/.test(text)) {
+          const top = this.getTopFrequentCommands(3);
+          if (top.length === 0) {
+            this.speak("บอสยังไม่มีประวัติคำสั่งที่ใช้บ่อยครับ ลองสั่งค้นหาหรือสรุปงานได้เลยครับ", false);
+          } else {
+            this.speak(`คำสั่งที่บอสใช้บ่อยที่สุดคือ <b>${top.join(', ')}</b> ครับ ต้องการเรียกดูอันไหนบอกได้เลยครับ`, true);
+            this.state.mode = 'AWAITING_FILTER';
+            this.state.lastKeywords = [];
+          }
+          return;
+        }
+
+        // หมวด 5: เช็กรายการซ้ำข้ามเดือน
+        if (/(ซ้ำ|ซ้ำกัน|ซ้ำซ้อน|ชนกัน)/.test(text)) {
+          this.analyzeCrossMonthDuplicates();
+          return;
+        }
+
+        // หมวด 4: วิเคราะห์รายการสำคัญ / งานด่วน / เทียบเดือนนี้กับเดือนที่แล้ว
+        if (/(สำคัญ|งานด่วน|เร่งด่วน|ครั้งที่ 2|ครั้งที่ 3)/.test(text)) {
+          const isCompare = /(เดือนนี้|เดือนที่แล้ว|เดือนก่อน|เทียบ)/.test(text);
+          this.analyzeImportantWork(isCompare);
+          return;
+        }
+
+        // หมวด 6: วิเคราะห์สาเหตุการชำรุดยอดฮิต
+        if (/(สาเหตุ|เสียบ่อย|พังบ่อย|ชำรุดอะไร|อันดับสาเหตุ)/.test(text)) {
+          this.analyzeTopReasons();
+          return;
+        }
+
+        // หมวด 8: เช็กความพร้อมพิกัด GPS
+        if (/(พิกัด|gps|จีพีเอส)/i.test(text)) {
+          this.analyzeGpsReadiness();
+          return;
+        }
+
+        // หมวด 3: เปรียบเทียบผลงานผู้รับเหมา vs พนักงาน
+        if (/(ผู้รับเหมา|ผรม|พนักงาน|พนง|เทียบผลงาน)/.test(text) && /(กี่|ยอด|สรุป|เท่าไหร่|ผลงาน|เทียบ)/.test(text)) {
+          this.analyzeOperatorPerformance();
+          return;
+        }
+
+        // หมวด 2: เช็กยอดเฉพาะสถานะ (งานคงเหลือ / รอปิดใบสั่ง / เสร็จสมบูรณ์)
+        if (/(รอปิด|ยังไม่ได้ปิด|ตรวจงาน|ส่งงานแล้ว)/.test(text) && /(กี่|มี|ยอด|สรุป|ดู|เช็ก)/.test(text)) {
+          this.analyzePendingCloseOrders();
+          return;
+        }
+        if (/(คงเหลือ|เหลืออีก|ค้างอยู่)/.test(text) && /(กี่|มี|ยอด|สรุป|เท่าไหร่)/.test(text)) {
+          this.analyzeRemainingWork();
+          return;
+        }
+
+        // หมวด 7: แนะนำจุดเริ่มงาน / จัดเส้นทางอัจฉริยะ
+        if (/(แนะนำ|ไปไหนก่อน|เริ่มตรงไหน|วางแผน|โซนไหนเยอะ|พื้นที่ไหนเยอะ)/.test(text)) {
+          this.recommendBestRoute();
+          return;
+        }
+
+        // หมวด 1: สรุปภาพรวม & ความคืบหน้า
+        if (/(สรุป|ภาพรวม|ความคืบหน้า|กี่เปอร์เซ็นต์|มีงานอะไรบ้าง)/.test(text)) {
+          this.analyzeAndSummarize();
+          return;
+        }
+
+        // หมวด 9: ค้นหาเจาะจง (PEA / ชื่อ / พื้นที่ / สาเหตุ)
+        const cleaned = this.cleanText(text);
+        if (cleaned.length < 2) {
+          this.state.mode = 'AWAITING_INTENT';
+          this.speak(`ขออภัยครับบอส ผมได้ยินว่า "${rawText}" ไม่แน่ใจว่าบอสต้องการให้ <b>สรุปภาพรวม</b>, <b>เช็กรายการซ้ำ</b>, <b>แนะนำจุดเริ่มงาน</b> หรือ <b>ค้นหาใบงาน</b> ครับ?`, true);
+          return;
+        }
+
+        this.saveCommandToMemory(cleaned);
+        this.state.lastKeywords = [cleaned];
+        this.performSearchAndThink(cleaned, false);
+      }
+
+      // --- ฟังก์ชันวิเคราะห์เชิงลึกแต่ละหมวด ---
+
+      // [หมวด 1] สรุปภาพรวม & ความคืบหน้า
+      analyzeAndSummarize() {
+        this.ensureData(false, (all) => {
+          const total = all.length;
+          const pending = all.filter(i => i.status === 'งานคงเหลือ').length;
+          const waitingClose = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ').length;
+          const completed = all.filter(i => i.status === 'เสร็จสมบูรณ์').length;
+          const donePercent = total > 0 ? Math.round(((waitingClose + completed) / total) * 100) : 0;
+
+          this.speak(
+            `สรุปภาพรวมครับบอส จากทั้งหมด <b>${total} ใบงาน</b> ดำเนินการหน้างานแล้ว <b>${donePercent}%</b> ครับ แบ่งเป็น งานคงเหลือ <b>${pending}</b>, ส่งงานรอปิดใบสั่ง <b>${waitingClose}</b> และปิดเสร็จสมบูรณ์ <b>${completed}</b> ใบงานครับ ต้องการให้เปิดดูรายการรอปิดใบสั่งเลยไหมครับ?`,
+            true
+          );
+          this.state.mode = 'AWAITING_CUSTOM_LIST';
+          this.state.customItems = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ');
+          this.state.pendingAction = 'รายการส่งงานแล้ว (รอตรวจสอบ/ปิดใบสั่ง)';
+        });
+      }
+
+      // [หมวด 2A] เช็กงานคงเหลือ
+      analyzeRemainingWork() {
+        this.ensureData(false, (all) => {
+          const pending = all.filter(i => i.status === 'งานคงเหลือ');
+          const urgent = pending.filter(i => (i.reason || '').includes('ช็อตไหม้')).length;
+          this.state.mode = 'AWAITING_CUSTOM_LIST';
+          this.state.customItems = pending;
+          this.state.pendingAction = 'รายการงานคงเหลือทั้งหมด';
+          this.speak(
+            `ตอนนี้มี <b>งานคงเหลือ</b> ทั้งหมด <b>${pending.length} รายการ</b> ครับบอส (เป็นงานช็อตไหม้ด่วน ${urgent} รายการ) ต้องการให้แสดงเฉพาะงานคงเหลือบนหน้าจอเลยไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 2B] เช็กงานรอปิดใบสั่ง
+      analyzePendingCloseOrders() {
+        this.ensureData(false, (all) => {
+          const waiting = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ');
+          this.state.mode = 'AWAITING_CUSTOM_LIST';
+          this.state.customItems = waiting;
+          this.state.pendingAction = 'รายการส่งงานแล้ว (รอปิดใบสั่ง)';
+          this.speak(
+            `มีใบงานที่ส่งแล้วและ <b>รอตรวจสอบเพื่อปิดใบสั่ง</b> จำนวน <b>${waiting.length} รายการ</b> ครับบอส ต้องการให้ดึงขึ้นมาตรวจสอบบนหน้าจอเลยไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 3] วิเคราะห์ผลงาน ผู้รับเหมา vs พนักงาน
+      analyzeOperatorPerformance() {
+        this.ensureData(false, (all) => {
+          const contractor = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
+          const emp = all.filter(i => i.status === 'พนง. ดำเนินการ');
+          this.state.mode = 'AWAITING_CUSTOM_LIST';
+          this.state.customItems = contractor;
+          this.state.pendingAction = 'ผลงานผู้รับเหมา (ผรม. ส่งงานแล้ว)';
+          this.speak(
+            `ยอดส่งงานปัจจุบัน ผู้รับเหมาส่งงานแล้ว <b>${contractor.length} รายการ</b> และพนักงานดำเนินการ <b>${emp.length} รายการ</b> ครับบอส ต้องการเปิดดูรายการของผู้รับเหมาบนหน้าจอไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 4] วิเคราะห์รายการสำคัญ / งานด่วน (รองรับเทียบเดือนนี้กับเดือนที่แล้ว)
+      isImportantItem(item) {
+        const sheet = (item.sheetName || '').toLowerCase();
+        const reason = (item.reason || '').toLowerCase();
+        return sheet.includes('ด่วน') || reason.includes('ช็อตไหม้') || /ครั้งที่\s*[2-9]/.test(reason);
+      }
+
+      analyzeImportantWork(isCompareMonths) {
+        this.ensureData(isCompareMonths, (allData) => {
+          if (isCompareMonths) {
+            const monthSheets = [...new Set(allData.map(i => i.sheetName))]
+              .filter(name => /^\d{2}\.\d{4}$/.test(name))
+              .sort((a, b) => {
+                const [mA, yA] = a.split('.').map(Number);
+                const [mB, yB] = b.split('.').map(Number);
+                return (yB * 100 + mB) - (yA * 100 + mA);
+              });
+
+            const now = new Date();
+            const curKey = `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`;
+            const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const prevKey = `${String(prevDate.getMonth() + 1).padStart(2, '0')}.${prevDate.getFullYear() + 543}`;
+
+            const thisM = monthSheets.includes(curKey) ? curKey : (monthSheets[0] || curKey);
+            const lastM = (monthSheets.includes(prevKey) && thisM === curKey) ? prevKey : (monthSheets.find(m => m !== thisM) || prevKey);
+
+            const impThis = allData.filter(i => i.sheetName === thisM && this.isImportantItem(i));
+            const impLast = allData.filter(i => i.sheetName === lastM && this.isImportantItem(i));
+            const pendingThis = impThis.filter(i => i.status === 'งานคงเหลือ');
+
+            this.state.mode = 'AWAITING_CUSTOM_LIST';
+            this.state.customItems = pendingThis.length > 0 ? pendingThis : impThis;
+            this.state.pendingAction = `รายการสำคัญรอบเดือน ${thisM}`;
+            this.speak(
+              `สรุปรายการสำคัญครับบอส รอบเดือน <b>${thisM}</b> มี <b>${impThis.length} ราย</b> (คงเหลือ ${pendingThis.length} ราย) ส่วนเดือนก่อนหน้า <b>${lastM}</b> มี <b>${impLast.length} ราย</b> ครับ ต้องการให้แสดงรายการสำคัญของเดือนนี้บนหน้าจอไหมครับ?`,
+              true
+            );
+          } else {
+            const impAll = allData.filter(i => this.isImportantItem(i));
+            const impPending = impAll.filter(i => i.status === 'งานคงเหลือ');
+            this.state.mode = 'AWAITING_CUSTOM_LIST';
+            this.state.customItems = impPending.length > 0 ? impPending : impAll;
+            this.state.pendingAction = 'รายการสำคัญ / งานด่วน / งานค้างซ้ำ';
+            this.speak(
+              `พบรายการสำคัญและงานด่วนทั้งหมด <b>${impAll.length} รายการ</b> และยังเป็นงานคงเหลือ <b>${impPending.length} รายการ</b> ครับบอส ต้องการเปิดดูรายการเหล่านี้บนหน้าจอเลยไหมครับ?`,
+              true
+            );
+          }
+        });
+      }
+
+      // [หมวด 5] วิเคราะห์รายการซ้ำข้ามเดือน
+      analyzeCrossMonthDuplicates() {
+        this.speak("กำลังตรวจสอบหมายเลข PEA ที่ซ้ำกันระหว่างเดือนนี้กับเดือนที่แล้ว รอสักครู่ครับบอส", false);
+        this.ensureData(true, (allData) => {
+          const monthSheets = [...new Set(allData.map(i => i.sheetName))]
+            .filter(name => /^\d{2}\.\d{4}$/.test(name))
+            .sort((a, b) => {
+              const [mA, yA] = a.split('.').map(Number);
+              const [mB, yB] = b.split('.').map(Number);
+              return (yB * 100 + mB) - (yA * 100 + mA);
+            });
+
+          if (monthSheets.length < 2) {
+            this.resetConversation();
+            this.speak("ในระบบมีข้อมูลชีตเดือนไม่ถึง 2 เดือน จึงยังไม่สามารถเทียบรายการซ้ำข้ามเดือนได้ครับบอส", false);
+            return;
+          }
+
+          const now = new Date();
+          const curKey = `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`;
+          const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const prevKey = `${String(prevDate.getMonth() + 1).padStart(2, '0')}.${prevDate.getFullYear() + 543}`;
+
+          const targetThisMonth = monthSheets.includes(curKey) ? curKey : monthSheets[0];
+          const targetLastMonth = (monthSheets.includes(prevKey) && targetThisMonth === curKey)
+            ? prevKey
+            : monthSheets.find(m => m !== targetThisMonth);
+
+          const thisPeas = new Set(allData.filter(i => i.sheetName === targetThisMonth && i.pea && i.pea !== '-').map(i => i.pea.trim()));
+          const lastPeas = new Set(allData.filter(i => i.sheetName === targetLastMonth && i.pea && i.pea !== '-').map(i => i.pea.trim()));
+          const dupPeas = [...thisPeas].filter(pea => lastPeas.has(pea));
+
+          if (dupPeas.length === 0) {
+            this.resetConversation();
+            this.speak(`ตรวจสอบแล้วครับบอส ระหว่างรอบเดือน <b>${targetThisMonth}</b> กับ <b>${targetLastMonth}</b> ไม่มีหมายเลข PEA ซ้ำกันเลยครับ`, false);
+            return;
+          }
+
+          const dupSet = new Set(dupPeas);
+          const matchedRows = allData
+            .filter(i => (i.sheetName === targetThisMonth || i.sheetName === targetLastMonth) && dupSet.has((i.pea || '').trim()))
+            .sort((a, b) => String(a.pea).localeCompare(String(b.pea)));
+
+          const stillPending = matchedRows.filter(i => i.status === 'งานคงเหลือ').length;
+          this.state.mode = 'AWAITING_CUSTOM_LIST';
+          this.state.customItems = matchedRows;
+          this.state.pendingAction = `รายการ PEA ซ้ำกัน (${targetThisMonth} vs ${targetLastMonth})`;
+
+          const pendingNote = stillPending > 0
+            ? `และในกลุ่มนี้ยังมีสถานะ <b>งานคงเหลือ</b> ค้างอยู่ ${stillPending} รายการครับ`
+            : `ซึ่งทั้งหมดถูกดำเนินการส่งงานเรียบร้อยแล้วครับ`;
+
+          this.speak(
+            `พบหมายเลข PEA ซ้ำกันระหว่างรอบเดือน <b>${targetThisMonth}</b> กับ <b>${targetLastMonth}</b> จำนวน <b>${dupPeas.length} ราย</b> ครับบอส ${pendingNote} ต้องการให้ผมดึงรายการคู่ที่ซ้ำทั้งหมดมาแสดงบนหน้าจอเลยไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 6] วิเคราะห์สาเหตุการชำรุดยอดฮิต
+      analyzeTopReasons() {
+        this.ensureData(false, (all) => {
+          const counts = {};
+          all.forEach(i => {
+            const r = (i.reason || 'ไม่ระบุสาเหตุ').trim();
+            counts[r] = (counts[r] || 0) + 1;
+          });
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          if (sorted.length === 0) {
+            this.speak("ยังไม่มีข้อมูลสาเหตุการชำรุดให้วิเคราะห์ครับบอส", false);
+            return;
+          }
+          const top1 = sorted[0];
+          const top2Text = sorted[1] ? ` รองลงมาคือ <b>${sorted[1][0]}</b> (${sorted[1][1]} ราย)` : '';
+          this.state.mode = 'AWAITING_FILTER';
+          this.state.lastKeywords = [top1[0]];
+          this.speak(
+            `สาเหตุที่พบมากที่สุดอันดับ 1 คือ <b>${top1[0]}</b> จำนวน <b>${top1[1]} ราย</b>${top2Text} ครับบอส ต้องการให้ผมกรองแสดงเฉพาะสาเหตุ ${top1[0]} บนหน้าจอไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 7] แนะนำจุดเริ่มงาน & จัดเส้นทาง GPS
+      recommendBestRoute() {
+        this.ensureData(false, (all) => {
+          const pendingWithGps = all.filter(i => i.status === 'งานคงเหลือ' && i.gps && i.gps.trim() !== '' && !i.gps.toLowerCase().includes('http'));
+          if (pendingWithGps.length === 0) {
+            this.speak("ตอนนี้ไม่มีงานคงเหลือที่มีพิกัดตัวเลขพร้อมนำทางครับบอส", false);
+            return;
+          }
+          const areaCount = {};
+          pendingWithGps.forEach(item => {
+            const loc = (item.location || 'ไม่ระบุ').trim();
+            areaCount[loc] = (areaCount[loc] || 0) + 1;
+          });
+          const bestArea = Object.entries(areaCount).sort((a, b) => b[1] - a[1])[0];
+          this.state.mode = 'AWAITING_CONFIRM';
+          this.state.pendingAction = 'OPEN_MAP';
+          this.state.lastMatchedItems = pendingWithGps.filter(i => (i.location || '').trim() === bestArea[0]);
+          this.speak(
+            `ผมวิเคราะห์แล้ว แนะนำให้เริ่มที่พื้นที่ <b>${bestArea[0]}</b> ก่อนครับ เพราะมีงานคงเหลือพร้อมพิกัดกระจุกตัวมากที่สุด <b>${bestArea[1]} ใบงาน</b> ต้องการเปิด Google Maps นำทางไปจุดนี้เลยไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 8] เช็กความพร้อมพิกัด GPS
+      analyzeGpsReadiness() {
+        this.ensureData(false, (all) => {
+          const pending = all.filter(i => i.status === 'งานคงเหลือ');
+          const validGps = pending.filter(i => i.gps && i.gps.trim() !== '' && !i.gps.toLowerCase().includes('http'));
+          const urlGps = pending.filter(i => i.gps && i.gps.toLowerCase().includes('http'));
+          const missingGps = pending.filter(i => !i.gps || i.gps.trim() === '');
+
+          this.state.mode = 'AWAITING_CUSTOM_LIST';
+          this.state.customItems = missingGps;
+          this.state.pendingAction = 'งานคงเหลือที่ยังไม่มีพิกัด GPS';
+          const urlWarn = urlGps.length > 0 ? ` (และมี ${urlGps.length} งานที่พิกัดเป็นลิงก์ URL)` : '';
+          this.speak(
+            `จากงานคงเหลือ ${pending.length} งาน มีพิกัดพร้อมนำทาง <b>${validGps.length} งาน</b> และยังไม่มีพิกัด <b>${missingGps.length} งาน</b>${urlWarn} ครับบอส ต้องการเปิดดูรายการที่ยังไม่มีพิกัดไหมครับ?`,
+            true
+          );
+        });
+      }
+
+      // [หมวด 9] ค้นหาเจาะจง + วิเคราะห์ผลลัพธ์เชิงรุก
+      performSearchAndThink(keyword, isFollowUp) {
+        const statusTab = document.querySelector('#status-tab');
+        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
+        
+        const searchBox = document.getElementById('dash-search');
+        if (searchBox) {
+          searchBox.value = keyword;
+          filterDashboard();
+        }
+
+        const terms = keyword.toLowerCase().split(/\s+/);
+        const matched = (globalDashResults || []).filter(item => {
+          const fullText = `${item.pea} ${item.name} ${item.location} ${item.reason} ${item.status} ${item.sheetName}`.toLowerCase();
+          return terms.every(t => fullText.includes(t));
+        });
+
+        this.state.lastMatchedItems = matched;
+
+        if (matched.length === 0) {
+          this.resetConversation();
+          this.speak(`ไม่พบใบงานที่ตรงกับ "${keyword}" เลยครับบอส ลองระบุชื่อพื้นที่หรือสาเหตุอื่นดูไหมครับ?`, false);
+        } else if (matched.length === 1) {
+          // เจอ 1 รายการเป๊ะๆ -> ถามเปิดหน้าฟอร์มส่งงานให้เลย!
+          const item = matched[0];
+          this.state.mode = 'AWAITING_OPEN_FORM';
+          this.state.customItems = [item];
+          this.speak(
+            `พบ 1 ใบงานครับบอส PEA <b>${item.pea}</b> คุณ${item.name} สถานะ <b>${item.status}</b> ต้องการเปิดหน้าแบบฟอร์มใบงานนี้เลยไหมครับ?`,
+            true
+          );
+        } else if (matched.length > 10 && !isFollowUp) {
+          this.state.mode = 'AWAITING_FILTER';
+          this.speak(`พบถึง <b>${matched.length} ใบงาน</b> ครับบอส ค่อนข้างเยอะเลย ต้องการให้กรองเฉพาะ <b>งานคงเหลือ</b> หรือระบุ <b>ชื่อพื้นที่</b> เพิ่มไหมครับ?`, true);
+        } else {
+          const withGps = matched.filter(m => m.gps && m.gps.trim() !== '' && !m.gps.toLowerCase().includes('http') && m.status === 'งานคงเหลือ');
+          if (withGps.length > 0 && withGps.length <= 9) {
+            this.state.mode = 'AWAITING_CONFIRM';
+            this.state.pendingAction = 'OPEN_MAP';
+            this.state.lastMatchedItems = withGps;
+            this.speak(`พบ <b>${matched.length} ใบงาน</b> ครับ และมี <b>${withGps.length} งานคงเหลือ</b> ที่มีพิกัดพร้อมนำทาง ต้องการให้เปิดแผนที่นำทางเลยไหมครับบอส?`, true);
+          } else {
+            this.resetConversation();
+            this.speak(`แสดง <b>${matched.length} ใบงาน</b> ที่เกี่ยวกับ ${keyword} บนหน้าจอเรียบร้อยครับบอส`, false);
+          }
+        }
+      }
+
+      executeMapRouting(items) {
+        let url = "https://www.google.com/maps/dir/Current+Location/";
+        items.slice(0, 9).forEach(item => {
+          const cleanGps = item.gps.trim().replace(/\s/g, '');
+          if (!cleanGps.toLowerCase().includes('http')) url += cleanGps + "/";
+        });
+        window.open(url, '_blank');
+      }
+
+      cleanText(text) {
+        let kw = text
+          .replace(/ช่วย|กรอง|หา|ค้นหา|ใบงาน|ที่อยู่|ในโซน|เอาเฉพาะ|เฉพาะ|เปิดดู|ดูงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|สิ/g, '')
+          .replace(/กับ|และ|เว้นวรรค/g, ' ');
+        const knownReasons = ["ช็อตไหม้", "น้ำเข้า", "ผ้ามัว", "ไม่หมุน", "ติดขัด", "ชำรุด", "ขั้วต่อ", "แป้นผุ"];
+        knownReasons.forEach(reason => {
+          if (kw.includes(reason)) kw = kw.replace(new RegExp(reason, 'g'), ' ' + reason + ' ');
+        });
+        return kw.replace(/\s+/g, ' ').trim();
+      }
     }
-    function toggleJarvis() { if(!recognition) { alert("เบราว์เซอร์ไม่รองรับครับ"); return; } document.getElementById('jarvis-btn').classList.add('listening'); try { recognition.start(); } catch(e) {} }
-    function speak(text) { if('speechSynthesis' in window) { const msg = new SpeechSynthesisUtterance(text); msg.lang = 'th-TH'; msg.rate = 1.1; window.speechSynthesis.speak(msg); } }
-    function processVoiceCommand(text) {
-      let keyword = text.replace(/ช่วย/g, '').replace(/กรอง/g, '').replace(/หา/g, '').replace(/ค้นหา/g, '').replace(/ใบงาน/g, '').replace(/ที่อยู่/g, '').replace(/ในโซน/g, '').replace(/ให้หน่อย/g, '').replace(/หน่อย/g, '').replace(/ครับ/g, '').replace(/ค่ะ/g, '').replace(/สิ/g, '').trim();
-      keyword = keyword.replace(/กับ|และ|เว้นวรรค/g, ' ');
-      const knownReasons = ["ช็อตไหม้", "น้ำเข้า", "ผ้ามัว", "ไม่หมุน", "ติดขัด", "ชำรุด", "ขั้วต่อ"];
-      knownReasons.forEach(reason => { if (keyword.includes(reason)) { keyword = keyword.replace(new RegExp(reason, 'g'), ' ' + reason + ' '); } });
-      keyword = keyword.replace(/\s+/g, ' ').trim();
-      if(keyword === "") return;
-      const statusTab = document.querySelector('#status-tab'); bootstrap.Tab.getOrCreateInstance(statusTab).show();
-      const searchBox = document.getElementById('dash-search'); searchBox.value = keyword; filterDashboard(); 
-      setTimeout(() => {
-        const items = document.querySelectorAll('.dash-item'); let count = 0;
-        items.forEach(item => { if (item.style.getPropertyValue('display') !== 'none') count++; });
-        let reply = count > 0 ? `พบ ${count} ใบงานที่เกี่ยวข้องกับ ${keyword} ครับบอส` : `ไม่พบใบงานเกี่ยวกับ ${keyword} เลยครับ`; speak(reply);
-      }, 350); 
+
+    const jarvisBrain = new JarvisVoiceBrain();
+    function toggleJarvis() {
+      if (!isAdminUser) return;
+      jarvisBrain.startListening();
     }
   </script>
 </body>
