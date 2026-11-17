@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <!-- ไลบรารี SheetJS สำหรับอ่าน/เขียนไฟล์ Excel และ CSV -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- ไลบรารี Tesseract.js สำหรับ AI OCR อ่านเลขป้ายหน้ามิเตอร์ -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); background-attachment: fixed; font-family: 'Sarabun', sans-serif; color: #333; }
     .container { max-width: 850px; margin-top: 20px; padding-bottom: 135px; }
@@ -65,7 +67,85 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
     .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 400px; }
+    .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 360px; }
+
+    /* กล่องถ่ายภาพและสแกนมิเตอร์แยกฝั่ง PEA.No เก่า / PEA.No ใหม่ / ภาพถ่ายสำรอง */
+    .meter-capture-card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1.5px solid rgba(63, 43, 150, 0.18);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    }
+    .meter-capture-card.old-meter { border-left: 5px solid #e67e22; }
+    .meter-capture-card.new-meter { border-left: 5px solid #2ecc71; }
+    .meter-capture-card.backup-meter { border-left: 5px solid #3498db; }
+
+    .ocr-result-box {
+      background: #f8f9fa;
+      border: 1px dashed #6c757d;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-top: 10px;
+      font-size: 0.86rem;
+      display: none;
+    }
+    .ocr-token-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      margin: 2px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: #e9ecef;
+      color: #2c3e50;
+      border: 1px solid #ced4da;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .ocr-token-pill:hover { background: #3f2b96; color: #fff; border-color: #3f2b96; }
+
+    /* กล้องถ่ายภาพเรียลไทม์พร้อมกรอบเล็งป้ายมิเตอร์ */
+    .camera-viewport-wrap {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      aspect-ratio: 3 / 4;
+      max-height: 62vh;
+    }
+    #realtime-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .meter-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 82%;
+      height: 52%;
+      border: 2.5px solid #00d2ff;
+      border-radius: 14px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+      pointer-events: none;
+    }
+    .meter-reticle-label {
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 210, 255, 0.92);
+      color: #081826;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
 
     /* Dropzone สำหรับนำเข้าไฟล์ UCUBE */
     .ucube-dropzone {
@@ -425,6 +505,42 @@
     </div>
   </div>
 
+  <!-- 📸 Modal กล้องถ่ายภาพเรียลไทม์สำหรับสแกนมิเตอร์และภาพสำรอง -->
+  <div class="modal fade" id="realtimeCameraModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white border-0" style="border-radius: 20px;">
+        <div class="modal-header border-secondary py-2 px-3">
+          <h6 class="modal-title fw-bold text-info" id="camera-modal-title">
+            <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพสแกนมิเตอร์
+          </h6>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" id="btn-toggle-torch" class="btn btn-sm btn-outline-warning rounded-pill" style="display:none;" onclick="smartMeterOCR.toggleTorch()">
+              <i class="bi bi-lightning-fill"></i> ไฟฉาย
+            </button>
+            <button type="button" class="btn-close btn-close-white" onclick="smartMeterOCR.closeCamera()"></button>
+          </div>
+        </div>
+        <div class="modal-body p-2 text-center">
+          <div class="camera-viewport-wrap">
+            <video id="realtime-video" autoplay playsinline muted></video>
+            <div class="meter-reticle" id="camera-reticle-box">
+              <div class="meter-reticle-label" id="camera-reticle-label">วางป้ายเลข PEA และหน้าปัดหน่วยให้อยู่ในกรอบ</div>
+            </div>
+          </div>
+          <div class="small text-white-50 mt-2" id="camera-modal-hint">
+            ถ่ายให้เห็นเลข <b>PEA</b> และตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ
+          </div>
+        </div>
+        <div class="modal-footer border-secondary justify-content-center py-3">
+          <button type="button" class="btn btn-light rounded-pill px-4" onclick="smartMeterOCR.closeCamera()">ยกเลิก</button>
+          <button type="button" class="btn btn-info rounded-pill px-5 fw-bold shadow" onclick="smartMeterOCR.captureFromVideo()">
+            <i class="bi bi-camera-fill me-1"></i> กดถ่ายภาพ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal ตรวจสอบข้อมูลเพื่อปิดใบสั่ง -->
   <div class="modal fade" id="orderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -559,7 +675,7 @@
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.3 พร้อมโมดูลนำเข้า UCUBE เรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.3 พร้อมระบบสแกนมิเตอร์เรียบร้อยครับ", false);
       }
     }
 
@@ -657,12 +773,363 @@
     }
 
     // =========================================================================
+    // 📷 Smart Meter OCR & Dual Camera Engine
+    // รองรับ: PEA.No เก่า (col-8), PEA.No ใหม่ (col-9), และ ภาพถ่ายสำรอง (backup)
+    // =========================================================================
+    class SmartMeterOCR {
+      constructor() {
+        this.activeTargetInputId = null; // 'col-8' | 'col-9' | 'extra-backup-pic'
+        this.activePreviewId = null;     // 'preview-8' | 'preview-9' | 'preview-backup'
+        this.activeMeterRole = null;     // 'old' | 'new' | 'backup'
+        this.mediaStream = null;
+        this.torchOn = false;
+        this.lastExtractedTokens = { old: [], new: [] };
+      }
+
+      resolveFieldIds() {
+        let oldPeaIdx = 1; // คอลัมน์ C (#col-1)
+        let oldKwhIdx = 2; // คอลัมน์ D (#col-2)
+        let newPeaIdx = 4; // คอลัมน์ F (#col-4)
+        let newKwhIdx = 5; // คอลัมน์ G (#col-5)
+
+        (globalHeaders || []).forEach((h, idx) => {
+          const title = String(h || '').toLowerCase();
+          if (title.includes('pea') && (title.includes('เก่า') || title.includes('เดิม'))) oldPeaIdx = idx;
+          else if (title.includes('หน่วย') && (title.includes('เก่า') || title.includes('เดิม'))) oldKwhIdx = idx;
+          else if (title.includes('pea') && title.includes('ใหม่')) newPeaIdx = idx;
+          else if (title.includes('หน่วย') && title.includes('ใหม่')) newKwhIdx = idx;
+        });
+
+        return {
+          oldPeaEl: document.getElementById(`col-${oldPeaIdx}`),
+          oldKwhEl: document.getElementById(`col-${oldKwhIdx}`),
+          newPeaEl: document.getElementById(`col-${newPeaIdx}`),
+          newKwhEl: document.getElementById(`col-${newKwhIdx}`)
+        };
+      }
+
+      // 1. เปิดกล้องถ่ายภาพเรียลไทม์ (WebRTC + Fallback Native Camera)
+      async openRealtimeCamera(targetInputId, previewId, role, nativeInputId) {
+        this.activeTargetInputId = targetInputId;
+        this.activePreviewId = previewId;
+        this.activeMeterRole = role;
+        this.torchOn = false;
+
+        const titleEl = document.getElementById('camera-modal-title');
+        const reticleBox = document.getElementById('camera-reticle-box');
+        const reticleLabel = document.getElementById('camera-reticle-label');
+        const hintEl = document.getElementById('camera-modal-hint');
+
+        if (role === 'old') {
+          titleEl.innerHTML = '<i class="bi bi-camera-fill me-1 text-warning"></i> ถ่ายภาพ PEA.No เก่า (มิเตอร์เดิม)';
+          reticleBox.style.display = 'block';
+          reticleLabel.innerText = 'วางป้ายเลข PEA.No เก่า และหน่วยเดิมในกรอบ';
+          hintEl.innerHTML = 'ถ่ายให้เห็นเลข <b>PEA.No เก่า</b> และตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ';
+        } else if (role === 'new') {
+          titleEl.innerHTML = '<i class="bi bi-camera-fill me-1 text-success"></i> ถ่ายภาพ PEA.No ใหม่ (มิเตอร์ใหม่)';
+          reticleBox.style.display = 'block';
+          reticleLabel.innerText = 'วางป้ายเลข PEA.No ใหม่ และหน่วยใหม่ในกรอบ';
+          hintEl.innerHTML = 'ถ่ายให้เห็นเลข <b>PEA.No ใหม่</b> และตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ';
+        } else {
+          titleEl.innerHTML = '<i class="bi bi-camera-fill me-1 text-info"></i> ถ่ายภาพสำรองหน้างาน';
+          reticleBox.style.display = 'none';
+          hintEl.innerHTML = 'ถ่ายภาพประกอบเพิ่มเติม เช่น ตู้มิเตอร์ ใบสั่งงาน หรือสภาพหน้างาน';
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          document.getElementById(nativeInputId)?.click();
+          return;
+        }
+
+        try {
+          this.mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: 'environment' },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            },
+            audio: false
+          });
+
+          const videoEl = document.getElementById('realtime-video');
+          videoEl.srcObject = this.mediaStream;
+
+          const track = this.mediaStream.getVideoTracks()[0];
+          const caps = track.getCapabilities ? track.getCapabilities() : {};
+          const torchBtn = document.getElementById('btn-toggle-torch');
+          torchBtn.style.display = caps.torch ? 'inline-block' : 'none';
+
+          new bootstrap.Modal(document.getElementById('realtimeCameraModal')).show();
+        } catch (err) {
+          document.getElementById(nativeInputId)?.click();
+        }
+      }
+
+      async toggleTorch() {
+        if (!this.mediaStream) return;
+        const track = this.mediaStream.getVideoTracks()[0];
+        if (!track) return;
+        this.torchOn = !this.torchOn;
+        try {
+          await track.applyConstraints({ advanced: [{ torch: this.torchOn }] });
+        } catch (e) {}
+      }
+
+      closeCamera() {
+        if (this.mediaStream) {
+          this.mediaStream.getTracks().forEach(track => track.stop());
+          this.mediaStream = null;
+        }
+        const modalEl = document.getElementById('realtimeCameraModal');
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        if (inst) inst.hide();
+      }
+
+      captureFromVideo() {
+        const videoEl = document.getElementById('realtime-video');
+        if (!videoEl || !videoEl.videoWidth) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = videoEl.videoWidth;
+        canvas.height = videoEl.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+        const targetInputId = this.activeTargetInputId;
+        const previewId = this.activePreviewId;
+        const role = this.activeMeterRole;
+        this.closeCamera();
+
+        this.processCapturedCanvas(canvas, targetInputId, previewId, role);
+      }
+
+      // 2. รองรับการอัปโหลดไฟล์ในเครื่อง (หรือกล้อง Native สำรอง)
+      handleLocalFile(event, targetInputId, previewId, role) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            this.processCapturedCanvas(canvas, targetInputId, previewId, role);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // 3. บีบอัดภาพเก็บลงฟอร์ม + ส่งเข้า AI OCR (สำหรับ PEA.No เก่า และ PEA.No ใหม่)
+      async processCapturedCanvas(sourceCanvas, targetInputId, previewId, role) {
+        const maxW = 1280;
+        let targetW = sourceCanvas.width;
+        let targetH = sourceCanvas.height;
+        if (targetW > maxW) {
+          targetH = Math.round((targetH * maxW) / targetW);
+          targetW = maxW;
+        }
+
+        const saveCanvas = document.createElement('canvas');
+        saveCanvas.width = targetW;
+        saveCanvas.height = targetH;
+        const saveCtx = saveCanvas.getContext('2d');
+        saveCtx.drawImage(sourceCanvas, 0, 0, targetW, targetH);
+        const compressedBase64 = saveCanvas.toDataURL('image/jpeg', 0.82);
+
+        const hiddenInput = document.getElementById(targetInputId);
+        if (hiddenInput) hiddenInput.value = compressedBase64;
+
+        const previewEl = document.getElementById(previewId);
+        if (previewEl) {
+          previewEl.src = compressedBase64;
+          previewEl.style.display = 'block';
+        }
+
+        // ถ้าเป็นภาพถ่ายสำรอง ไม่ต้องสั่ง AI OCR อ่านทับช่องมิเตอร์
+        if (role === 'backup') return;
+
+        const ocrCanvas = document.createElement('canvas');
+        ocrCanvas.width = targetW;
+        ocrCanvas.height = targetH;
+        const ocrCtx = ocrCanvas.getContext('2d');
+        ocrCtx.filter = 'grayscale(100%) contrast(145%) brightness(105%)';
+        ocrCtx.drawImage(saveCanvas, 0, 0);
+
+        await this.runOcrScan(ocrCanvas, role);
+      }
+
+      // 4. รัน AI OCR อ่านข้อความและแยกเลข PEA + หน่วย kWh
+      async runOcrScan(ocrCanvas, role) {
+        const resultBox = document.getElementById(`ocr-result-${role}`);
+        if (!resultBox) return;
+
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `
+          <div class="d-flex align-items-center text-primary fw-bold">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            AI กำลังสแกนอ่านหมายเลข ${role === 'old' ? 'PEA.No เก่า' : 'PEA.No ใหม่'} และหน่วย kWh...
+          </div>
+        `;
+
+        try {
+          if (!window.Tesseract) throw new Error('ไม่สามารถโหลดโมดูล Tesseract OCR ได้');
+          const { data: { text } } = await Tesseract.recognize(ocrCanvas, 'eng');
+          const parsed = this.extractMeterNumbers(text, role);
+          this.lastExtractedTokens[role] = parsed.allTokens;
+          this.applyAndRenderOcrResult(parsed, role);
+        } catch (err) {
+          resultBox.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle"></i> สแกนตัวเลขไม่สำเร็จ สามารถกรอกตัวเลขในช่องด้านบนได้ตามปกติครับ</span>`;
+        }
+      }
+
+      extractMeterNumbers(rawText, role) {
+        const cleanText = (rawText || '').replace(/[|]/g, '1').replace(/[Oo]/g, '0');
+        const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+        let peaCandidates = [];
+        let kwhCandidates = [];
+        let allTokens = [];
+
+        const peaLabelRegex = /(?:PEA|NO|S\/N)[.\s:#-]*([0-9]{2}[-\s]?[0-9]{6,10}|[0-9]{7,13})/gi;
+        let match;
+        while ((match = peaLabelRegex.exec(cleanText)) !== null) {
+          const val = match[1].replace(/\s+/g, '');
+          if (!peaCandidates.includes(val)) peaCandidates.push(val);
+        }
+
+        lines.forEach(line => {
+          const lower = line.toLowerCase();
+          if (lower.includes('hz') || lower.includes('imp') || lower.includes('class') || lower.includes('iec')) return;
+
+          const numMatches = line.match(/\b\d{2}-\d{6,10}\b|\b\d{4,13}\b/g) || [];
+          numMatches.forEach(num => {
+            if (/^(202[0-9]|220|230|240|380|400)$/.test(num)) return;
+            if (!allTokens.includes(num)) allTokens.push(num);
+
+            const digitsOnly = num.replace(/\D/g, '');
+            if (digitsOnly.length >= 7) {
+              if (!peaCandidates.includes(num)) peaCandidates.push(num);
+            } else if (digitsOnly.length >= 4 && digitsOnly.length <= 6) {
+              if (!kwhCandidates.includes(num)) kwhCandidates.push(num);
+            }
+          });
+        });
+
+        if (role === 'new' && kwhCandidates.length > 1) {
+          kwhCandidates.sort((a, b) => Number(a) - Number(b));
+        }
+
+        return {
+          detectedPea: peaCandidates[0] || '',
+          detectedKwh: kwhCandidates[0] || '',
+          allTokens: allTokens
+        };
+      }
+
+      applyAndRenderOcrResult(parsed, role) {
+        const resultBox = document.getElementById(`ocr-result-${role}`);
+        const fields = this.resolveFieldIds();
+        const workMode = document.getElementById('work-mode')?.value || 'ucube';
+
+        const { detectedPea, detectedKwh, allTokens } = parsed;
+        let statusHtml = '';
+
+        if (role === 'old') {
+          if (detectedPea && fields.oldPeaEl) {
+            if (workMode === 'ucube') {
+              const sheetPea = String(fields.oldPeaEl.value || '').replace(/\D/g, '');
+              const scanPea = detectedPea.replace(/\D/g, '');
+              if (sheetPea && (sheetPea.includes(scanPea) || scanPea.includes(sheetPea))) {
+                statusHtml += `<div class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> เลข PEA.No เก่าในรูป (${detectedPea}) ตรงกับใบงานถูกต้อง!</div>`;
+              } else {
+                statusHtml += `<div class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> คำเตือน: เลข PEA ในรูป (${detectedPea}) ไม่ตรงกับใบงาน (${fields.oldPeaEl.value}) กรุณาตรวจสอบ!</div>`;
+              }
+            } else {
+              fields.oldPeaEl.value = detectedPea;
+              this.flashInput(fields.oldPeaEl);
+              statusHtml += `<div class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> เติม PEA.No เก่า: ${detectedPea}</div>`;
+            }
+          }
+
+          if (detectedKwh && fields.oldKwhEl) {
+            fields.oldKwhEl.value = detectedKwh;
+            this.flashInput(fields.oldKwhEl);
+            statusHtml += `<div class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> เติมหน่วย PEA.No เก่า: ${detectedKwh}</div>`;
+          }
+        } else if (role === 'new') {
+          if (detectedPea && fields.newPeaEl) {
+            fields.newPeaEl.value = detectedPea;
+            this.flashInput(fields.newPeaEl);
+            statusHtml += `<div class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> เติม PEA.No ใหม่: ${detectedPea}</div>`;
+          }
+          if (detectedKwh && fields.newKwhEl) {
+            fields.newKwhEl.value = detectedKwh;
+            this.flashInput(fields.newKwhEl);
+            statusHtml += `<div class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> เติมหน่วย PEA.No ใหม่: ${detectedKwh}</div>`;
+          }
+        }
+
+        if (!statusHtml) {
+          statusHtml = `<div class="text-warning-emphasis fw-bold"><i class="bi bi-info-circle"></i> AI อ่านตัวเลขไม่ชัดเจน สามารถจิ้มเลือกตัวเลขด้านล่างหรือพิมพ์เองได้เลยครับ</div>`;
+        }
+
+        let pillsHtml = '';
+        if (allTokens.length > 0) {
+          pillsHtml = `<div class="mt-2 pt-2 border-top">
+            <span class="text-muted small d-block mb-1">ตัวเลขที่พบในภาพ (คลิกเพื่อนำไปใส่ช่อง):</span>
+            ${allTokens.map(tok => `
+              <span class="ocr-token-pill" onclick="smartMeterOCR.applyTokenChoice('${role}', '${tok}')">${tok}</span>
+            `).join('')}
+          </div>`;
+        }
+
+        resultBox.innerHTML = statusHtml + pillsHtml;
+      }
+
+      applyTokenChoice(role, tokenVal) {
+        const fields = this.resolveFieldIds();
+        const isPeaLength = tokenVal.replace(/\D/g, '').length >= 7;
+
+        if (role === 'old') {
+          const targetEl = isPeaLength ? fields.oldPeaEl : fields.oldKwhEl;
+          if (targetEl && !targetEl.readOnly) {
+            targetEl.value = tokenVal;
+            this.flashInput(targetEl);
+          } else if (fields.oldKwhEl) {
+            fields.oldKwhEl.value = tokenVal;
+            this.flashInput(fields.oldKwhEl);
+          }
+        } else if (role === 'new') {
+          const targetEl = isPeaLength ? fields.newPeaEl : fields.newKwhEl;
+          if (targetEl) {
+            targetEl.value = tokenVal;
+            this.flashInput(targetEl);
+          }
+        }
+      }
+
+      flashInput(el) {
+        if (!el) return;
+        el.style.transition = 'background-color 0.4s ease';
+        el.style.backgroundColor = '#d1e7dd';
+        setTimeout(() => { el.style.backgroundColor = ''; }, 1800);
+      }
+    }
+
+    const smartMeterOCR = new SmartMeterOCR();
+
+    // =========================================================================
     // 📥 UCUBE Smart Auto-Importer Engine
     // =========================================================================
     class UcubeSmartImporter {
       constructor() {
-        this.rawGrid = [];       // 2D array of strings
-        this.parsedItems = [];   // [{ pea, name, location, reason, gps, dupStatus, prevSheet }]
+        this.rawGrid = [];
+        this.parsedItems = [];
         this.MAP_STORAGE_KEY = 'pea_ucube_col_mapping_v1';
       }
 
@@ -705,7 +1172,6 @@
           const textDecoder = new TextDecoder('utf-8');
           const headText = textDecoder.decode(buffer.slice(0, 4096));
 
-          // ตรวจจับกรณีไฟล์ Excel Web Page Frameset ที่ไม่มีโฟลเดอร์ .files ติดมาด้วย
           if (headText.includes('Excel Workbook Frameset') && !headText.toLowerCase().includes('<td')) {
             alertBox.innerHTML = `
               <i class="bi bi-exclamation-triangle-fill me-1"></i>
@@ -716,13 +1182,11 @@
             return;
           }
 
-          // กรณีเป็นไฟล์ HTML Table ที่ Export ตรงจาก UCUBE หรือ sheet001.htm
           if (headText.toLowerCase().includes('<table') || headText.toLowerCase().includes('<tr')) {
             const fullHtml = new TextDecoder('utf-8').decode(buffer);
             const doc = new DOMParser().parseFromString(fullHtml, 'text/html');
             const tables = [...doc.querySelectorAll('table')];
             if (tables.length > 0) {
-              // เลือกตารางที่มีจำนวนแถวมากที่สุด
               tables.sort((a, b) => b.querySelectorAll('tr').length - a.querySelectorAll('tr').length);
               const rows = [...tables[0].querySelectorAll('tr')].map(tr =>
                 [...tr.querySelectorAll('td, th')].map(td => td.innerText.replace(/\s+/g, ' ').trim())
@@ -735,7 +1199,6 @@
             }
           }
 
-          // กรณีไฟล์ Excel (.xlsx / .xls) หรือ CSV มาตรฐาน
           try {
             const wb = XLSX.read(buffer, { type: 'array' });
             const firstSheet = wb.Sheets[wb.SheetNames[0]];
@@ -860,7 +1323,6 @@
         if (!this.parsedItems) return;
         const targetSheet = document.getElementById('import-target-month')?.value || '';
 
-        // ตรวจสอบเทียบกับข้อมูลทั้งหมดที่โหลดไว้ใน globalDashResults
         const sameSheetPeas = new Set();
         const otherSheetMap = {};
 
@@ -986,7 +1448,6 @@
             jarvisBrain.speak(`นำเข้าข้อมูลจาก UCUBE จำนวน ${res.importedCount} รายการ ลงชีต ${targetSheet} เรียบร้อยแล้วครับบอส!`, false);
           }
 
-          // รีเฟรช Dashboard ให้แสดงเดือนที่เพิ่งนำเข้า
           document.getElementById('filter-month').value = targetSheet;
           loadDashboard();
           this.clearAll();
@@ -1290,6 +1751,7 @@
           'หน่วย PEA ใหม่': it.colG || '-',
           'ผู้ดำเนินการ': it.operator || '-',
           'สถานะ': it.status || '-',
+          'หมายเหตุ': it.remark || '-',
           'ข้อมูลที่ขาด/ไม่สมบูรณ์': it._missingNote || 'ครบถ้วน'
         }));
         const ws = XLSX.utils.json_to_sheet(rows);
@@ -1304,9 +1766,6 @@
         return g !== '' && !g.toLowerCase().includes('http') && !g.toLowerCase().includes('goo.gl');
       }
 
-      // =======================================================================
-      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (v5.3)
-      // =======================================================================
       handleInput(rawText) {
         if (!isAdminUser) return;
         const text = rawText.toLowerCase().trim();
@@ -1391,26 +1850,22 @@
           if (/(พิกัด|gps)/i.test(text)) { this.analyzeGpsReadiness(); return; }
         }
 
-        // เปิดหน้านำเข้า UCUBE ด้วยเสียง
         if (/(นำเข้า|อัปโหลด|ดึงข้อมูล).*(ucube|ยูคิวบ์|ใบงาน|excel)/i.test(text) || /เปิด.*(นำเข้า|ucube)/i.test(text)) {
           bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show();
           this.speak("เปิดหน้า UCUBE Smart Auto-Importer เรียบร้อยครับบอส เลือกไฟล์หรือวางตารางจาก Excel ได้เลยครับ", false);
           return;
         }
 
-        // สั่งสร้างชีตใบงานเดือนใหม่ใน Google Sheets
         if (/(สร้าง|เปิดรอบ|เพิ่ม).*(ใบงาน|ชีต|ตาราง|รอบเดือน|เดือน)/.test(text) && /(เดือน|ชีต|รอบเดือน)/.test(text)) {
           this.promptCreateNewMonthSheet(text);
           return;
         }
 
-        // วิเคราะห์ใบงานที่ไม่สมบูรณ์
         if (/(ไม่สมบูรณ์|ข้อมูลไม่ครบ|ไม่ครบถ้วน|ขาดรูป|ไม่มีรูป|ขาดหน่วย|ไม่มีหน่วย|ข้อมูลขาด|ตกหล่น)/.test(text)) {
           this.analyzeIncompleteByStatusAndMonth(text);
           return;
         }
 
-        // คู่มือคำสั่งเสียง
         if (/(ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
           this.promptChoices(
             "บอสสามารถสั่งให้ผม <b>สร้างชีตใบงานเดือนใหม่พร้อมสูตร</b>, <b>เปิดหน้านำเข้า UCUBE</b>, <b>วิเคราะห์ใบงานไม่สมบูรณ์</b> หรือ <b>เช็ก PEA ซ้ำข้ามเดือน</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนครับ?",
@@ -1422,7 +1877,6 @@
           return;
         }
 
-        // ส่งออก Excel
         if (/(export|เอ็กซ์เซล|ส่งออก|ดาวน์โหลดตาราง|โหลดตาราง)/i.test(text)) {
           const curStatus = document.getElementById('filter-status')?.value || 'ทั้งหมด';
           this.promptChoices(
@@ -1484,9 +1938,6 @@
         this.performSearchAndThink(cleaned, false);
       }
 
-      // =======================================================================
-      // ➕ สร้างชีตใบงานเดือนใหม่
-      // =======================================================================
       getNextMonthSuggestionFromDropdown() {
         const opts = [...document.querySelectorAll('#filter-month option')]
           .map(o => o.value)
@@ -1592,9 +2043,6 @@
         }
       }
 
-      // =======================================================================
-      // 🩺 วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
-      // =======================================================================
       parseMonthFromText(text) {
         const now = new Date();
         if (/เดือนนี้/.test(text)) return { monthNum: String(now.getMonth() + 1).padStart(2, '0'), thaiName: 'เดือนนี้' };
@@ -1733,9 +2181,6 @@
         });
       }
 
-      // =======================================================================
-      // 🔍 ระบบตรวจสอบและปิดงานซ้ำข้ามเดือน
-      // =======================================================================
       auditSourceCompleteness(sourceItem) {
         const missing = [];
         const hasVal = (v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-';
@@ -1897,7 +2342,14 @@
         if (sourceItem.pic2 && String(sourceItem.pic2).startsWith('http')) rowArray[9] = sourceItem.pic2;
         rowArray[10] = (sourceItem.operator && sourceItem.operator !== '-') ? sourceItem.operator : 'พนง.ผมต.';
 
-        const saveRes = await this.callAPIAsync('saveData', { mode: 'ucube', month: pendingItem.sheetName, rowIndex: searchRes.rowIndex, formData: rowArray });
+        const saveRes = await this.callAPIAsync('saveData', {
+          mode: 'ucube',
+          month: pendingItem.sheetName,
+          rowIndex: searchRes.rowIndex,
+          formData: rowArray,
+          backupPic: sourceItem.backupPic || searchRes.backupPic || '',
+          remark: sourceItem.remark || searchRes.remark || ''
+        });
         if (!saveRes || !saveRes.success) throw new Error(saveRes?.message || `บันทึกข้อมูล PEA ${pendingItem.pea} ไม่สำเร็จ`);
         return saveRes;
       }
@@ -1997,7 +2449,6 @@
         );
       }
 
-      // สรุปภาพรวม & หมวดวิเคราะห์อื่นๆ
       analyzeAndSummarize() {
         this.ensureData(false, (all) => {
           const total = all.length;
@@ -2202,7 +2653,7 @@
     }
 
     // =========================================================================
-    // ฟังก์ชันเดิมของระบบส่งงาน & Dashboard
+    // ฟังก์ชันหลักของระบบส่งงาน & Dashboard
     // =========================================================================
     function getDirectImageUrl(url) {
       if (!url) return '';
@@ -2215,7 +2666,7 @@
       if (mode === 'general') {
         document.getElementById('search-section').style.display = 'none';
         document.getElementById('status-badge-container').style.display = 'none';
-        renderFormUI(new Array(globalHeaders.length).fill(''), 'general');
+        renderFormUI(new Array(globalHeaders.length).fill(''), 'general', '', '');
         document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
         document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
       } else {
@@ -2256,42 +2707,120 @@
         }
         
         if (res.foundMonth) document.getElementById('month-select').value = res.foundMonth;
-        renderFormUI(res.data, 'ucube');
+        renderFormUI(res.data, 'ucube', res.backupPic || '', res.remark || '');
       });
     }
 
-    function renderFormUI(dataArray, mode) {
+    function renderFormUI(dataArray, mode, backupPicVal = '', remarkVal = '') {
       let fieldsHtml = '';
       for (let i = 0; i < globalHeaders.length; i++) {
         let title = globalHeaders[i] || `คอลัมน์ ${i+1}`;
         let val = dataArray[i] || '';
         let isReadOnly = (mode === 'ucube' && (i === 0 || i === 1)) ? 'readonly' : ''; 
+
         if (i === 7) {
           fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="details-list" value="${val}"></div>`;
         } else if (i === 10) {
           fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`;
         } else if (i === 8 || i === 9) {
+          // ตั้งชื่อตามจริง: PEA.No เก่า (i === 8) และ PEA.No ใหม่ (i === 9)
+          const isOld = (i === 8);
+          const role = isOld ? 'old' : 'new';
+          const cardTitle = isOld ? 'PEA.No เก่า' : 'PEA.No ใหม่';
+          const roleBadge = isOld
+            ? '<span class="badge bg-warning text-dark ms-1">สแกน PEA.No เก่า + หน่วยเดิม</span>'
+            : '<span class="badge bg-success ms-1">สแกน PEA.No ใหม่ + หน่วยใหม่</span>';
+          const cardClass = isOld ? 'old-meter' : 'new-meter';
+
           let directUrl = getDirectImageUrl(val);
-          let imgPreview = val && val.startsWith('http') ? `<img src="${directUrl}" class="image-preview" style="display:block;">` : `<img id="preview-${i}" class="image-preview">`;
-          fieldsHtml += `<div class="mb-3 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px;"><label class="form-label text-secondary fw-bold"><i class="bi bi-camera"></i> ${title}</label><input type="file" class="form-control mb-2" accept="image/*" onchange="handleFileUpload(event, ${i})"><input type="hidden" id="col-${i}" value="${val}">${imgPreview}</div>`;
+          let imgPreview = val && val.startsWith('http')
+            ? `<img id="preview-${i}" src="${directUrl}" class="image-preview" style="display:block;">`
+            : `<img id="preview-${i}" class="image-preview">`;
+
+          fieldsHtml += `
+            <div class="meter-capture-card ${cardClass}">
+              <label class="form-label text-dark fw-bold d-block mb-2">
+                <i class="bi bi-qr-code-scan text-primary me-1"></i> ${cardTitle} ${roleBadge}
+              </label>
+
+              <div class="row g-2">
+                <div class="col-6">
+                  <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm"
+                    onclick="smartMeterOCR.openRealtimeCamera('col-${i}', 'preview-${i}', '${role}', 'native-cam-${i}')">
+                    <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพเรียลไทม์
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-bold py-2 bg-white"
+                    onclick="document.getElementById('file-upload-${i}').click()">
+                    <i class="bi bi-folder2-open me-1"></i> อัปโหลดในเครื่อง
+                  </button>
+                </div>
+              </div>
+
+              <input type="file" id="file-upload-${i}" accept="image/*" style="display:none;"
+                onchange="smartMeterOCR.handleLocalFile(event, 'col-${i}', 'preview-${i}', '${role}')">
+
+              <input type="file" id="native-cam-${i}" accept="image/*" capture="environment" style="display:none;"
+                onchange="smartMeterOCR.handleLocalFile(event, 'col-${i}', 'preview-${i}', '${role}')">
+
+              <input type="hidden" id="col-${i}" value="${val}">
+
+              <div id="ocr-result-${role}" class="ocr-result-box"></div>
+              ${imgPreview}
+            </div>
+          `;
         } else {
           fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" value="${val}" ${isReadOnly}></div>`;
         }
       }
+
+      // เพิ่มช่องภาพถ่ายสำรอง (รองรับทั้งถ่ายเรียลไทม์ + อัปโหลดไฟล์ในเครื่อง)
+      const directBackupUrl = getDirectImageUrl(backupPicVal);
+      const backupImgPreview = backupPicVal && backupPicVal.startsWith('http')
+        ? `<img id="preview-backup" src="${directBackupUrl}" class="image-preview" style="display:block;">`
+        : `<img id="preview-backup" class="image-preview">`;
+
+      fieldsHtml += `
+        <div class="meter-capture-card backup-meter">
+          <label class="form-label text-dark fw-bold d-block mb-2">
+            <i class="bi bi-images text-info me-1"></i> ภาพถ่ายสำรอง <span class="badge bg-info text-dark ms-1">ตู้มิเตอร์ / สภาพหน้างาน</span>
+          </label>
+
+          <div class="row g-2">
+            <div class="col-6">
+              <button type="button" class="btn btn-info text-dark w-100 rounded-pill fw-bold py-2 shadow-sm"
+                onclick="smartMeterOCR.openRealtimeCamera('extra-backup-pic', 'preview-backup', 'backup', 'native-cam-backup')">
+                <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพสำรอง
+              </button>
+            </div>
+            <div class="col-6">
+              <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-bold py-2 bg-white"
+                onclick="document.getElementById('file-upload-backup').click()">
+                <i class="bi bi-folder2-open me-1"></i> อัปโหลดในเครื่อง
+              </button>
+            </div>
+          </div>
+
+          <input type="file" id="file-upload-backup" accept="image/*" style="display:none;"
+            onchange="smartMeterOCR.handleLocalFile(event, 'extra-backup-pic', 'preview-backup', 'backup')">
+
+          <input type="file" id="native-cam-backup" accept="image/*" capture="environment" style="display:none;"
+            onchange="smartMeterOCR.handleLocalFile(event, 'extra-backup-pic', 'preview-backup', 'backup')">
+
+          <input type="hidden" id="extra-backup-pic" value="${backupPicVal}">
+          ${backupImgPreview}
+        </div>
+
+        <!-- เพิ่มช่องหมายเหตุอีก 1 ช่อง -->
+        <div class="mb-3">
+          <label class="form-label text-secondary fw-bold"><i class="bi bi-chat-left-text me-1"></i> หมายเหตุ</label>
+          <textarea class="form-control p-2" id="extra-remark" rows="2" placeholder="ระบุหมายเหตุเพิ่มเติมหน้างาน (ถ้ามี)...">${remarkVal}</textarea>
+        </div>
+      `;
+
       document.getElementById('dynamic-fields').innerHTML = fieldsHtml;
       document.getElementById('form-container').style.display = 'block';
-    }
-
-    function handleFileUpload(event, index) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        document.getElementById(`col-${index}`).value = e.target.result;
-        let preview = document.getElementById(`preview-${index}`);
-        if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
-      };
-      reader.readAsDataURL(file);
     }
 
     function saveData() {
@@ -2306,8 +2835,17 @@
       for (let i = 0; i < globalHeaders.length; i++) {
         formData.push(document.getElementById(`col-${i}`).value);
       }
+      const backupPic = document.getElementById('extra-backup-pic') ? document.getElementById('extra-backup-pic').value : '';
+      const remark = document.getElementById('extra-remark') ? document.getElementById('extra-remark').value.trim() : '';
 
-      callAPI('saveData', { mode: mode, month: month, rowIndex: rowIndex, formData: formData }, function(res) {
+      callAPI('saveData', {
+        mode: mode,
+        month: month,
+        rowIndex: rowIndex,
+        formData: formData,
+        backupPic: backupPic,
+        remark: remark
+      }, function(res) {
         btn.disabled = false;
         if (res.success) {
           alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
@@ -2393,16 +2931,24 @@
 
       let directPic1 = getDirectImageUrl(item.pic1);
       let directPic2 = getDirectImageUrl(item.pic2);
-      let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายหลัก</div>';
-      let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายรอง</div>';
+      let directBackup = getDirectImageUrl(item.backupPic);
+
+      let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพ PEA.No เก่า</div>';
+      let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพ PEA.No ใหม่</div>';
+      let backupHtml = item.backupPic && item.backupPic.startsWith('http') ? `<a href="${item.backupPic}" target="_blank"><img src="${directBackup}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายสำรอง</div>';
 
       let html = `
         <div class="p-2 modal-custom-text">
           <div class="row mb-3"><div class="col-12"><span class="fw-bold me-2 text-primary">ชื่อ</span> : ${item.name || '-'}</div></div>
           <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.เดิม</span> : ${item.pea || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colD || '-'}</div></div>
           <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.ใหม่</span> : ${item.colF || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colG || '-'}</div></div>
-          <div class="row mb-4"><div class="col-6"><span class="fw-bold me-2 text-primary">สาเหตุ</span> : ${item.reason || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">ผู้ดำเนินงาน</span> : ${item.operator || '-'}</div></div>
-          <div class="row text-center mt-2"><div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายหลัก</p>${pic1Html}</div><div class="col-6"><p class="fw-bold mb-2">ภาพถ่ายรอง</p>${pic2Html}</div></div>
+          <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">สาเหตุ</span> : ${item.reason || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">ผู้ดำเนินงาน</span> : ${item.operator || '-'}</div></div>
+          <div class="row mb-4"><div class="col-12"><span class="fw-bold me-2 text-primary">หมายเหตุ</span> : ${item.remark || '-'}</div></div>
+          <div class="row text-center mt-2 g-2">
+            <div class="col-4"><p class="fw-bold mb-2 small">PEA.No เก่า</p>${pic1Html}</div>
+            <div class="col-4"><p class="fw-bold mb-2 small">PEA.No ใหม่</p>${pic2Html}</div>
+            <div class="col-4"><p class="fw-bold mb-2 small">ภาพถ่ายสำรอง</p>${backupHtml}</div>
+          </div>
           ${item.timestamp ? `<div class="mt-3 text-center"><span class="badge bg-secondary rounded-pill py-2 px-3 shadow-sm">ส่งงานเมื่อ: ${item.timestamp}</span></div>` : ''}
         </div>
       `;
@@ -2450,6 +2996,10 @@
           if (item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
           if (item.status === 'พนง. ดำเนินการ') statusBadgeList = '<span class="badge text-white float-end" style="background:#9b59b6;">พนง.ส่งงาน</span>';
 
+          let remarkHtml = item.remark && item.remark.trim() !== ''
+            ? `<br><strong class="text-primary">หมายเหตุ:</strong> ${item.remark}`
+            : '';
+
           let missingAlertHtml = item._missingNote
             ? `<div class="mt-2 ps-2"><span class="badge bg-danger-subtle text-danger border border-danger-subtle text-wrap text-start"><i class="bi bi-exclamation-triangle-fill me-1"></i>ใบงานที่ ${idx + 1} ข้อมูลไม่สมบูรณ์: ${item._missingNote}</span></div>`
             : '';
@@ -2463,7 +3013,7 @@
               <div class="mb-2">
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-calendar-event"></i> รอบเดือน: ${item.sheetName}</span>
               </div>
-              <div class="text-muted small mb-1 ps-2"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}</div>
+              <div class="text-muted small mb-1 ps-2"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}${remarkHtml}</div>
               ${missingAlertHtml}
               ${actionHtml}
             </div>
@@ -2511,19 +3061,19 @@
       }
 
       if (filterStatus === 'งานคงเหลือ' || filterStatus === 'ทั้งหมด') {
-        thead = `<tr><th>PEA</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th>${filterStatus==='ทั้งหมด'?'<th>สถานะ</th>':''}</tr>`;
+        thead = `<tr><th>PEA</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th><th>หมายเหตุ</th>${filterStatus==='ทั้งหมด'?'<th>สถานะ</th>':''}</tr>`;
         filteredData.forEach(item => {
-          tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td>${filterStatus==='ทั้งหมด'?`<td>${item.status}</td>`:''}</tr>`;
+          tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td><td>${item.remark || '-'}</td>${filterStatus==='ทั้งหมด'?`<td>${item.status}</td>`:''}</tr>`;
         });
       } else if (filterStatus === 'ผรม. ส่งงานแล้ว' || filterStatus === 'พนง. ดำเนินการ') {
-        thead = `<tr><th>PEA เก่า</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th><th>หน่วย PEA เก่า</th><th>PEA ใหม่</th><th>หน่วย PEA ใหม่</th><th>ผู้ดำเนินการ</th><th>วันที่ดำเนินการ</th></tr>`;
+        thead = `<tr><th>PEA เก่า</th><th>ชื่อ</th><th>สถานที่</th><th>สาเหตุ</th><th>หน่วย PEA เก่า</th><th>PEA ใหม่</th><th>หน่วย PEA ใหม่</th><th>ผู้ดำเนินการ</th><th>วันที่ดำเนินการ</th><th>หมายเหตุ</th></tr>`;
         filteredData.forEach(item => {
-          tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td><td class="text-center">${item.colD}</td><td>${item.colF}</td><td class="text-center">${item.colG}</td><td class="text-center">${item.operator}</td><td>${item.timestamp}</td></tr>`;
+          tbody += `<tr><td>${item.pea}</td><td>${item.name}</td><td>${item.location}</td><td>${item.reason}</td><td class="text-center">${item.colD}</td><td>${item.colF}</td><td class="text-center">${item.colG}</td><td class="text-center">${item.operator}</td><td>${item.timestamp}</td><td>${item.remark || '-'}</td></tr>`;
         });
       } else if (filterStatus === 'เสร็จสมบูรณ์') {
-        thead = `<tr><th>ชื่อ</th><th>PEA เก่า</th><th>PEA ใหม่</th><th>สาเหตุ</th><th>ผู้ดำเนินการ</th><th>วันที่ปิดใบสั่ง</th></tr>`;
+        thead = `<tr><th>ชื่อ</th><th>PEA เก่า</th><th>PEA ใหม่</th><th>สาเหตุ</th><th>ผู้ดำเนินการ</th><th>วันที่ปิดใบสั่ง</th><th>หมายเหตุ</th></tr>`;
         filteredData.forEach(item => {
-          tbody += `<tr><td>${item.name}</td><td>${item.pea}</td><td>${item.colF}</td><td>${item.reason}</td><td class="text-center">${item.operator}</td><td>${item.closeTime || '-'}</td></tr>`;
+          tbody += `<tr><td>${item.name}</td><td>${item.pea}</td><td>${item.colF}</td><td>${item.reason}</td><td class="text-center">${item.operator}</td><td>${item.closeTime || '-'}</td><td>${item.remark || '-'}</td></tr>`;
         });
       }
 
