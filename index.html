@@ -100,13 +100,13 @@
       100% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0); }
     }
 
-    /* กล่องข้อความสนทนาสด & ปุ่มทางเลือกของ J.A.R.V.I.S v4.0 */
+    /* กล่องข้อความสนทนาสด & ปุ่มทางเลือกของ J.A.R.V.I.S */
     .jarvis-subtitle-box {
       position: fixed;
       bottom: 105px;
       right: 20px;
       left: 20px;
-      max-width: 410px;
+      max-width: 430px;
       margin-left: auto;
       background: rgba(15, 32, 39, 0.96);
       color: #e0f7fa;
@@ -215,6 +215,196 @@
             <select id="month-select" class="form-select mb-3"></select>
             
             <label class="form-label fw-bold text-secondary">ค้นหาใบงาน:</label>
+            <div class="input-group">
+              <input type="text" id="search-query" class="form-control" placeholder="ระบุ PEA หรือ ชื่อผู้ใช้ไฟฟ้า">
+              <button class="btn btn-primary px-4" onclick="searchData()"><i class="bi bi-search"></i> ค้นหา</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="search-loader" class="loader"></div>
+        
+        <div id="form-container" style="display:none;">
+          <div class="text-center mb-3" id="status-badge-container">
+            <span id="status-display" class="badge rounded-pill fs-6 px-4 py-2 shadow-sm"></span>
+          </div>
+          <form id="data-form" class="glass-card">
+            <input type="hidden" id="row-index">
+            <div id="dynamic-fields"></div>
+            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow" onclick="saveData()">
+              <i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- แท็บที่ 2: สถานะใบงาน -->
+      <div class="tab-pane fade" id="status-panel" role="tabpanel">
+        <div class="glass-card">
+          <div class="row">
+            <div class="col-6">
+              <label class="form-label fw-bold text-secondary">สถานะ:</label>
+              <select id="filter-status" class="form-select" onchange="loadDashboard()">
+                <option value="ทั้งหมด" selected>ทั้งหมด</option>
+                <option value="งานคงเหลือ">งานคงเหลือ</option>
+                <option value="ผรม. ส่งงานแล้ว">ผรม. ส่งงานแล้ว</option>
+                <option value="พนง. ดำเนินการ">พนง. ดำเนินการ</option>
+                <option value="เสร็จสมบูรณ์">เสร็จสมบูรณ์</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold text-secondary">ประจำเดือน:</label>
+              <select id="filter-month" class="form-select" onchange="loadDashboard()"></select>
+            </div>
+          </div>
+          <div class="mt-4">
+            <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหาแบบตรงตัวใส่ฟันหนู (เช่น &quot;ครั้งที่ 3&quot;)" onkeyup="filterDashboard()">
+          </div>
+
+          <!-- 🧠 แผงคำสั่งอัจฉริยะที่ใช้บ่อย (แสดงเฉพาะโหมด Admin) -->
+          <div id="admin-voice-chips-panel" class="mt-3 pt-2 border-top" style="display:none;">
+            <div class="d-flex align-items-center flex-wrap gap-2" id="admin-voice-chips-list"></div>
+          </div>
+        </div>
+        
+        <div id="dash-loader" class="loader"></div>
+        
+        <div class="row flex-column-reverse flex-md-row">
+          <div class="col-md-7">
+            <div class="list-group" id="dashboard-list"></div>
+          </div>
+          <div class="col-md-5 mb-3">
+            <div class="row g-2">
+              <div class="col-12"><div class="stat-card bg-total" onclick="showTableModal('ทั้งหมด')"><h6 class="mb-1 text-white-50">ใบงานทั้งหมด <i class="bi bi-table ms-1"></i></h6><h3 id="stat-total" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6"><div class="stat-card bg-pending" onclick="showTableModal('งานคงเหลือ')"><h6 class="mb-1 text-white-50">คงเหลือ <i class="bi bi-table ms-1"></i></h6><h3 id="stat-pending" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6"><div class="stat-card bg-completed" onclick="showTableModal('เสร็จสมบูรณ์')"><h6 class="mb-1 text-white-50">เสร็จสมบูรณ์ <i class="bi bi-table ms-1"></i></h6><h3 id="stat-completed" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6"><div class="stat-card bg-contractor" onclick="showTableModal('ผรม. ส่งงานแล้ว')"><h6 class="mb-1 text-white-50">ผรม. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-contractor" class="fw-bold mb-0 text-dark">0</h3></div></div>
+              <div class="col-6"><div class="stat-card bg-emp" onclick="showTableModal('พนง. ดำเนินการ')"><h6 class="mb-1 text-white-50">พนง. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-emp" class="fw-bold mb-0">0</h3></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ตรวจสอบข้อมูลเพื่อปิดใบสั่ง -->
+  <div class="modal fade" id="orderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content glass-card border-0">
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title fw-bold text-primary"><i class="bi bi-clipboard-check"></i> ตรวจสอบข้อมูลเพื่อปิดใบสั่ง</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="orderModalBody"></div>
+        <div class="modal-footer border-top">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-success rounded-pill px-5 fw-bold shadow" id="btn-close-order" onclick="submitCloseOrder()">ปิดใบสั่ง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal ตารางรายละเอียด + Export Excel -->
+  <div class="modal fade" id="tableModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center">
+          <h5 class="modal-title fw-bold" id="tableModalTitle"><i class="bi bi-table"></i> รายละเอียดข้อมูล</h5>
+          <div>
+            <button type="button" class="btn btn-sm btn-success me-2 rounded-pill px-3 shadow-sm" onclick="exportTableToExcel()">
+              <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+        </div>
+        <div class="modal-body p-0">
+          <div class="table-container">
+            <table class="table table-bordered table-striped table-hover mb-0" id="detailDataTreeTable">
+              <thead id="tableModalHead"></thead>
+              <tbody id="tableModalBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔐 Modal ยืนยันตัวตนเข้าใช้งาน Admin -->
+  <div class="modal fade" id="adminLoginModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 18px;">
+        <div class="modal-header bg-dark text-white" style="border-radius: 18px 18px 0 0;">
+          <h6 class="modal-title fw-bold"><i class="bi bi-shield-lock text-info me-2"></i>เข้าสู่ระบบ Admin</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+          <label class="form-label small text-muted fw-bold">กรุณาระบุรหัสผ่านผู้ดูแลระบบ:</label>
+          <input type="password" id="admin-password-input" class="form-control text-center fw-bold" placeholder="••••••••••••" onkeyup="if(event.key==='Enter') verifyAdminLogin()">
+          <div id="admin-login-error" class="text-danger small text-center mt-2" style="display:none;">รหัสผ่านไม่ถูกต้องครับ</div>
+        </div>
+        <div class="modal-footer border-0 pt-0 px-4 pb-4">
+          <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold" onclick="verifyAdminLogin()">
+            <i class="bi bi-unlock-fill me-1"></i> ยืนยันสิทธิ์
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.error(err));
+      });
+    }
+    
+    const API_URL = "https://script.google.com/macros/s/AKfycbxV5LU6BkYkodydL4g8ajf6jxZVACRxXOARt7K0poJ08RLT8YIbSzNiJdcOIP6WB62g/exec";
+    const ADMIN_SECRET = "fenderparker";
+    const ADMIN_SESSION_KEY = "pea_jarvis_admin_authenticated";
+
+    let globalHeaders = [];
+    let currentOrderRow = null; 
+    let currentOrderSheetName = null; 
+    let globalDashResults = []; 
+    let isAdminUser = false;
+
+    // =========================================================================
+    // 🔐 ระบบจัดการสิทธิ์ Admin (Default = ปิด Smart Voice / Admin = เปิด)
+    // =========================================================================
+    function checkAdminSessionOnLoad() {
+      if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+        enableAdminMode(false);
+      }
+    }
+
+    function handleAdminButtonClick() {
+      if (isAdminUser) {
+        if (confirm("ต้องการออกจากโหมด Admin และปิดระบบ J.A.R.V.I.S Smart Voice ใช่หรือไม่?")) {
+          disableAdminMode();
+        }
+      } else {
+        document.getElementById('admin-password-input').value = '';
+        document.getElementById('admin-login-error').style.display = 'none';
+        const modalEl = document.getElementById('adminLoginModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        modalEl.addEventListener('shown.bs.modal', () => {
+          document.getElementById('admin-password-input').focus();
+        }, { once: true });
+      }
+    }
+
+    function verifyAdminLogin() {
+      const inputVal = document.getElementById('admin-password-input').value.trim();
+      if (inputVal === ADMIN_SECRET) {
+        bootstrap.Modal.getInstance(document.getElementById('adminLoginModal')).hide();
+        sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
+        enableAdminMode(true);
+      } else {
+        const errEl = document.getElementById('admin-login-error');
+        errEl.style.display = 'block';
+        document.getElementById('admin-password-inpu     <label class="form-label fw-bold text-secondary">ค้นหาใบงาน:</label>
             <div class="input-group">
               <input type="text" id="search-query" class="form-control" placeholder="ระบุ PEA หรือ ชื่อผู้ใช้ไฟฟ้า">
               <button class="btn btn-primary px-4" onclick="searchData()"><i class="bi bi-search"></i> ค้นหา</button>
