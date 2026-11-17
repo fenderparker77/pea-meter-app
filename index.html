@@ -9,11 +9,11 @@
   <link rel="apple-touch-icon" href="1000002294.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-  <!-- ไลบรารี SheetJS สำหรับ Export Excel -->
+  <!-- ไลบรารี SheetJS สำหรับอ่าน/เขียนไฟล์ Excel และ CSV -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); background-attachment: fixed; font-family: 'Sarabun', sans-serif; color: #333; }
-    .container { max-width: 800px; margin-top: 20px; padding-bottom: 135px; }
+    .container { max-width: 850px; margin-top: 20px; padding-bottom: 135px; }
     
     /* ปุ่ม Admin มุมขวาบน */
     .admin-corner-btn {
@@ -41,14 +41,14 @@
       box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
     }
 
-    .glass-card { background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); padding: 25px; margin-bottom: 20px; }
-    .form-control, .form-select { background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(200, 200, 200, 0.5); border-radius: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+    .glass-card { background: rgba(255, 255, 255, 0.76); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.55); border-radius: 16px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); padding: 24px; margin-bottom: 20px; }
+    .form-control, .form-select { background: rgba(255, 255, 255, 0.88); border: 1px solid rgba(200, 200, 200, 0.55); border-radius: 10px; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
 
-    .nav-tabs { border-bottom: none; justify-content: center; gap: 10px; margin-bottom: 15px; }
-    .nav-tabs .nav-link { border: none; background: rgba(255, 255, 255, 0.55); border-radius: 30px; color: #666; padding: 10px 25px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .nav-tabs { border-bottom: none; justify-content: center; gap: 8px; margin-bottom: 15px; }
+    .nav-tabs .nav-link { border: none; background: rgba(255, 255, 255, 0.6); border-radius: 30px; color: #555; padding: 10px 20px; font-size: 0.95rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     .nav-tabs .nav-link.active { background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%); color: #fff; font-weight: bold; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(63, 43, 150, 0.3); }
 
-    .app-logo { max-height: 140px; border-radius: 20px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15)); margin-bottom: 15px; }
+    .app-logo { max-height: 130px; border-radius: 20px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15)); margin-bottom: 12px; }
     .app-title { font-weight: 800; background: -webkit-linear-gradient(45deg, #3f2b96, #a8c0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
     .stat-card { border-radius: 15px; color: #fff; text-align: center; padding: 15px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.4); backdrop-filter: blur(5px); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
@@ -67,7 +67,23 @@
     .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 400px; }
 
-    /* J.A.R.V.I.S Smart Voice UI (ซ่อนเป็นค่าเริ่มต้น จนกว่า Admin จะล็อกอิน) */
+    /* Dropzone สำหรับนำเข้าไฟล์ UCUBE */
+    .ucube-dropzone {
+      border: 2px dashed rgba(63, 43, 150, 0.35);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.55);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .ucube-dropzone:hover, .ucube-dropzone.dragover {
+      border-color: #3f2b96;
+      background: rgba(168, 192, 255, 0.22);
+      transform: translateY(-1px);
+    }
+
+    /* J.A.R.V.I.S Smart Voice UI */
     .jarvis-fab {
       position: fixed;
       bottom: 30px;
@@ -100,7 +116,6 @@
       100% { box-shadow: 0 0 0 0 rgba(233, 64, 87, 0); }
     }
 
-    /* กล่องข้อความสนทนาสด & ปุ่มทางเลือกของ J.A.R.V.I.S */
     .jarvis-subtitle-box {
       position: fixed;
       bottom: 105px;
@@ -138,7 +153,6 @@
       transform: translateY(-1px);
     }
 
-    /* ปุ่มลัดคำสั่งเสียงที่ใช้บ่อย (Admin Only) */
     .voice-chip {
       font-size: 0.78rem;
       border-radius: 20px;
@@ -167,12 +181,12 @@
     <i class="bi bi-shield-lock-fill me-1"></i> แอดมิน
   </button>
 
-  <!-- 🎙️ ปุ่ม J.A.R.V.I.S Smart Voice (แสดงเฉพาะเมื่อยืนยันตัวตน Admin แล้ว) -->
-  <button id="jarvis-btn" class="jarvis-fab" onclick="toggleJarvis()" title="J.A.R.V.I.S Smart Voice (กดเพื่อสั่งการด้วยเสียง)">
+  <!-- 🎙️ ปุ่ม J.A.R.V.I.S Smart Voice -->
+  <button id="jarvis-btn" class="jarvis-fab" onclick="toggleJarvis()" title="J.A.R.V.I.S Smart Voice">
     <i class="bi bi-mic-fill"></i>
   </button>
 
-  <!-- 💬 กล่องแสดงคำพูดโต้ตอบ & ทางเลือกด่วนของ J.A.R.V.I.S -->
+  <!-- 💬 กล่องแสดงคำพูดโต้ตอบ & ทางเลือกด่วน -->
   <div id="jarvis-subtitle" class="jarvis-subtitle-box"></div>
 
   <!-- 🗺️ ปุ่มนำทางงาน -->
@@ -198,10 +212,13 @@
     <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item"><button class="nav-link active" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-panel" type="button">ส่งงาน ส.ป.มิเตอร์</button></li>
       <li class="nav-item"><button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-panel" type="button">สถานะใบงาน</button></li>
+      <li class="nav-item"><button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-panel" type="button"><i class="bi bi-cloud-upload-fill me-1"></i>นำเข้า UCUBE</button></li>
     </ul>
 
     <div class="tab-content mt-3">
-      <!-- แท็บที่ 1: ส่งงาน -->
+      <!-- ===================================================================== -->
+      <!-- แท็บที่ 1: ส่งงาน                                                      -->
+      <!-- ===================================================================== -->
       <div class="tab-pane fade show active" id="search-panel" role="tabpanel">
         <div class="glass-card">
           <label class="form-label fw-bold text-secondary">รูปแบบการส่งงาน:</label>
@@ -238,7 +255,9 @@
         </div>
       </div>
 
-      <!-- แท็บที่ 2: สถานะใบงาน -->
+      <!-- ===================================================================== -->
+      <!-- แท็บที่ 2: สถานะใบงาน                                                 -->
+      <!-- ===================================================================== -->
       <div class="tab-pane fade" id="status-panel" role="tabpanel">
         <div class="glass-card">
           <div class="row">
@@ -281,6 +300,125 @@
               <div class="col-6"><div class="stat-card bg-contractor" onclick="showTableModal('ผรม. ส่งงานแล้ว')"><h6 class="mb-1 text-white-50">ผรม. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-contractor" class="fw-bold mb-0 text-dark">0</h3></div></div>
               <div class="col-6"><div class="stat-card bg-emp" onclick="showTableModal('พนง. ดำเนินการ')"><h6 class="mb-1 text-white-50">พนง. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-emp" class="fw-bold mb-0">0</h3></div></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- แท็บที่ 3: UCUBE Smart Auto-Importer (นำเข้าใบงานเข้าชีตเดือนใหม่)     -->
+      <!-- ===================================================================== -->
+      <div class="tab-pane fade" id="import-panel" role="tabpanel">
+        <div class="glass-card">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>UCUBE Smart Auto-Importer</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3" onclick="quickCreateMonthFromImportTab()">
+              <i class="bi bi-plus-circle-fill me-1"></i>สร้างชีตเดือนใหม่พร้อมสูตร
+            </button>
+          </div>
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-secondary">1. เลือกชีตเดือนปลายทางที่จะนำเข้า:</label>
+              <select id="import-target-month" class="form-select fw-bold text-primary" onchange="ucubeImporter.recheckDuplicates()"></select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="import-skip-dup" checked onchange="ucubeImporter.renderPreview()">
+                <label class="form-check-label fw-bold text-secondary" for="import-skip-dup">ข้ามเลข PEA ที่มีอยู่แล้วในชีตเดือนนี้</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ช่องทางที่ A: อัปโหลดไฟล์ Excel / HTML / CSV -->
+          <div id="ucube-dropzone" class="ucube-dropzone mb-3" onclick="document.getElementById('ucube-file-input').click()">
+            <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+            <div class="fw-bold mt-1">คลิกเลือกไฟล์จาก UCUBE หรือลากไฟล์มาวางที่นี่</div>
+            <div class="text-muted small">รองรับ .xlsx, .xls, .csv, .htm (หรือไฟล์ sheet001.htm จากโฟลเดอร์ .files)</div>
+            <input type="file" id="ucube-file-input" accept=".xlsx,.xls,.csv,.htm,.html" style="display:none;" onchange="ucubeImporter.handleFileSelect(event)">
+          </div>
+
+          <div id="ucube-frameset-alert" class="alert alert-warning rounded-4 small" style="display:none;"></div>
+
+          <!-- ช่องทางที่ B: วางตารางด่วนจาก Excel / UCUBE -->
+          <div class="mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fw-bold text-secondary mb-0">
+                <i class="bi bi-clipboard-check me-1"></i>หรือวางข้อมูลตารางจาก Excel / UCUBE (Ctrl+A แล้ว Ctrl+V):
+              </label>
+              <button type="button" class="btn btn-sm btn-link text-danger text-decoration-none p-0" onclick="ucubeImporter.clearAll()">ล้างข้อมูล</button>
+            </div>
+            <textarea id="ucube-paste-box" class="form-control font-monospace" rows="4"
+              placeholder="เปิดไฟล์ Data_E14201_waited ใน Excel -> กด Ctrl+A -> Ctrl+C -> แล้วคลิกวาง (Ctrl+V) ในช่องนี้ได้เลยครับ ระบบจะแยกคอลัมน์ให้อัตโนมัติทันที..."
+              oninput="ucubeImporter.handlePasteInput(this.value)"></textarea>
+          </div>
+        </div>
+
+        <!-- ส่วนตั้งค่าจับคู่คอลัมน์ (แสดงเมื่ออ่านข้อมูลสำเร็จ) -->
+        <div id="ucube-mapping-card" class="glass-card" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-dark mb-0"><i class="bi bi-sliders me-1 text-primary"></i>ตรวจสอบการจับคู่คอลัมน์ (Auto-Mapped)</h6>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" id="ucube-has-header" checked onchange="ucubeImporter.rebuildFromRawGrid()">
+              <label class="form-check-label small text-muted" for="ucube-has-header">แถวแรกเป็นหัวตาราง</label>
+            </div>
+          </div>
+
+          <div class="row g-2">
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold text-primary mb-1">คอลัมน์ C: เลข PEA เดิม *</label>
+              <select id="map-col-pea" class="form-select form-select-sm" onchange="ucubeImporter.onMappingChanged()"></select>
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold text-primary mb-1">คอลัมน์ H: ชื่อผู้ใช้ไฟ *</label>
+              <select id="map-col-name" class="form-select form-select-sm" onchange="ucubeImporter.onMappingChanged()"></select>
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label small fw-bold text-secondary mb-1">คอลัมน์ B: สถานที่ / สายป้อน</label>
+              <select id="map-col-location" class="form-select form-select-sm" onchange="ucubeImporter.onMappingChanged()"></select>
+            </div>
+            <div class="col-6 col-md-6">
+              <label class="form-label small fw-bold text-secondary mb-1">คอลัมน์ I: สาเหตุ / อาการชำรุด</label>
+              <select id="map-col-reason" class="form-select form-select-sm" onchange="ucubeImporter.onMappingChanged()"></select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label small fw-bold text-secondary mb-1">คอลัมน์ O: พิกัด GPS (ถ้ามี)</label>
+              <select id="map-col-gps" class="form-select form-select-sm" onchange="ucubeImporter.onMappingChanged()"></select>
+            </div>
+          </div>
+
+          <hr class="my-3">
+
+          <!-- สรุปยอดก่อนนำเข้า -->
+          <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-primary rounded-pill px-3 py-2">อ่านได้ทั้งหมด: <span id="imp-stat-total">0</span></span>
+              <span class="badge bg-success rounded-pill px-3 py-2">พร้อมนำเข้าใหม่: <span id="imp-stat-ready">0</span></span>
+              <span class="badge bg-warning text-dark rounded-pill px-3 py-2">ซ้ำเดือนก่อน: <span id="imp-stat-prev">0</span></span>
+              <span class="badge bg-secondary rounded-pill px-3 py-2">มีในชีตนี้แล้ว: <span id="imp-stat-dup">0</span></span>
+            </div>
+            <button type="button" id="btn-execute-import" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow" onclick="ucubeImporter.executeImport()">
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i> ยืนยันนำเข้าลง Google Sheets
+            </button>
+          </div>
+
+          <div id="import-loader" class="loader"></div>
+
+          <!-- ตารางตัวอย่างก่อนนำเข้า -->
+          <div class="table-container border" style="max-height: 42vh;">
+            <table class="table table-sm table-bordered table-hover mb-0" style="font-size: 0.84rem;">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>สถานะตรวจซ้ำ</th>
+                  <th>PEA เดิม (C)</th>
+                  <th>ชื่อผู้ใช้ไฟ (H)</th>
+                  <th>สถานที่ (B)</th>
+                  <th>สาเหตุ (I)</th>
+                  <th>GPS (O)</th>
+                </tr>
+              </thead>
+              <tbody id="ucube-preview-tbody"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -370,7 +508,7 @@
     let isAdminUser = false;
 
     // =========================================================================
-    // 🔐 ระบบจัดการสิทธิ์ Admin (Default = ปิด Smart Voice / Admin = เปิด)
+    // 🔐 ระบบจัดการสิทธิ์ Admin
     // =========================================================================
     function checkAdminSessionOnLoad() {
       if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
@@ -421,7 +559,7 @@
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.2 เรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.3 พร้อมโมดูลนำเข้า UCUBE เรียบร้อยครับ", false);
       }
     }
 
@@ -455,29 +593,41 @@
         alert('เชื่อมต่อล้มเหลว');
         document.getElementById('search-loader').style.display = 'none';
         document.getElementById('dash-loader').style.display = 'none';
+        document.getElementById('import-loader').style.display = 'none';
         if (document.getElementById('save-btn')) document.getElementById('save-btn').disabled = false;
       });
     }
 
     window.onload = function() {
       checkAdminSessionOnLoad();
+      ucubeImporter.initDragAndDrop();
       callAPI('getInitialData', {}, initApp);
     };
 
     function populateMonthDropdowns(months, selectedMonth = null) {
       const monthSelect = document.getElementById('month-select');
       const filterMonth = document.getElementById('filter-month');
+      const importTargetMonth = document.getElementById('import-target-month');
+
       monthSelect.innerHTML = '';
       filterMonth.innerHTML = '';
+      if (importTargetMonth) importTargetMonth.innerHTML = '';
+
       monthSelect.add(new Option("-- แสดงทั้งหมด --", "ALL"));
       filterMonth.add(new Option("-- แสดงทั้งหมด --", "ALL"));
+
       (months || []).forEach(month => {
         monthSelect.add(new Option(month, month));
         filterMonth.add(new Option(month, month));
+        if (importTargetMonth && /^\d{1,2}\.\d{4}$/.test(month)) {
+          importTargetMonth.add(new Option(month, month));
+        }
       });
+
       if (selectedMonth && (months || []).includes(selectedMonth)) {
         monthSelect.value = selectedMonth;
         filterMonth.value = selectedMonth;
+        if (importTargetMonth) importTargetMonth.value = selectedMonth;
       }
     }
 
@@ -487,6 +637,1573 @@
       loadDashboard();
     }
 
+    function quickCreateMonthFromImportTab() {
+      const suggestion = jarvisBrain.getNextMonthSuggestionFromDropdown();
+      if (!confirm(`ต้องการสร้างชีตใบงานเดือนใหม่ชื่อ "${suggestion.nextSheetName}" จากต้นแบบ "${suggestion.latestSheet || 'ล่าสุด'}" พร้อมคงสูตรคำนวณทั้งหมดใช่หรือไม่?`)) return;
+
+      document.getElementById('import-loader').style.display = 'block';
+      callAPI('createNewMonthSheet', { targetMonth: suggestion.nextMonthNum }, (res) => {
+        document.getElementById('import-loader').style.display = 'none';
+        if (!res || !res.success) {
+          alert(res?.message || 'สร้างชีตไม่สำเร็จ');
+          return;
+        }
+        callAPI('getInitialData', {}, (initRes) => {
+          populateMonthDropdowns(initRes.months, res.sheetName);
+          alert(`สร้างชีตเดือน ${res.sheetName} เรียบร้อยแล้วครับบอส!`);
+          ucubeImporter.renderPreview();
+        });
+      });
+    }
+
+    // =========================================================================
+    // 📥 UCUBE Smart Auto-Importer Engine
+    // =========================================================================
+    class UcubeSmartImporter {
+      constructor() {
+        this.rawGrid = [];       // 2D array of strings
+        this.parsedItems = [];   // [{ pea, name, location, reason, gps, dupStatus, prevSheet }]
+        this.MAP_STORAGE_KEY = 'pea_ucube_col_mapping_v1';
+      }
+
+      initDragAndDrop() {
+        const dz = document.getElementById('ucube-dropzone');
+        if (!dz) return;
+        ['dragenter', 'dragover'].forEach(ev => {
+          dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); });
+        });
+        ['dragleave', 'drop'].forEach(ev => {
+          dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); });
+        });
+        dz.addEventListener('drop', e => {
+          const files = e.dataTransfer?.files;
+          if (files && files.length > 0) this.processFile(files[0]);
+        });
+      }
+
+      clearAll() {
+        this.rawGrid = [];
+        this.parsedItems = [];
+        document.getElementById('ucube-paste-box').value = '';
+        document.getElementById('ucube-file-input').value = '';
+        document.getElementById('ucube-mapping-card').style.display = 'none';
+        document.getElementById('ucube-frameset-alert').style.display = 'none';
+      }
+
+      handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) this.processFile(file);
+      }
+
+      processFile(file) {
+        const alertBox = document.getElementById('ucube-frameset-alert');
+        alertBox.style.display = 'none';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const buffer = e.target.result;
+          const textDecoder = new TextDecoder('utf-8');
+          const headText = textDecoder.decode(buffer.slice(0, 4096));
+
+          // ตรวจจับกรณีไฟล์ Excel Web Page Frameset ที่ไม่มีโฟลเดอร์ .files ติดมาด้วย
+          if (headText.includes('Excel Workbook Frameset') && !headText.toLowerCase().includes('<td')) {
+            alertBox.innerHTML = `
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <strong>ตรวจพบไฟล์แบบ Web Page Frameset (${file.name}):</strong> ข้อมูลตารางจริงไม่ได้อยู่ในไฟล์นี้ (อยู่ในโฟลเดอร์ <code>.files/sheet001.htm</code>)<br>
+              <strong>วิธีนำเข้าที่เร็วที่สุด:</strong> เปิดไฟล์นี้ใน Microsoft Excel แล้วกด <b>Ctrl+A</b> คัดลอก (<b>Ctrl+C</b>) มาวางลงในช่องสี่เหลี่ยมด้านล่างนี้ได้เลยครับ!
+            `;
+            alertBox.style.display = 'block';
+            return;
+          }
+
+          // กรณีเป็นไฟล์ HTML Table ที่ Export ตรงจาก UCUBE หรือ sheet001.htm
+          if (headText.toLowerCase().includes('<table') || headText.toLowerCase().includes('<tr')) {
+            const fullHtml = new TextDecoder('utf-8').decode(buffer);
+            const doc = new DOMParser().parseFromString(fullHtml, 'text/html');
+            const tables = [...doc.querySelectorAll('table')];
+            if (tables.length > 0) {
+              // เลือกตารางที่มีจำนวนแถวมากที่สุด
+              tables.sort((a, b) => b.querySelectorAll('tr').length - a.querySelectorAll('tr').length);
+              const rows = [...tables[0].querySelectorAll('tr')].map(tr =>
+                [...tr.querySelectorAll('td, th')].map(td => td.innerText.replace(/\s+/g, ' ').trim())
+              ).filter(r => r.some(c => c !== ''));
+
+              if (rows.length > 0) {
+                this.loadRawGrid(rows);
+                return;
+              }
+            }
+          }
+
+          // กรณีไฟล์ Excel (.xlsx / .xls) หรือ CSV มาตรฐาน
+          try {
+            const wb = XLSX.read(buffer, { type: 'array' });
+            const firstSheet = wb.Sheets[wb.SheetNames[0]];
+            const aoa = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' })
+              .map(r => r.map(c => String(c ?? '').trim()))
+              .filter(r => r.some(c => c !== ''));
+
+            if (aoa.length === 0) {
+              alert('ไม่พบข้อมูลตารางในไฟล์ที่เลือกครับบอส');
+              return;
+            }
+            this.loadRawGrid(aoa);
+          } catch (err) {
+            alert('ไม่สามารถอ่านไฟล์นี้ได้ กรุณาลองคัดลอกตารางใน Excel แล้วกด Ctrl+V วางในช่องด้านล่างแทนครับ');
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      handlePasteInput(text) {
+        const alertBox = document.getElementById('ucube-frameset-alert');
+        alertBox.style.display = 'none';
+
+        const trimmed = (text || '').trim();
+        if (!trimmed) {
+          document.getElementById('ucube-mapping-card').style.display = 'none';
+          return;
+        }
+
+        const lines = trimmed.split(/\r?\n/).filter(l => l.trim() !== '');
+        const delimiter = lines[0].includes('\t') ? '\t' : ',';
+        const grid = lines.map(line => line.split(delimiter).map(cell => cell.trim()));
+        this.loadRawGrid(grid);
+      }
+
+      loadRawGrid(grid) {
+        this.rawGrid = grid;
+        const maxCols = Math.max(...grid.map(r => r.length));
+        const headerRow = grid[0] || [];
+
+        const mapSelectors = [
+          { id: 'map-col-pea',      keywords: ['pea', 'มิเตอร์', 'เครื่องวัด', 'รหัสทรัพย์สิน', 'เลขที่มิเตอร์'] },
+          { id: 'map-col-name',     keywords: ['ชื่อ', 'ผู้ใช้ไฟ', 'ลูกค้า', 'นาม'] },
+          { id: 'map-col-location', keywords: ['สถานที่', 'ที่อยู่', 'สายป้อน', 'หม้อแปลง', 'พื้นที่', 'หมู่', 'ตำบล', 'กฟฟ'] },
+          { id: 'map-col-reason',   keywords: ['สาเหตุ', 'อาการ', 'รายละเอียด', 'ประเภท', 'เหตุผล', 'หมายเหตุ'] },
+          { id: 'map-col-gps',      keywords: ['gps', 'พิกัด', 'ละติจูด', 'lat', 'ตำแหน่ง'] }
+        ];
+
+        let savedMap = {};
+        try { savedMap = JSON.parse(localStorage.getItem(this.MAP_STORAGE_KEY) || '{}'); } catch (e) {}
+
+        mapSelectors.forEach(sel => {
+          const el = document.getElementById(sel.id);
+          el.innerHTML = '';
+          el.add(new Option('-- ไม่ระบุ / ว่าง --', '-1'));
+
+          let detectedIdx = -1;
+          for (let c = 0; c < maxCols; c++) {
+            const colLetter = XLSX.utils.encode_col(c);
+            const hText = headerRow[c] ? ` (${headerRow[c].substring(0, 22)})` : '';
+            const sampleVal = grid[1] && grid[1][c] ? ` [ตัวอย่าง: ${grid[1][c].substring(0, 18)}]` : '';
+            el.add(new Option(`คอลัมน์ ${colLetter}${hText}${sampleVal}`, String(c)));
+
+            if (detectedIdx === -1 && headerRow[c]) {
+              const lowerH = headerRow[c].toLowerCase();
+              if (sel.keywords.some(kw => lowerH.includes(kw))) {
+                detectedIdx = c;
+              }
+            }
+          }
+
+          if (detectedIdx !== -1) {
+            el.value = String(detectedIdx);
+          } else if (savedMap[sel.id] !== undefined && Number(savedMap[sel.id]) < maxCols) {
+            el.value = String(savedMap[sel.id]);
+          }
+        });
+
+        document.getElementById('ucube-mapping-card').style.display = 'block';
+        this.rebuildFromRawGrid();
+      }
+
+      onMappingChanged() {
+        const savedMap = {};
+        ['map-col-pea', 'map-col-name', 'map-col-location', 'map-col-reason', 'map-col-gps'].forEach(id => {
+          savedMap[id] = document.getElementById(id).value;
+        });
+        localStorage.setItem(this.MAP_STORAGE_KEY, JSON.stringify(savedMap));
+        this.rebuildFromRawGrid();
+      }
+
+      rebuildFromRawGrid() {
+        if (!this.rawGrid || this.rawGrid.length === 0) return;
+
+        const hasHeader = document.getElementById('ucube-has-header').checked;
+        const startIdx = hasHeader ? 1 : 0;
+
+        const idxPea = Number(document.getElementById('map-col-pea').value);
+        const idxName = Number(document.getElementById('map-col-name').value);
+        const idxLoc = Number(document.getElementById('map-col-location').value);
+        const idxReason = Number(document.getElementById('map-col-reason').value);
+        const idxGps = Number(document.getElementById('map-col-gps').value);
+
+        const items = [];
+        for (let r = startIdx; r < this.rawGrid.length; r++) {
+          const row = this.rawGrid[r];
+          const pea = idxPea >= 0 ? (row[idxPea] || '').trim() : '';
+          const name = idxName >= 0 ? (row[idxName] || '').trim() : '';
+          const location = idxLoc >= 0 ? (row[idxLoc] || '').trim() : '';
+          const reason = idxReason >= 0 ? (row[idxReason] || '').trim() : '';
+          const gps = idxGps >= 0 ? (row[idxGps] || '').trim() : '';
+
+          if (!pea && !name) continue;
+          items.push({ pea, name, location, reason, gps });
+        }
+
+        this.parsedItems = items;
+        this.recheckDuplicates();
+      }
+
+      recheckDuplicates() {
+        if (!this.parsedItems) return;
+        const targetSheet = document.getElementById('import-target-month')?.value || '';
+
+        // ตรวจสอบเทียบกับข้อมูลทั้งหมดที่โหลดไว้ใน globalDashResults
+        const sameSheetPeas = new Set();
+        const otherSheetMap = {};
+
+        (globalDashResults || []).forEach(it => {
+          const p = String(it.pea || '').trim();
+          if (!p || p === '-') return;
+          if (it.sheetName === targetSheet) {
+            sameSheetPeas.add(p);
+          } else {
+            otherSheetMap[p] = { sheetName: it.sheetName, status: it.status };
+          }
+        });
+
+        const seenInBatch = new Set();
+        this.parsedItems.forEach(item => {
+          if (item.pea && (sameSheetPeas.has(item.pea) || seenInBatch.has(item.pea))) {
+            item.dupStatus = 'SAME_SHEET';
+          } else if (item.pea && otherSheetMap[item.pea]) {
+            item.dupStatus = 'PREV_MONTH';
+            item.prevSheet = otherSheetMap[item.pea].sheetName;
+            item.prevStatus = otherSheetMap[item.pea].status;
+          } else {
+            item.dupStatus = 'NEW';
+          }
+          if (item.pea) seenInBatch.add(item.pea);
+        });
+
+        this.renderPreview();
+      }
+
+      renderPreview() {
+        const skipDup = document.getElementById('import-skip-dup').checked;
+        let readyCount = 0;
+        let prevCount = 0;
+        let dupCount = 0;
+
+        let tbodyHtml = '';
+        this.parsedItems.forEach((item, idx) => {
+          let badgeHtml = '';
+          let rowClass = '';
+
+          if (item.dupStatus === 'SAME_SHEET') {
+            dupCount++;
+            if (!skipDup) readyCount++;
+            badgeHtml = `<span class="badge bg-secondary">${skipDup ? 'มีแล้ว (ข้าม)' : 'มีแล้ว (นำเข้าซ้ำ)'}</span>`;
+            rowClass = skipDup ? 'table-secondary text-muted' : '';
+          } else if (item.dupStatus === 'PREV_MONTH') {
+            prevCount++;
+            readyCount++;
+            badgeHtml = `<span class="badge bg-warning text-dark">ซ้ำเดือน ${item.prevSheet} (${item.prevStatus})</span>`;
+            rowClass = 'table-warning';
+          } else {
+            readyCount++;
+            badgeHtml = `<span class="badge bg-success">ใหม่พร้อมนำเข้า</span>`;
+          }
+
+          tbodyHtml += `
+            <tr class="${rowClass}">
+              <td class="text-center">${idx + 1}</td>
+              <td class="text-center">${badgeHtml}</td>
+              <td class="fw-bold text-primary">${item.pea || '-'}</td>
+              <td>${item.name || '-'}</td>
+              <td>${item.location || '-'}</td>
+              <td>${item.reason || '-'}</td>
+              <td>${item.gps || '-'}</td>
+            </tr>
+          `;
+        });
+
+        document.getElementById('imp-stat-total').innerText = this.parsedItems.length;
+        document.getElementById('imp-stat-ready').innerText = readyCount;
+        document.getElementById('imp-stat-prev').innerText = prevCount;
+        document.getElementById('imp-stat-dup').innerText = dupCount;
+        document.getElementById('ucube-preview-tbody').innerHTML = tbodyHtml || '<tr><td colspan="7" class="text-center py-3 text-muted">ไม่พบรายการที่จับคู่ได้ กรุณาตรวจสอบการเลือกคอลัมน์ด้านบน</td></tr>';
+      }
+
+      executeImport() {
+        const targetSheet = document.getElementById('import-target-month').value;
+        const skipDuplicates = document.getElementById('import-skip-dup').checked;
+
+        if (!targetSheet) {
+          alert('กรุณาเลือกชีตเดือนปลายทางก่อนครับบอส');
+          return;
+        }
+        if (!this.parsedItems || this.parsedItems.length === 0) {
+          alert('ไม่มีข้อมูลสำหรับนำเข้าครับบอส');
+          return;
+        }
+
+        const readyCount = Number(document.getElementById('imp-stat-ready').innerText);
+        if (readyCount === 0) {
+          alert('ไม่มีรายการใหม่สำหรับนำเข้า (รายการทั้งหมดมีอยู่ในชีตนี้แล้วครับ)');
+          return;
+        }
+
+        if (!confirm(`ยืนยันการนำเข้าใบงานจำนวน ${readyCount} รายการ ลงในชีต "${targetSheet}" ใช่หรือไม่?`)) return;
+
+        const btn = document.getElementById('btn-execute-import');
+        btn.disabled = true;
+        document.getElementById('import-loader').style.display = 'block';
+
+        callAPI('importUcubeBatch', {
+          targetSheet: targetSheet,
+          rows: this.parsedItems,
+          skipDuplicates: skipDuplicates
+        }, (res) => {
+          btn.disabled = false;
+          document.getElementById('import-loader').style.display = 'none';
+
+          if (!res || !res.success) {
+            alert('ผิดพลาด: ' + (res?.message || 'ไม่สามารถนำเข้าข้อมูลได้'));
+            return;
+          }
+
+          let alertMsg = `✅ ${res.message}`;
+          if (res.skippedCount > 0) alertMsg += `\n• ข้ามรายการซ้ำในชีตเดียวกัน: ${res.skippedCount} รายการ`;
+          if (res.prevMonthAlerts && res.prevMonthAlerts.length > 0) {
+            alertMsg += `\n⚠️ พบเลข PEA ซ้ำกับเดือนก่อนหน้า: ${res.prevMonthAlerts.length} รายการ (สามารถใช้ J.A.R.V.I.S สั่งปิดงานซ้ำข้ามเดือนต่อได้ทันที)`;
+          }
+
+          alert(alertMsg);
+          if (isAdminUser) {
+            jarvisBrain.speak(`นำเข้าข้อมูลจาก UCUBE จำนวน ${res.importedCount} รายการ ลงชีต ${targetSheet} เรียบร้อยแล้วครับบอส!`, false);
+          }
+
+          // รีเฟรช Dashboard ให้แสดงเดือนที่เพิ่งนำเข้า
+          document.getElementById('filter-month').value = targetSheet;
+          loadDashboard();
+          this.clearAll();
+        });
+      }
+    }
+
+    const ucubeImporter = new UcubeSmartImporter();
+
+    // =========================================================================
+    // 🤖 J.A.R.V.I.S Smart Voice Brain v5.3
+    // =========================================================================
+    class JarvisVoiceBrain {
+      constructor() {
+        this.state = {
+          mode: 'IDLE',
+          choices: [],
+          defaultAllHandler: null,
+          lastKeywords: [],
+          lastMatchedItems: [],
+          duplicateContext: null,
+          uncertainQueue: []
+        };
+        this.STORAGE_KEY = 'jarvis_pea_voice_memory_v1';
+        this.memory = this.loadMemory();
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = SpeechRecognition ? new SpeechRecognition() : null;
+        this.isListening = false;
+        this.subtitleTimer = null;
+        this.initSpeech();
+      }
+
+      unlockAudioEngine() {
+        if (!('speechSynthesis' in window)) return;
+        try {
+          const silent = new SpeechSynthesisUtterance('');
+          silent.volume = 0;
+          window.speechSynthesis.speak(silent);
+        } catch (e) {}
+      }
+
+      loadMemory() {
+        try {
+          const saved = localStorage.getItem(this.STORAGE_KEY);
+          return saved ? JSON.parse(saved) : { frequentCommands: {}, lastVisit: null };
+        } catch (e) {
+          return { frequentCommands: {}, lastVisit: null };
+        }
+      }
+
+      saveCommandToMemory(cleanCommand) {
+        if (!cleanCommand || cleanCommand.length < 2) return;
+        const count = this.memory.frequentCommands[cleanCommand] || 0;
+        this.memory.frequentCommands[cleanCommand] = count + 1;
+        this.memory.lastVisit = new Date().toISOString();
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.memory));
+        this.renderFrequentChips();
+      }
+
+      getTopFrequentCommands(limit = 3) {
+        return Object.entries(this.memory.frequentCommands)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit)
+          .map(entry => entry[0]);
+      }
+
+      renderFrequentChips() {
+        const container = document.getElementById('admin-voice-chips-list');
+        if (!container) return;
+
+        const top = this.getTopFrequentCommands(3);
+        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S ด่วน:</span>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่')">➕ สร้างชีตเดือนใหม่</button>`;
+        html += `<button type="button" class="voice-chip" onclick="bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show()">📥 นำเข้า UCUBE</button>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด')">🩺 ใบงานไม่สมบูรณ์</button>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeCrossMonthDuplicates()">🔁 เช็กซ้ำข้ามเดือน</button>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.startAutoCloseDuplicates()">⚡ ปิดงานซ้ำอัตโนมัติ</button>`;
+
+        top.forEach(cmd => {
+          const safeCmd = cmd.replace(/'/g, "\\'");
+          html += `<button type="button" class="voice-chip" onclick="jarvisBrain.runQuickChip('${safeCmd}')">🕒 ${cmd}</button>`;
+        });
+
+        container.innerHTML = html;
+      }
+
+      runQuickChip(cmd) {
+        if (!isAdminUser) return;
+        this.unlockAudioEngine();
+        this.resetConversation(false);
+        this.saveCommandToMemory(cmd);
+        this.state.lastKeywords = [cmd];
+        this.performSearchAndThink(cmd, false);
+      }
+
+      showSubtitle(speaker, htmlText, autoHideMs = 10000, choiceButtons = []) {
+        if (!isAdminUser) return;
+        const box = document.getElementById('jarvis-subtitle');
+        if (!box) return;
+        clearTimeout(this.subtitleTimer);
+
+        let pillsHtml = '';
+        if (choiceButtons && choiceButtons.length > 0) {
+          pillsHtml = `<div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top border-secondary">` +
+            choiceButtons.map((c, idx) =>
+              `<button type="button" class="jarvis-choice-pill" onclick="jarvisBrain.triggerChoiceByIndex(${idx})">${c.icon || '👉'} ${c.label}</button>`
+            ).join('') +
+            `</div>`;
+        }
+
+        box.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-info small">${speaker}</span>
+            <button type="button" class="btn-close btn-close-white" style="font-size:0.65rem;" onclick="document.getElementById('jarvis-subtitle').style.display='none'"></button>
+          </div>
+          <div>${htmlText}</div>
+          ${pillsHtml}
+        `;
+        box.style.display = 'block';
+        if (autoHideMs > 0) {
+          this.subtitleTimer = setTimeout(() => { box.style.display = 'none'; }, autoHideMs);
+        }
+      }
+
+      triggerChoiceByIndex(idx) {
+        if (!this.state.choices || !this.state.choices[idx]) return;
+        const chosen = this.state.choices[idx];
+        this.resetConversation(false);
+        chosen.handler();
+      }
+
+      promptChoices(htmlText, choices, defaultAllHandler = null) {
+        this.state.mode = 'AWAITING_CHOICE';
+        this.state.choices = choices;
+        this.state.defaultAllHandler = defaultAllHandler;
+        this.speak(htmlText, true, choices);
+      }
+
+      initSpeech() {
+        if (!this.recognition) return;
+        this.recognition.lang = 'th-TH';
+        this.recognition.interimResults = false;
+        this.recognition.maxAlternatives = 1;
+
+        this.recognition.onstart = () => {
+          this.isListening = true;
+          document.getElementById('jarvis-btn')?.classList.add('listening');
+          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+          const hint = this.state.mode === 'AWAITING_CHOICE'
+            ? 'พูดเลือกทางเลือก หรือแตะปุ่มด้านล่างได้เลยครับ'
+            : 'เชิญสั่งการได้เลยครับบอส';
+          this.showSubtitle('🎙️ J.A.R.V.I.S กำลังฟัง...', hint, 0, this.state.choices);
+        };
+
+        this.recognition.onresult = (event) => {
+          this.isListening = false;
+          const transcript = event.results[0][0].transcript.trim();
+          this.showSubtitle('🗣️ บอสสั่งว่า:', `"${transcript}"`, 5000);
+          this.handleInput(transcript);
+        };
+
+        this.recognition.onerror = (event) => {
+          this.isListening = false;
+          document.getElementById('jarvis-btn')?.classList.remove('listening');
+          if (event.error === 'no-speech' && this.state.mode === 'AWAITING_CHOICE' && this.state.choices.length > 0) {
+            this.showSubtitle('🤖 J.A.R.V.I.S:', 'บอสสามารถแตะเลือกทางเลือกจากปุ่มด้านล่าง หรือกดไมค์สั่งใหม่ได้ครับ', 14000, this.state.choices);
+            this.state.mode = 'IDLE';
+          } else if (event.error === 'no-speech' && this.state.mode !== 'IDLE') {
+            this.resetConversation(false);
+            this.speak("หากต้องการสั่งการเพิ่มเติม กดปุ่มไมค์ได้ตลอดครับบอส", false);
+          } else {
+            document.getElementById('jarvis-subtitle').style.display = 'none';
+          }
+        };
+
+        this.recognition.onend = () => {
+          this.isListening = false;
+          document.getElementById('jarvis-btn')?.classList.remove('listening');
+        };
+      }
+
+      toggleListening() {
+        if (!isAdminUser) return;
+        this.unlockAudioEngine();
+        if (this.isListening && this.recognition) {
+          try { this.recognition.stop(); } catch (e) {}
+          this.isListening = false;
+          document.getElementById('jarvis-btn')?.classList.remove('listening');
+          return;
+        }
+        this.startListening();
+      }
+
+      startListening() {
+        if (!isAdminUser) return;
+        if (!this.recognition) {
+          alert("เบราว์เซอร์นี้ไม่รองรับการสั่งงานด้วยเสียงครับ");
+          return;
+        }
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        try {
+          this.recognition.start();
+        } catch (e) {}
+      }
+
+      speak(htmlText, expectReply = false, choiceButtons = []) {
+        if (!isAdminUser) return;
+        this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 11000, choiceButtons);
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+
+        const msg = new SpeechSynthesisUtterance(cleanSpeech);
+        msg.lang = 'th-TH';
+        msg.rate = 1.1;
+
+        msg.onend = () => {
+          if (expectReply && isAdminUser) {
+            setTimeout(() => this.startListening(), 400);
+          }
+        };
+
+        window.speechSynthesis.speak(msg);
+      }
+
+      resetConversation(clearDupContext = true) {
+        this.state.mode = 'IDLE';
+        this.state.choices = [];
+        this.state.defaultAllHandler = null;
+        this.state.lastKeywords = [];
+        this.state.lastMatchedItems = [];
+        if (clearDupContext) {
+          this.state.duplicateContext = null;
+          this.state.uncertainQueue = [];
+        }
+      }
+
+      callAPIAsync(action, params) {
+        return new Promise((resolve, reject) => {
+          fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: action, params: params })
+          })
+          .then(r => r.json())
+          .then(data => resolve(data))
+          .catch(err => reject(err));
+        });
+      }
+
+      ensureData(requireAllMonths, callback) {
+        const currentFilterMonth = document.getElementById('filter-month')?.value;
+        const needFetch = !globalDashResults || globalDashResults.length === 0 || (requireAllMonths && currentFilterMonth !== 'ALL');
+        if (needFetch) {
+          callAPI('getDashboardData', { month: requireAllMonths ? 'ALL' : (currentFilterMonth || 'ALL'), statusFilter: 'ทั้งหมด' }, (res) => {
+            if (requireAllMonths) {
+              const fm = document.getElementById('filter-month');
+              if (fm) fm.value = 'ALL';
+            }
+            globalDashResults = res.results || [];
+            document.getElementById('stat-total').innerText = res.stats.total;
+            document.getElementById('stat-pending').innerText = res.stats.pending;
+            document.getElementById('stat-contractor').innerText = res.stats.contractor;
+            document.getElementById('stat-emp').innerText = res.stats.employee;
+            document.getElementById('stat-completed').innerText = res.stats.completed;
+            callback(globalDashResults);
+          });
+        } else {
+          callback(globalDashResults);
+        }
+      }
+
+      displayCustomListOnDashboard(items, bannerTitle, alertType = 'info') {
+        const statusTab = document.querySelector('#status-tab');
+        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
+        const searchBox = document.getElementById('dash-search');
+        if (searchBox) searchBox.value = '';
+        const banner = `<div class="alert alert-${alertType} rounded-4 shadow-sm mb-3 fw-bold"><i class="bi bi-cpu-fill me-2"></i>${bannerTitle} (${items.length} รายการ)</div>`;
+        renderCardsList(items, banner);
+      }
+
+      exportCustomItemsToExcel(items, filePrefix) {
+        if (!items || items.length === 0) {
+          alert("ไม่มีข้อมูลสำหรับส่งออก Excel");
+          return;
+        }
+        const rows = items.map((it, idx) => ({
+          'ลำดับ': idx + 1,
+          'รอบเดือน': it.sheetName || '-',
+          'PEA เดิม': it.pea || '-',
+          'ชื่อผู้ใช้ไฟ': it.name || '-',
+          'สถานที่': it.location || '-',
+          'สาเหตุ': it.reason || '-',
+          'หน่วย PEA เดิม': it.colD || '-',
+          'PEA ใหม่': it.colF || '-',
+          'หน่วย PEA ใหม่': it.colG || '-',
+          'ผู้ดำเนินการ': it.operator || '-',
+          'สถานะ': it.status || '-',
+          'ข้อมูลที่ขาด/ไม่สมบูรณ์': it._missingNote || 'ครบถ้วน'
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Incomplete_Report');
+        XLSX.writeFile(wb, `${filePrefix}.xlsx`);
+      }
+
+      hasValidNumericGps(item) {
+        if (!item || !item.gps) return false;
+        const g = item.gps.trim();
+        return g !== '' && !g.toLowerCase().includes('http') && !g.toLowerCase().includes('goo.gl');
+      }
+
+      // =======================================================================
+      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (v5.3)
+      // =======================================================================
+      handleInput(rawText) {
+        if (!isAdminUser) return;
+        const text = rawText.toLowerCase().trim();
+        const affirmative = /(ใช่|เอา|เปิด|แสดง|ตกลง|จัดไป|ได้เลย|ดู|นำทาง|ครับ|ค่ะ)/;
+
+        if (/(ยกเลิก|เริ่มใหม่|พอแค่นี้|ไม่ต้องแล้ว)/.test(text)) {
+          this.resetConversation(true);
+          this.speak("รับทราบครับบอส ยกเลิกคำสั่งเรียบร้อยครับ", false);
+          return;
+        }
+
+        if (/(ปิดงานที่ซ้ำ|ปิดงานซ้ำ|ปิดรายการซ้ำ|เปลี่ยนสถานะ.*ส่งงาน|ปิดงาน.*ซ้ำ|อัปเดต.*ซ้ำ|ดำเนินการปิดงานซ้ำ)/.test(text)) {
+          this.startAutoCloseDuplicates();
+          return;
+        }
+
+        if (this.state.mode === 'AWAITING_CHOICE' && this.state.choices.length > 0) {
+          if (/(ทั้งหมด|ทั้งคู่|สองอย่าง|รวมเลย)/.test(text) && this.state.defaultAllHandler) {
+            const fnAll = this.state.defaultAllHandler;
+            this.resetConversation(false);
+            fnAll();
+            return;
+          }
+          if (/(อันแรก|ตัวแรก|อย่างแรก|ข้อแรก|ข้อหนึ่ง|ข้อ 1|ตัวที่ 1)/.test(text)) {
+            const c0 = this.state.choices[0];
+            this.resetConversation(false);
+            c0.handler();
+            return;
+          }
+          if (/(อันหลัง|อันที่สอง|ตัวหลัง|ตัวที่สอง|อย่างหลัง|ข้อสอง|ข้อ 2|ตัวที่ 2)/.test(text) && this.state.choices[1]) {
+            const c1 = this.state.choices[1];
+            this.resetConversation(false);
+            c1.handler();
+            return;
+          }
+          if (/(ข้อสาม|ข้อ 3|ตัวที่ 3|อันที่สาม)/.test(text) && this.state.choices[2]) {
+            const c2 = this.state.choices[2];
+            this.resetConversation(false);
+            c2.handler();
+            return;
+          }
+
+          const sortedChoices = [...this.state.choices].sort((a, b) => (b.priority || 1) - (a.priority || 1));
+          for (const choice of sortedChoices) {
+            if (choice.keywords.some(kw => text.includes(kw))) {
+              this.resetConversation(false);
+              choice.handler();
+              return;
+            }
+          }
+          this.resetConversation(false);
+        }
+
+        if (this.state.mode === 'AWAITING_FILTER') {
+          const extraKeyword = this.cleanText(text);
+          if (affirmative.test(text) && extraKeyword.length < 2 && this.state.lastKeywords.length > 0) {
+            const combinedQuery = this.state.lastKeywords.join(' ');
+            this.performSearchAndThink(combinedQuery, true);
+            return;
+          }
+          this.state.lastKeywords.push(extraKeyword);
+          const combinedQuery = this.state.lastKeywords.join(' ');
+          this.saveCommandToMemory(combinedQuery);
+          this.performSearchAndThink(combinedQuery, true);
+          return;
+        }
+
+        if (this.state.mode === 'AWAITING_INTENT') {
+          this.resetConversation(false);
+          if (/(นำเข้า|ucube|ยูคิวบ์)/i.test(text)) {
+            bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show();
+            this.speak("เปิดหน้าจอนำเข้าข้อมูลจาก UCUBE เรียบร้อยครับบอส", false);
+            return;
+          }
+          if (/(สร้าง.*เดือน|สร้างชีต|เปิดรอบเดือน)/.test(text)) { this.promptCreateNewMonthSheet(text); return; }
+          if (/(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย)/.test(text)) { this.analyzeIncompleteByStatusAndMonth(text); return; }
+          if (/(สรุป|ภาพรวม|ยอด)/.test(text)) { this.analyzeAndSummarize(); return; }
+          if (/(ซ้ำ)/.test(text)) { this.analyzeCrossMonthDuplicates(); return; }
+          if (/(แนะนำ|ไปไหน|เริ่มตรงไหน)/.test(text)) { this.recommendBestRoute(); return; }
+          if (/(ด่วน|สำคัญ|ช็อต)/.test(text)) { this.analyzeImportantWork(false); return; }
+          if (/(สาเหตุ|เสียบ่อย|พัง)/.test(text)) { this.analyzeTopReasons(); return; }
+          if (/(พิกัด|gps)/i.test(text)) { this.analyzeGpsReadiness(); return; }
+        }
+
+        // เปิดหน้านำเข้า UCUBE ด้วยเสียง
+        if (/(นำเข้า|อัปโหลด|ดึงข้อมูล).*(ucube|ยูคิวบ์|ใบงาน|excel)/i.test(text) || /เปิด.*(นำเข้า|ucube)/i.test(text)) {
+          bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show();
+          this.speak("เปิดหน้า UCUBE Smart Auto-Importer เรียบร้อยครับบอส เลือกไฟล์หรือวางตารางจาก Excel ได้เลยครับ", false);
+          return;
+        }
+
+        // สั่งสร้างชีตใบงานเดือนใหม่ใน Google Sheets
+        if (/(สร้าง|เปิดรอบ|เพิ่ม).*(ใบงาน|ชีต|ตาราง|รอบเดือน|เดือน)/.test(text) && /(เดือน|ชีต|รอบเดือน)/.test(text)) {
+          this.promptCreateNewMonthSheet(text);
+          return;
+        }
+
+        // วิเคราะห์ใบงานที่ไม่สมบูรณ์
+        if (/(ไม่สมบูรณ์|ข้อมูลไม่ครบ|ไม่ครบถ้วน|ขาดรูป|ไม่มีรูป|ขาดหน่วย|ไม่มีหน่วย|ข้อมูลขาด|ตกหล่น)/.test(text)) {
+          this.analyzeIncompleteByStatusAndMonth(text);
+          return;
+        }
+
+        // คู่มือคำสั่งเสียง
+        if (/(ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
+          this.promptChoices(
+            "บอสสามารถสั่งให้ผม <b>สร้างชีตใบงานเดือนใหม่พร้อมสูตร</b>, <b>เปิดหน้านำเข้า UCUBE</b>, <b>วิเคราะห์ใบงานไม่สมบูรณ์</b> หรือ <b>เช็ก PEA ซ้ำข้ามเดือน</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนครับ?",
+            [
+              { label: '➕ สร้างชีตเดือนใหม่', icon: '➕', priority: 2, keywords: ['สร้าง', 'เดือนใหม่', 'ชีต'], handler: () => this.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่') },
+              { label: '📥 เปิดหน้านำเข้า UCUBE', icon: '📥', priority: 1, keywords: ['นำเข้า', 'ucube'], handler: () => { bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show(); this.speak("เปิดหน้านำเข้าข้อมูลจาก UCUBE เรียบร้อยครับบอส", false); } }
+            ]
+          );
+          return;
+        }
+
+        // ส่งออก Excel
+        if (/(export|เอ็กซ์เซล|ส่งออก|ดาวน์โหลดตาราง|โหลดตาราง)/i.test(text)) {
+          const curStatus = document.getElementById('filter-status')?.value || 'ทั้งหมด';
+          this.promptChoices(
+            `พร้อมส่งออกข้อมูลสถานะ <b>"${curStatus}"</b> เป็นไฟล์ Excel ครับบอส ต้องการให้ <b>ดาวน์โหลด Excel ทันที</b> หรือ <b>เปิดตารางตรวจสอบก่อน</b> ครับ?`,
+            [
+              {
+                label: 'ดาวน์โหลด Excel ทันที',
+                icon: '📥',
+                priority: 2,
+                keywords: ['ดาวน์โหลด', 'ทันที', 'ส่งออก', 'โหลดเลย', 'export'],
+                handler: () => {
+                  showTableModal(curStatus);
+                  setTimeout(() => exportTableToExcel(), 400);
+                  this.speak("เปิดตารางและดาวน์โหลดไฟล์ Excel เรียบร้อยครับบอส", false);
+                }
+              },
+              {
+                label: 'เปิดตารางตรวจสอบก่อน',
+                icon: '📊',
+                priority: 1,
+                keywords: ['ตาราง', 'ตรวจสอบ', 'เปิดดูก่อน'],
+                handler: () => {
+                  showTableModal(curStatus);
+                  this.speak("เปิดตารางรายละเอียดบนหน้าจอเรียบร้อยครับบอส", false);
+                }
+              }
+            ]
+          );
+          return;
+        }
+
+        if (/(ล้างความจำ|ลบประวัติคำสั่ง)/.test(text)) {
+          localStorage.removeItem(this.STORAGE_KEY);
+          this.memory = { frequentCommands: {}, lastVisit: null };
+          this.renderFrequentChips();
+          this.speak("ล้างประวัติคำสั่งที่ใช้บ่อยเรียบร้อยครับบอส", false);
+          return;
+        }
+
+        if (/(ซ้ำ|ซ้ำกัน|ซ้ำซ้อน|ชนกัน)/.test(text)) { this.analyzeCrossMonthDuplicates(); return; }
+        if (/(สำคัญ|งานด่วน|เร่งด่วน|ครั้งที่ 2|ครั้งที่ 3)/.test(text)) { this.analyzeImportantWork(/(เดือนนี้|เดือนที่แล้ว|เดือนก่อน|เทียบ)/.test(text)); return; }
+        if (/(สาเหตุ|เสียบ่อย|พังบ่อย|ชำรุดอะไร|อันดับสาเหตุ)/.test(text)) { this.analyzeTopReasons(); return; }
+        if (/(พิกัด|gps|จีพีเอส)/i.test(text)) { this.analyzeGpsReadiness(); return; }
+        if (/(ผู้รับเหมา|ผรม|พนักงาน|พนง|เทียบผลงาน)/.test(text) && /(กี่|ยอด|สรุป|เท่าไหร่|ผลงาน|เทียบ)/.test(text)) { this.analyzeOperatorPerformance(); return; }
+        if (/(รอปิด|ยังไม่ได้ปิด|ตรวจงาน|ส่งงานแล้ว)/.test(text) && /(กี่|มี|ยอด|สรุป|ดู|เช็ก)/.test(text)) { this.analyzePendingCloseOrders(); return; }
+        if (/(คงเหลือ|เหลืออีก|ค้างอยู่)/.test(text) && /(กี่|มี|ยอด|สรุป|เท่าไหร่)/.test(text)) { this.analyzeRemainingWork(); return; }
+        if (/(แนะนำ|ไปไหนก่อน|เริ่มตรงไหน|วางแผน|โซนไหนเยอะ|พื้นที่ไหนเยอะ)/.test(text)) { this.recommendBestRoute(); return; }
+        if (/(สรุป|ภาพรวม|ความคืบหน้า|กี่เปอร์เซ็นต์|มีงานอะไรบ้าง)/.test(text)) { this.analyzeAndSummarize(); return; }
+
+        const cleaned = this.cleanText(text);
+        if (cleaned.length < 2) {
+          this.state.mode = 'AWAITING_INTENT';
+          this.speak(`ขออภัยครับบอส ผมได้ยินว่า "${rawText}" ไม่แน่ใจว่าบอสต้องการให้ <b>สร้างชีตเดือนใหม่</b>, <b>เปิดหน้านำเข้า UCUBE</b>, <b>วิเคราะห์ใบงานไม่สมบูรณ์</b> หรือ <b>สรุปภาพรวม</b> ครับ?`, true);
+          return;
+        }
+
+        this.saveCommandToMemory(cleaned);
+        this.state.lastKeywords = [cleaned];
+        this.performSearchAndThink(cleaned, false);
+      }
+
+      // =======================================================================
+      // ➕ สร้างชีตใบงานเดือนใหม่
+      // =======================================================================
+      getNextMonthSuggestionFromDropdown() {
+        const opts = [...document.querySelectorAll('#filter-month option')]
+          .map(o => o.value)
+          .filter(v => /^\d{1,2}\.\d{4}$/.test(v))
+          .sort((a, b) => {
+            const [mA, yA] = a.split('.').map(Number);
+            const [mB, yB] = b.split('.').map(Number);
+            return (yB * 100 + mB) - (yA * 100 + mA);
+          });
+
+        if (opts.length === 0) {
+          const now = new Date();
+          return {
+            latestSheet: null,
+            nextMonthNum: String(now.getMonth() + 1).padStart(2, '0'),
+            nextSheetName: `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`
+          };
+        }
+
+        const latest = opts[0];
+        const [m, y] = latest.split('.').map(Number);
+        const nextM = m + 1 > 12 ? 1 : m + 1;
+        const nextY = m + 1 > 12 ? y + 1 : y;
+        return {
+          latestSheet: latest,
+          nextMonthNum: String(nextM).padStart(2, '0'),
+          nextSheetName: `${String(nextM).padStart(2, '0')}.${nextY}`
+        };
+      }
+
+      promptCreateNewMonthSheet(rawText) {
+        const text = (rawText || '').toLowerCase();
+        const parsedMonth = this.parseMonthFromText(text);
+        const suggestion = this.getNextMonthSuggestionFromDropdown();
+
+        let targetMonthNum = parsedMonth ? parsedMonth.monthNum : suggestion.nextMonthNum;
+        let targetYear = suggestion.latestSheet ? Number(suggestion.latestSheet.split('.')[1]) : (new Date().getFullYear() + 543);
+        if (suggestion.latestSheet && Number(suggestion.latestSheet.split('.')[0]) === 12 && Number(targetMonthNum) === 1) {
+          targetYear += 1;
+        }
+        const targetSheetName = `${targetMonthNum}.${targetYear}`;
+        const fromText = suggestion.latestSheet ? `จากต้นแบบชีต <b>${suggestion.latestSheet}</b>` : 'จากต้นแบบชีตเดือนล่าสุด';
+
+        this.promptChoices(
+          `พร้อมสร้างชีตใบงานเดือนใหม่ชื่อ <b>"${targetSheetName}"</b> ${fromText} พร้อมคงสูตรคำนวณทั้งหมดและล้างข้อมูลเก่าให้เป็นตารางว่างครับบอส ยืนยันให้สร้างเลยไหมครับ?`,
+          [
+            {
+              label: `✅ สร้างชีต ${targetSheetName} เลย`,
+              icon: '✅',
+              priority: 2,
+              keywords: ['ยืนยัน', 'สร้างเลย', 'สร้าง', 'ใช่', 'เอาเลย', 'ตกลง', 'จัดไป'],
+              handler: () => this.executeCreateNewMonthSheet(targetMonthNum, targetSheetName)
+            },
+            {
+              label: '❌ ยกเลิก',
+              icon: '❌',
+              priority: 1,
+              keywords: ['ยกเลิก', 'ไม่ต้อง', 'ไม่เอา', 'ยังก่อน'],
+              handler: () => {
+                this.resetConversation(true);
+                this.speak("รับทราบครับบอส ยกเลิกการสร้างชีตเดือนใหม่เรียบร้อยครับ", false);
+              }
+            }
+          ]
+        );
+      }
+
+      async executeCreateNewMonthSheet(targetMonthNum, expectedSheetName) {
+        this.showSubtitle(
+          '⚙️ J.A.R.V.I.S กำลังสร้างชีตใหม่...',
+          `กำลังคัดลอกโครงสร้างและสูตรคำนวณไปยังชีต <b>${expectedSheetName}</b> ใน Google Sheets รอสักครู่ครับบอส...`,
+          0
+        );
+
+        try {
+          const res = await this.callAPIAsync('createNewMonthSheet', { targetMonth: targetMonthNum });
+          if (!res || !res.success) {
+            if (res && res.alreadyExists) {
+              const initRes = await this.callAPIAsync('getInitialData', {});
+              if (initRes && initRes.months) {
+                populateMonthDropdowns(initRes.months, res.sheetName);
+                loadDashboard();
+              }
+              this.speak(`ชีตเดือน <b>${res.sheetName}</b> มีอยู่ในระบบอยู่แล้วครับบอส ผมสลับหน้าจอมาที่เดือน ${res.sheetName} ให้เรียบร้อยครับ`, false);
+            } else {
+              this.speak(`ขออภัยครับบอส สร้างชีตไม่สำเร็จ: ${res?.message || 'กรุณาตรวจสอบการ Deploy ใน Apps Script ครับ'}`, false);
+            }
+            return;
+          }
+
+          const initRes = await this.callAPIAsync('getInitialData', {});
+          if (initRes && initRes.months) {
+            populateMonthDropdowns(initRes.months, res.sheetName);
+            loadDashboard();
+          }
+
+          this.speak(
+            `สร้างชีตใบงานเดือน <b>${res.sheetName}</b> เรียบร้อยแล้วครับบอส! คัดลอกโครงสร้างและสูตรจาก <b>${res.templateUsed}</b> มาครบถ้วนพร้อมล้างข้อมูลเก่าให้เรียบร้อย และเลือกชีต ${res.sheetName} ให้แล้วครับ`,
+            false
+          );
+        } catch (err) {
+          this.speak("เกิดข้อผิดพลาดในการเชื่อมต่อ Google Apps Script ครับบอส", false);
+        }
+      }
+
+      // =======================================================================
+      // 🩺 วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
+      // =======================================================================
+      parseMonthFromText(text) {
+        const now = new Date();
+        if (/เดือนนี้/.test(text)) return { monthNum: String(now.getMonth() + 1).padStart(2, '0'), thaiName: 'เดือนนี้' };
+        if (/เดือนที่แล้ว|เดือนก่อน/.test(text)) {
+          const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          return { monthNum: String(prev.getMonth() + 1).padStart(2, '0'), thaiName: 'เดือนที่แล้ว' };
+        }
+        const monthRules = [
+          { num: '12', name: 'ธันวาคม (เดือน 12)', keys: ['ธันวาคม', 'ธันวา', 'ธ.ค.', 'เดือนสิบสอง', 'เดือน 12', 'เดือน12'] },
+          { num: '11', name: 'พฤศจิกายน (เดือน 11)', keys: ['พฤศจิกายน', 'พฤศจิกา', 'พ.ย.', 'เดือนสิบเอ็ด', 'เดือน 11', 'เดือน11'] },
+          { num: '10', name: 'ตุลาคม (เดือน 10)', keys: ['ตุลาคม', 'ตุลา', 'ต.ค.', 'เดือนสิบ', 'เดือน 10', 'เดือน10'] },
+          { num: '09', name: 'กันยายน (เดือน 9)', keys: ['กันยายน', 'กันยา', 'ก.ย.', 'เดือนเก้า', 'เดือน 9', 'เดือน09', 'เดือน 09'] },
+          { num: '08', name: 'สิงหาคม (เดือน 8)', keys: ['สิงหาคม', 'สิงหา', 'ส.ค.', 'เดือนแปด', 'เดือน 8', 'เดือน08', 'เดือน 08'] },
+          { num: '07', name: 'กรกฎาคม (เดือน 7)', keys: ['กรกฎาคม', 'กรกฎา', 'ก.ค.', 'เดือนเจ็ด', 'เดือน 7', 'เดือน07', 'เดือน 07'] },
+          { num: '06', name: 'มิถุนายน (เดือน 6)', keys: ['มิถุนายน', 'มิถุนา', 'มิ.ย.', 'เดือนหก', 'เดือน 6', 'เดือน06', 'เดือน 06'] },
+          { num: '05', name: 'พฤษภาคม (เดือน 5)', keys: ['พฤษภาคม', 'พฤษภา', 'พ.ค.', 'เดือนห้า', 'เดือน 5', 'เดือน05', 'เดือน 05'] },
+          { num: '04', name: 'เมษายน (เดือน 4)', keys: ['เมษายน', 'เมษา', 'เม.ย.', 'เดือนสี่', 'เดือน 4', 'เดือน04', 'เดือน 04'] },
+          { num: '03', name: 'มีนาคม (เดือน 3)', keys: ['มีนาคม', 'มีนา', 'มี.ค.', 'เดือนสาม', 'เดือน 3', 'เดือน03', 'เดือน 03'] },
+          { num: '02', name: 'กุมภาพันธ์ (เดือน 2)', keys: ['กุมภาพันธ์', 'กุมภา', 'ก.พ.', 'เดือนสอง', 'เดือน 2', 'เดือน02', 'เดือน 02'] },
+          { num: '01', name: 'มกราคม (เดือน 1)', keys: ['มกราคม', 'มกรา', 'ม.ค.', 'เดือนหนึ่ง', 'เดือน 1', 'เดือน01', 'เดือน 01'] }
+        ];
+        for (const rule of monthRules) {
+          if (rule.keys.some(k => text.includes(k))) return { monthNum: rule.num, thaiName: rule.name };
+        }
+        return null;
+      }
+
+      parseStatusFromText(text) {
+        if (/(ผรม|ผู้รับเหมา)/.test(text)) return { label: 'ผรม. ส่งงานแล้ว', filterFn: (s) => s === 'ผรม. ส่งงานแล้ว' };
+        if (/(พนง|พนักงาน|ผมต)/.test(text)) return { label: 'พนง. ดำเนินการ', filterFn: (s) => s === 'พนง. ดำเนินการ' };
+        if (/(เสร็จสมบูรณ์|ปิดใบสั่งแล้ว)/.test(text)) return { label: 'เสร็จสมบูรณ์', filterFn: (s) => s === 'เสร็จสมบูรณ์' };
+        if (/(งานคงเหลือ|คงเหลือ)/.test(text)) return { label: 'งานคงเหลือ', filterFn: (s) => s === 'งานคงเหลือ' };
+        if (/(ทุกสถานะ|ทั้งหมดทุกสถานะ)/.test(text)) return { label: 'ทุกสถานะ', filterFn: () => true };
+        return { label: 'ส่งงานแล้ว (ผรม. + พนง.)', filterFn: (s) => s === 'ผรม. ส่งงานแล้ว' || s === 'พนง. ดำเนินการ' };
+      }
+
+      inspectSingleItemCompleteness(item) {
+        const missing = [];
+        const hasVal = (v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-';
+        const hasPhoto = (item.pic1 && String(item.pic1).startsWith('http')) || (item.pic2 && String(item.pic2).startsWith('http'));
+        if (!hasPhoto) missing.push('ยังไม่มีรูปภาพ');
+        if (!hasVal(item.colD)) missing.push('ยังไม่มีหน่วย PEA เดิม');
+        if (!hasVal(item.colF)) missing.push('ยังไม่มีเลข PEA ใหม่');
+        if (!hasVal(item.colG)) missing.push('ยังไม่มีหน่วย PEA ใหม่');
+        if (!hasVal(item.operator)) missing.push('ยังไม่มีชื่อผู้ดำเนินการ');
+        return missing;
+      }
+
+      analyzeIncompleteByStatusAndMonth(rawText) {
+        const text = (rawText || '').toLowerCase();
+        const monthInfo = this.parseMonthFromText(text);
+        const statusInfo = this.parseStatusFromText(text);
+
+        this.speak("กำลังตรวจสอบความสมบูรณ์ของข้อมูลใบงาน รอสักครู่ครับบอส", false);
+
+        this.ensureData(true, (allData) => {
+          let targetMonthSheets = [];
+          let scopedItems = allData;
+
+          if (monthInfo) {
+            const mNoZero = String(Number(monthInfo.monthNum));
+            const monthRegex = new RegExp(`(^|[^0-9])(0?${mNoZero})[./]\\d{4}`);
+            scopedItems = allData.filter(it => monthRegex.test(String(it.sheetName || '')));
+            targetMonthSheets = [...new Set(scopedItems.map(it => it.sheetName))];
+            const fm = document.getElementById('filter-month');
+            if (fm && targetMonthSheets.length === 1) fm.value = targetMonthSheets[0];
+          }
+
+          const statusMatchedItems = scopedItems.filter(it => statusInfo.filterFn(it.status));
+          const incompleteItems = [];
+          const missingStats = {};
+
+          statusMatchedItems.forEach(it => {
+            const missingList = this.inspectSingleItemCompleteness(it);
+            if (missingList.length > 0) {
+              missingList.forEach(m => { missingStats[m] = (missingStats[m] || 0) + 1; });
+              incompleteItems.push({ ...it, _missingNote: missingList.join(', ') });
+            }
+          });
+
+          const monthLabel = monthInfo ? `ใน${monthInfo.thaiName}${targetMonthSheets.length > 0 ? ` (${targetMonthSheets.join(', ')})` : ''}` : 'ในทุกเดือน';
+
+          if (statusMatchedItems.length === 0) {
+            this.resetConversation(false);
+            this.displayCustomListOnDashboard([], `ไม่พบใบงานสถานะ "${statusInfo.label}" ${monthLabel}`, 'secondary');
+            this.speak(`ไม่พบใบงานสถานะ <b>${statusInfo.label}</b> ${monthLabel} ในระบบครับบอส`, false);
+            return;
+          }
+
+          if (incompleteItems.length === 0) {
+            this.resetConversation(false);
+            this.displayCustomListOnDashboard(statusMatchedItems, `✅ ใบงานสถานะ "${statusInfo.label}" ${monthLabel} ข้อมูลครบถ้วนทั้งหมด`, 'success');
+            this.speak(`ยอดเยี่ยมครับบอส! ใบงานสถานะ <b>${statusInfo.label}</b> ${monthLabel} ทั้งหมด <b>${statusMatchedItems.length} ใบงาน</b> มีข้อมูลครบถ้วนสมบูรณ์ทุกรายการครับ`, false);
+            return;
+          }
+
+          this.displayCustomListOnDashboard(incompleteItems, `🩺 ใบงานไม่สมบูรณ์ [${statusInfo.label}] ${monthLabel}`, 'danger');
+
+          let speechText = '';
+          if (incompleteItems.length <= 3) {
+            const detailsArr = incompleteItems.map((it, idx) => `ใบงานที่ ${idx + 1} PEA <b>${it.pea}</b> คุณ<b>${it.name}</b> ${it._missingNote}`);
+            speechText = `พบใบงาน<b>${statusInfo.label}</b>ที่ไม่สมบูรณ์${monthLabel} จำนวน <b>${incompleteItems.length} ใบงาน</b>ครับบอส ได้แก่ ${detailsArr.join(' , ')} แสดงรายการทั้งหมดบนหน้าจอเรียบร้อยครับ ต้องการ <b>เปิดฟอร์มแก้ไขใบงานที่ 1</b> หรือ <b>ส่งออกรายการนี้เป็น Excel</b> ครับ?`;
+          } else {
+            const topMissingText = Object.entries(missingStats).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v} ราย`).join(', ');
+            const first = incompleteItems[0];
+            const second = incompleteItems[1];
+            speechText = `พบใบงาน<b>${statusInfo.label}</b>ที่ไม่สมบูรณ์${monthLabel} จำนวน <b>${incompleteItems.length} ใบงาน</b>ครับบอส แบ่งเป็น ${topMissingText} เช่น ใบงานที่ 1 PEA <b>${first.pea}</b> คุณ<b>${first.name}</b> ${first._missingNote} และใบงานที่ 2 PEA <b>${second.pea}</b> คุณ<b>${second.name}</b> ${second._missingNote} ผมนำรายการที่ไม่สมบูรณ์ทั้งหมด <b>${incompleteItems.length} ใบงาน</b> ขึ้นมาโชว์บนหน้าจอให้แล้วครับ ต้องการ <b>เปิดฟอร์มแก้ไขใบงานที่ 1</b> หรือ <b>ส่งออกรายการนี้เป็น Excel</b> ครับ?`;
+          }
+
+          const firstItem = incompleteItems[0];
+          this.promptChoices(
+            speechText,
+            [
+              {
+                label: `📝 แก้ไขใบงานที่ 1 (PEA ${firstItem.pea})`,
+                icon: '📝',
+                priority: 2,
+                keywords: ['แก้ไข', 'เปิดฟอร์ม', 'ใบงานที่ 1', 'ใบแรก', 'กรอกเพิ่ม'],
+                handler: () => {
+                  this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${firstItem.pea} ให้บอสแก้ไขข้อมูลครับ`, false);
+                  processPendingWork(firstItem.pea, firstItem.sheetName);
+                }
+              },
+              {
+                label: `📥 ส่งออก Excel (${incompleteItems.length} ราย)`,
+                icon: '📥',
+                priority: 1,
+                keywords: ['excel', 'เอ็กซ์เซล', 'ส่งออก', 'ดาวน์โหลด'],
+                handler: () => {
+                  this.exportCustomItemsToExcel(incompleteItems, `รายงานใบงานไม่สมบูรณ์_${statusInfo.label}`);
+                  this.speak(`ส่งออกไฟล์ Excel รายการที่ไม่สมบูรณ์ทั้งหมด ${incompleteItems.length} รายการ เรียบร้อยครับบอส`, false);
+                }
+              }
+            ]
+          );
+        });
+      }
+
+      // =======================================================================
+      // 🔍 ระบบตรวจสอบและปิดงานซ้ำข้ามเดือน
+      // =======================================================================
+      auditSourceCompleteness(sourceItem) {
+        const missing = [];
+        const hasVal = (v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-';
+        const hasPhoto = (sourceItem.pic1 && String(sourceItem.pic1).startsWith('http')) || (sourceItem.pic2 && String(sourceItem.pic2).startsWith('http'));
+        if (!hasVal(sourceItem.colF)) missing.push('เลข PEA ใหม่');
+        if (!hasVal(sourceItem.colD)) missing.push('หน่วย PEA เก่า');
+        if (!hasVal(sourceItem.colG)) missing.push('หน่วย PEA ใหม่');
+        if (!hasVal(sourceItem.operator)) missing.push('ชื่อผู้ดำเนินการ');
+        if (!hasPhoto) missing.push('รูปถ่ายหน้างาน');
+        return { isComplete: missing.length === 0, missingFields: missing };
+      }
+
+      evaluateDuplicateReadiness(allData) {
+        const monthSheets = [...new Set(allData.map(i => i.sheetName))]
+          .filter(name => /^\d{1,2}\.\d{4}$/.test(name))
+          .sort((a, b) => {
+            const [mA, yA] = a.split('.').map(Number);
+            const [mB, yB] = b.split('.').map(Number);
+            return (yB * 100 + mB) - (yA * 100 + mA);
+          });
+
+        if (monthSheets.length < 2) return null;
+
+        const targetThisMonth = monthSheets[0];
+        const targetLastMonth = monthSheets[1];
+
+        const thisItems = allData.filter(i => i.sheetName === targetThisMonth && i.pea && i.pea !== '-');
+        const lastItems = allData.filter(i => i.sheetName === targetLastMonth && i.pea && i.pea !== '-');
+
+        const thisPeas = new Set(thisItems.map(i => i.pea.trim()));
+        const lastPeas = new Set(lastItems.map(i => i.pea.trim()));
+        const dupPeas = [...thisPeas].filter(pea => lastPeas.has(pea));
+
+        const readyToAutoClose = [];
+        const uncertainList = [];
+        const bothPendingList = [];
+        const alreadyDoneList = [];
+
+        dupPeas.forEach(pea => {
+          const pairRows = [...thisItems, ...lastItems].filter(i => i.pea.trim() === pea);
+          const pendingRow = pairRows.find(r => r.status === 'งานคงเหลือ');
+          const completedRows = pairRows.filter(r => r.status !== 'งานคงเหลือ');
+          completedRows.sort((a, b) => (a.status === 'เสร็จสมบูรณ์' ? -1 : 1));
+          const sourceRow = completedRows[0] || null;
+
+          if (!pendingRow && sourceRow) alreadyDoneList.push(sourceRow);
+          else if (pendingRow && !sourceRow) bothPendingList.push(pendingRow);
+          else if (pendingRow && sourceRow) {
+            const audit = this.auditSourceCompleteness(sourceRow);
+            if (audit.isComplete) readyToAutoClose.push({ pendingItem: pendingRow, sourceItem: sourceRow, missingFields: [] });
+            else uncertainList.push({ pendingItem: pendingRow, sourceItem: sourceRow, missingFields: audit.missingFields });
+          }
+        });
+
+        const dupSet = new Set(dupPeas);
+        const allMatchedRows = [...thisItems, ...lastItems]
+          .filter(i => dupSet.has(i.pea.trim()))
+          .sort((a, b) => String(a.pea).localeCompare(String(b.pea)));
+
+        return { targetThisMonth, targetLastMonth, dupPeas, readyToAutoClose, uncertainList, bothPendingList, alreadyDoneList, allMatchedRows };
+      }
+
+      analyzeCrossMonthDuplicates() {
+        this.speak("กำลังตรวจสอบหมายเลข PEA ที่ซ้ำกัน และตรวจความครบถ้วนของข้อมูล รอสักครู่ครับบอส", false);
+        this.ensureData(true, (allData) => {
+          const ctx = this.evaluateDuplicateReadiness(allData);
+          if (!ctx) {
+            this.resetConversation(true);
+            this.speak("ในระบบมีข้อมูลชีตเดือนไม่ถึง 2 เดือน จึงยังไม่สามารถเทียบรายการซ้ำข้ามเดือนได้ครับบอส", false);
+            return;
+          }
+
+          if (ctx.dupPeas.length === 0) {
+            this.resetConversation(true);
+            this.speak(`ตรวจสอบแล้วครับบอส ระหว่างรอบเดือน <b>${ctx.targetThisMonth}</b> กับ <b>${ctx.targetLastMonth}</b> ไม่มีหมายเลข PEA ซ้ำกันเลยครับ`, false);
+            return;
+          }
+
+          this.state.duplicateContext = ctx;
+          this.displayCustomListOnDashboard(ctx.allMatchedRows, `รายการ PEA ซ้ำกัน (${ctx.targetThisMonth} vs ${ctx.targetLastMonth})`);
+
+          const readyCount = ctx.readyToAutoClose.length;
+          const uncertainCount = ctx.uncertainList.length;
+          const actionableTotal = readyCount + uncertainCount;
+
+          if (actionableTotal > 0) {
+            this.promptChoices(
+              `พบ PEA ซ้ำกัน <b>${ctx.dupPeas.length} ราย</b> ครับบอส โดยมีงานคงเหลือที่ปิดตามรอบก่อนได้ <b>${actionableTotal} ราย</b> (ข้อมูลครบพร้อมปิดทันที <b>${readyCount} ราย</b>, ข้อมูลไม่ครบต้องถามบอสก่อน <b>${uncertainCount} ราย</b>) ต้องการให้ผม <b>ดำเนินการปิดงานที่ซ้ำกันเลย</b> หรือ <b>ดูเฉพาะรายที่ไม่แน่ใจ</b> ครับ?`,
+              [
+                {
+                  label: `⚡ ปิดงานที่ซ้ำกัน (${actionableTotal} ราย)`,
+                  icon: '⚡',
+                  priority: 2,
+                  keywords: ['ปิดงาน', 'ปิดเลย', 'เปลี่ยนสถานะ', 'ส่งงานแล้ว', 'ดำเนินการ'],
+                  handler: () => this.startAutoCloseDuplicates()
+                },
+                {
+                  label: `⚠️ ดูรายที่ข้อมูลไม่ครบ (${uncertainCount})`,
+                  icon: '⚠️',
+                  priority: 1,
+                  keywords: ['ไม่แน่ใจ', 'ไม่ครบ', 'ขาดข้อมูล', 'ตรวจสอบ'],
+                  handler: () => {
+                    if (uncertainCount === 0) {
+                      this.speak("ไม่มีรายการที่ข้อมูลไม่ครบครับบอส ทุกรายข้อมูลครบ 100% พร้อมปิดงานทันทีครับ", false);
+                    } else {
+                      const items = ctx.uncertainList.map(u => ({ ...u.pendingItem, _missingNote: u.missingFields.join(', ') }));
+                      this.displayCustomListOnDashboard(items, 'รายการซ้ำที่ข้อมูลรอบก่อนไม่ครบ (รอการตัดสินใจ)', 'warning');
+                      this.state.uncertainQueue = [...ctx.uncertainList];
+                      this.askNextUncertainItem();
+                    }
+                  }
+                }
+              ]
+            );
+          } else {
+            this.speak(`พบ PEA ซ้ำกัน <b>${ctx.dupPeas.length} ราย</b> ครับบอส (ส่งงานเรียบร้อยแล้ว ${ctx.alreadyDoneList.length} ราย, ยังค้างทั้งคู่ ${ctx.bothPendingList.length} ราย) แสดงบนหน้าจอเรียบร้อยครับ`, false);
+          }
+        });
+      }
+
+      startAutoCloseDuplicates() {
+        const runWithContext = (ctx) => {
+          if (!ctx || (ctx.readyToAutoClose.length === 0 && ctx.uncertainList.length === 0)) {
+            this.resetConversation(true);
+            this.speak("ตรวจสอบแล้ว ไม่พบรายการซ้ำที่ค้างรอปิดงานในรอบเดือนนี้ครับบอส", false);
+            return;
+          }
+          this.executeBatchSyncAndAskUncertain(ctx);
+        };
+
+        if (this.state.duplicateContext) runWithContext(this.state.duplicateContext);
+        else {
+          this.speak("กำลังค้นหารายการซ้ำและตรวจสอบความครบถ้วนของข้อมูลสักครู่ครับบอส", false);
+          this.ensureData(true, (allData) => {
+            const ctx = this.evaluateDuplicateReadiness(allData);
+            this.state.duplicateContext = ctx;
+            runWithContext(ctx);
+          });
+        }
+      }
+
+      async syncSingleDuplicateRow(pairObj) {
+        const { pendingItem, sourceItem } = pairObj;
+        const searchRes = await this.callAPIAsync('searchWork', { month: pendingItem.sheetName, query: pendingItem.pea });
+        if (!searchRes || !searchRes.success || !searchRes.data) throw new Error(`ไม่พบข้อมูลแถวของ PEA ${pendingItem.pea}`);
+
+        const rowArray = [...searchRes.data];
+        while (rowArray.length < globalHeaders.length) rowArray.push('');
+
+        if (sourceItem.colD !== undefined && sourceItem.colD !== '') rowArray[3] = sourceItem.colD;
+        if (sourceItem.colF !== undefined && sourceItem.colF !== '') rowArray[5] = sourceItem.colF;
+        if (sourceItem.colG !== undefined && sourceItem.colG !== '') rowArray[6] = sourceItem.colG;
+
+        const baseReason = sourceItem.reason || pendingItem.reason || '';
+        const refNote = `(ส่งงานแล้วตามรอบ ${sourceItem.sheetName})`;
+        rowArray[7] = baseReason.includes(sourceItem.sheetName) ? baseReason : `${baseReason} ${refNote}`.trim();
+
+        if (sourceItem.pic1 && String(sourceItem.pic1).startsWith('http')) rowArray[8] = sourceItem.pic1;
+        if (sourceItem.pic2 && String(sourceItem.pic2).startsWith('http')) rowArray[9] = sourceItem.pic2;
+        rowArray[10] = (sourceItem.operator && sourceItem.operator !== '-') ? sourceItem.operator : 'พนง.ผมต.';
+
+        const saveRes = await this.callAPIAsync('saveData', { mode: 'ucube', month: pendingItem.sheetName, rowIndex: searchRes.rowIndex, formData: rowArray });
+        if (!saveRes || !saveRes.success) throw new Error(saveRes?.message || `บันทึกข้อมูล PEA ${pendingItem.pea} ไม่สำเร็จ`);
+        return saveRes;
+      }
+
+      async executeBatchSyncAndAskUncertain(ctx) {
+        const readyList = ctx.readyToAutoClose || [];
+        const uncertainList = ctx.uncertainList || [];
+        let autoClosedCount = 0;
+
+        if (readyList.length > 0) {
+          this.showSubtitle('⚙️ J.A.R.V.I.S กำลังดำเนินการ...', `กำลังปิดงานรายการที่ข้อมูลครบถ้วน <b>${readyList.length} ราย</b> อัตโนมัติ รอสักครู่ครับบอส...`, 0);
+          for (const pair of readyList) {
+            try {
+              await this.syncSingleDuplicateRow(pair);
+              autoClosedCount++;
+            } catch (err) {
+              uncertainList.push({ ...pair, missingFields: ['เกิดข้อผิดพลาดขณะอัปเดตอัตโนมัติ'] });
+            }
+          }
+        }
+
+        loadDashboard();
+
+        if (uncertainList.length === 0) {
+          this.resetConversation(true);
+          this.speak(`ดำเนินการเรียบร้อยครับบอส! ปิดงานรายการที่ซ้ำกันและข้อมูลครบถ้วนทั้งหมด <b>${autoClosedCount} ราย</b> เปลี่ยนสถานะเป็น <b>ส่งงานแล้ว</b> เรียบร้อยครับ`, false);
+          return;
+        }
+
+        const uncertainPendingItems = uncertainList.map(u => ({ ...u.pendingItem, _missingNote: u.missingFields.join(', ') }));
+        this.displayCustomListOnDashboard(uncertainPendingItems, '⚠️ รายการซ้ำที่ข้อมูลรอบก่อนไม่ครบ (รอการยืนยันจากบอส)', 'warning');
+
+        this.state.uncertainQueue = [...uncertainList];
+        const prefixText = autoClosedCount > 0
+          ? `ผมปิดงานรายการที่ข้อมูลครบให้แล้ว <b>${autoClosedCount} ราย</b> ครับบอส ส่วนอีก <b>${uncertainList.length} ราย</b> ข้อมูลยังไม่ครบจึงไม่แน่ใจ — `
+          : `พบรายการซ้ำ <b>${uncertainList.length} ราย</b> ที่ข้อมูลรอบก่อนหน้ายังไม่ครบครับบอส — `;
+
+        this.askNextUncertainItem(prefixText);
+      }
+
+      askNextUncertainItem(prefixText = '') {
+        if (!this.state.uncertainQueue || this.state.uncertainQueue.length === 0) {
+          this.resetConversation(true);
+          loadDashboard();
+          this.speak("ตรวจสอบและจัดการรายการซ้ำครบทุกรายการเรียบร้อยแล้วครับบอส!", false);
+          return;
+        }
+
+        const current = this.state.uncertainQueue[0];
+        const { pendingItem, sourceItem, missingFields } = current;
+        const missingText = missingFields.join(', ');
+
+        this.displayCustomListOnDashboard([{ ...pendingItem, _missingNote: missingText }], `⚠️ รอยืนยัน: PEA ${pendingItem.pea} (รอบ ${sourceItem.sheetName} ขาด: ${missingText})`, 'warning');
+
+        this.promptChoices(
+          `${prefixText}รายการ PEA <b>${pendingItem.pea}</b> คุณ<b>${pendingItem.name}</b> (ข้อมูลรอบ ${sourceItem.sheetName} ขาด: <b>${missingText}</b>) จะให้ผม <b>ปิดงานเป็นส่งงานแล้วเลย</b>, <b>เปิดฟอร์มกรอกเพิ่ม</b> หรือ <b>ข้ามรายการนี้</b> ครับ?`,
+          [
+            {
+              label: '✅ ปิดเป็นส่งงานแล้วเลย',
+              icon: '✅',
+              priority: 2,
+              keywords: ['ปิดเลย', 'ปิดงาน', 'ส่งงานแล้ว', 'ยืนยัน', 'ใช่', 'เอาเลย'],
+              handler: async () => {
+                this.showSubtitle('⚙️ กำลังอัปเดตสถานะ...', `กำลังเปลี่ยนสถานะ PEA <b>${pendingItem.pea}</b> เป็นส่งงานแล้วครับบอส...`, 0);
+                try {
+                  await this.syncSingleDuplicateRow(current);
+                  this.state.uncertainQueue.shift();
+                  this.askNextUncertainItem(`เปลี่ยนสถานะ PEA <b>${pendingItem.pea}</b> เป็นส่งงานแล้วเรียบร้อยครับ — `);
+                } catch (e) {
+                  this.state.uncertainQueue.shift();
+                  this.askNextUncertainItem(`ขออภัยครับ อัปเดต PEA ${pendingItem.pea} ไม่สำเร็จ (${e.message}) — `);
+                }
+              }
+            },
+            {
+              label: '📝 เปิดฟอร์มกรอกเพิ่ม',
+              icon: '📝',
+              priority: 2,
+              keywords: ['เปิดฟอร์ม', 'กรอกเพิ่ม', 'แก้ไข', 'กรอกข้อมูล'],
+              handler: () => {
+                this.resetConversation(true);
+                this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${pendingItem.pea} ให้บอสกรอกข้อมูลเพิ่มเติมครับ`, false);
+                processPendingWork(pendingItem.pea, pendingItem.sheetName);
+              }
+            },
+            {
+              label: '⏭️ ข้ามรายการนี้',
+              icon: '⏭️',
+              priority: 1,
+              keywords: ['ข้าม', 'ไม่ต้อง', 'ยังไม่ปิด', 'ผ่าน'],
+              handler: () => {
+                this.state.uncertainQueue.shift();
+                this.askNextUncertainItem(`ข้ามรายการ PEA <b>${pendingItem.pea}</b> ไว้ก่อนครับ — `);
+              }
+            }
+          ]
+        );
+      }
+
+      // สรุปภาพรวม & หมวดวิเคราะห์อื่นๆ
+      analyzeAndSummarize() {
+        this.ensureData(false, (all) => {
+          const total = all.length;
+          const pendingList = all.filter(i => i.status === 'งานคงเหลือ');
+          const waitingCloseList = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ');
+          const completedCount = all.filter(i => i.status === 'เสร็จสมบูรณ์').length;
+          const donePercent = total > 0 ? Math.round(((waitingCloseList.length + completedCount) / total) * 100) : 0;
+
+          this.promptChoices(
+            `สรุปภาพรวมครับบอส จากทั้งหมด <b>${total} ใบงาน</b> ดำเนินการหน้างานแล้ว <b>${donePercent}%</b> ครับ แบ่งเป็น งานคงเหลือ <b>${pendingList.length}</b>, ส่งงานรอปิดใบสั่ง <b>${waitingCloseList.length}</b> และปิดเสร็จสมบูรณ์ <b>${completedCount}</b> ใบงานครับ ต้องการให้เปิดดูรายการ <b>งานคงเหลือ</b> หรือรายการ <b>รอปิดใบสั่ง</b> ครับ?`,
+            [
+              {
+                label: `งานคงเหลือ (${pendingList.length})`,
+                icon: '⏳',
+                priority: 2,
+                keywords: ['งานคงเหลือ', 'คงเหลือ', 'ค้าง'],
+                handler: () => {
+                  this.displayCustomListOnDashboard(pendingList, 'รายการงานคงเหลือทั้งหมด');
+                  this.speak(`แสดงงานคงเหลือ ${pendingList.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
+                }
+              },
+              {
+                label: `รอปิดใบสั่ง (${waitingCloseList.length})`,
+                icon: '📋',
+                priority: 1,
+                keywords: ['รอปิด', 'ส่งงานแล้ว', 'ตรวจสอบ', 'ปิดใบสั่ง'],
+                handler: () => {
+                  this.displayCustomListOnDashboard(waitingCloseList, 'รายการส่งงานแล้ว (รอตรวจสอบ/ปิดใบสั่ง)');
+                  this.speak(`แสดงรายการรอปิดใบสั่ง ${waitingCloseList.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
+                }
+              }
+            ],
+            () => {
+              this.displayCustomListOnDashboard(all, 'ใบงานทั้งหมดในรอบที่เลือก');
+              this.speak(`แสดงใบงานทั้งหมด ${all.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
+            }
+          );
+        });
+      }
+
+      analyzeRemainingWork() {
+        this.ensureData(false, (all) => {
+          const pending = all.filter(i => i.status === 'งานคงเหลือ');
+          const urgent = pending.filter(i => this.isImportantItem(i));
+          this.promptChoices(
+            `ตอนนี้มี <b>งานคงเหลือ</b> ทั้งหมด <b>${pending.length} รายการ</b> ครับบอส (เป็นงานด่วน/ช็อตไหม้/ค้างซ้ำ <b>${urgent.length} รายการ</b>) ต้องการเปิดดูเฉพาะ <b>งานด่วนคงเหลือ</b> หรือ <b>งานคงเหลือทั้งหมด</b> ครับ?`,
+            [
+              {
+                label: `งานด่วนคงเหลือ (${urgent.length})`,
+                icon: '🔥',
+                priority: 2,
+                keywords: ['ด่วน', 'ช็อตไหม้', 'สำคัญ', 'ซ้ำ'],
+                handler: () => {
+                  this.displayCustomListOnDashboard(urgent, 'งานด่วน / ช็อตไหม้ ที่ยังคงเหลือ');
+                  this.speak(`แสดงงานด่วนคงเหลือ ${urgent.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
+                }
+              },
+              {
+                label: `คงเหลือทั้งหมด (${pending.length})`,
+                icon: '📋',
+                priority: 1,
+                keywords: ['คงเหลือ', 'ทั้งหมด', 'ทั่วไป'],
+                handler: () => {
+                  this.displayCustomListOnDashboard(pending, 'รายการงานคงเหลือทั้งหมด');
+                  this.speak(`แสดงงานคงเหลือทั้งหมด ${pending.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
+                }
+              }
+            ]
+          );
+        });
+      }
+
+      analyzePendingCloseOrders() {
+        this.ensureData(false, (all) => {
+          const contractorWait = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
+          const empWait = all.filter(i => i.status === 'พนง. ดำเนินการ');
+          const totalWait = contractorWait.length + empWait.length;
+          this.promptChoices(
+            `มีใบงานที่ส่งแล้วและ <b>รอตรวจสอบเพื่อปิดใบสั่ง</b> ทั้งหมด <b>${totalWait} รายการ</b> ครับบอส แบ่งเป็น <b>ผรม. ส่งงานแล้ว ${contractorWait.length} ราย</b> และ <b>พนง. ดำเนินการ ${empWait.length} ราย</b> ต้องการเปิดดูของ <b>ผู้รับเหมา</b> หรือ <b>พนักงาน</b> ครับ?`,
+            [
+              { label: `ผรม. ส่งงานแล้ว (${contractorWait.length})`, icon: '👷', priority: 1, keywords: ['ผู้รับเหมา', 'ผรม'], handler: () => { this.displayCustomListOnDashboard(contractorWait, 'ผรม. ส่งงานแล้ว (รอปิดใบสั่ง)'); this.speak(`แสดงรายการ ผรม. ส่งงานแล้ว ${contractorWait.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false); } },
+              { label: `พนง. ดำเนินการ (${empWait.length})`, icon: '⚡', priority: 1, keywords: ['พนักงาน', 'พนง', 'ผมต'], handler: () => { this.displayCustomListOnDashboard(empWait, 'พนง. ดำเนินการ (รอปิดใบสั่ง)'); this.speak(`แสดงรายการ พนง. ดำเนินการ ${empWait.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false); } }
+            ]
+          );
+        });
+      }
+
+      analyzeOperatorPerformance() {
+        this.ensureData(false, (all) => {
+          const contractor = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
+          const emp = all.filter(i => i.status === 'พนง. ดำเนินการ');
+          this.promptChoices(
+            `ยอดส่งงานปัจจุบัน <b>ผู้รับเหมา</b> ส่งงานแล้ว <b>${contractor.length} รายการ</b> และ <b>พนักงาน</b> ดำเนินการ <b>${emp.length} รายการ</b> ครับบอส ต้องการเปิดดูรายการของ <b>ผู้รับเหมา</b> หรือ <b>พนักงาน</b> บนหน้าจอครับ?`,
+            [
+              { label: `ผลงานผู้รับเหมา (${contractor.length})`, icon: '👷', priority: 1, keywords: ['ผู้รับเหมา', 'ผรม'], handler: () => { this.displayCustomListOnDashboard(contractor, 'ผลงานผู้รับเหมา'); this.speak(`แสดงผลงานผู้รับเหมา ${contractor.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false); } },
+              { label: `ผลงานพนักงาน (${emp.length})`, icon: '⚡', priority: 1, keywords: ['พนักงาน', 'พนง', 'ผมต'], handler: () => { this.displayCustomListOnDashboard(emp, 'ผลงานพนักงาน'); this.speak(`แสดงผลงานพนักงาน ${emp.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false); } }
+            ]
+          );
+        });
+      }
+
+      isImportantItem(item) {
+        const sheet = (item.sheetName || '').toLowerCase();
+        const reason = (item.reason || '').toLowerCase();
+        return sheet.includes('ด่วน') || reason.includes('ช็อตไหม้') || /ครั้งที่\s*[2-9]/.test(reason);
+      }
+
+      analyzeImportantWork(isCompareMonths) {
+        this.ensureData(isCompareMonths, (allData) => {
+          const impAll = allData.filter(i => this.isImportantItem(i));
+          const impPending = impAll.filter(i => i.status === 'งานคงเหลือ');
+          this.promptChoices(
+            `พบรายการสำคัญและงานด่วนทั้งหมด <b>${impAll.length} รายการ</b> และยังเป็น <b>งานคงเหลือ ${impPending.length} รายการ</b> ครับบอส ต้องการเปิดดูเฉพาะ <b>งานสำคัญที่ยังค้าง</b> หรือ <b>รายการสำคัญทั้งหมด</b> ครับ?`,
+            [
+              { label: `สำคัญที่ยังค้าง (${impPending.length})`, icon: '⏳', priority: 2, keywords: ['ค้าง', 'คงเหลือ', 'ยังไม่เสร็จ'], handler: () => { this.displayCustomListOnDashboard(impPending, 'รายการสำคัญที่ยังคงเหลือ'); this.speak(`แสดงรายการสำคัญที่ยังค้าง ${impPending.length} รายการ เรียบร้อยครับบอส`, false); } },
+              { label: `สำคัญทั้งหมด (${impAll.length})`, icon: '🔥', priority: 1, keywords: ['สำคัญทั้งหมด', 'ทั้งหมด'], handler: () => { this.displayCustomListOnDashboard(impAll, 'รายการสำคัญทั้งหมด'); this.speak(`แสดงรายการสำคัญทั้งหมด ${impAll.length} รายการ เรียบร้อยครับบอส`, false); } }
+            ]
+          );
+        });
+      }
+
+      analyzeTopReasons() {
+        this.ensureData(false, (all) => {
+          const counts = {};
+          all.forEach(i => { const r = (i.reason || 'ไม่ระบุสาเหตุ').trim(); counts[r] = (counts[r] || 0) + 1; });
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          if (sorted.length === 0) { this.speak("ยังไม่มีข้อมูลสาเหตุการชำรุดให้วิเคราะห์ครับบอส", false); return; }
+          const top1 = sorted[0];
+          const top1Items = all.filter(i => (i.reason || 'ไม่ระบุสาเหตุ').trim() === top1[0]);
+          this.displayCustomListOnDashboard(top1Items, `กรองตามสาเหตุอันดับ 1: ${top1[0]}`);
+          this.speak(`สาเหตุที่พบมากที่สุดคือ <b>${top1[0]}</b> จำนวน ${top1[1]} ราย แสดงบนหน้าจอเรียบร้อยครับบอส`, false);
+        });
+      }
+
+      recommendBestRoute() {
+        this.ensureData(false, (all) => {
+          const pendingWithGps = all.filter(i => i.status === 'งานคงเหลือ' && this.hasValidNumericGps(i));
+          if (pendingWithGps.length === 0) { this.speak("ตอนนี้ไม่มีงานคงเหลือที่มีพิกัดตัวเลขพร้อมนำทางครับบอส", false); return; }
+          const areaCount = {};
+          pendingWithGps.forEach(item => { const loc = (item.location || 'ไม่ระบุ').trim(); areaCount[loc] = (areaCount[loc] || 0) + 1; });
+          const bestArea = Object.entries(areaCount).sort((a, b) => b[1] - a[1])[0];
+          const bestItems = pendingWithGps.filter(i => (i.location || '').trim() === bestArea[0]);
+          this.promptChoices(
+            `แนะนำให้เริ่มที่พื้นที่ <b>${bestArea[0]}</b> ก่อนครับ เพราะมีงานคงเหลือพร้อมพิกัดมากที่สุด <b>${bestArea[1]} ใบงาน</b> ต้องการ <b>เปิด Google Maps นำทาง</b> หรือ <b>โชว์รายการพื้นที่นี้</b> ครับ?`,
+            [
+              { label: `เปิดแผนที่นำทาง (${bestItems.length} จุด)`, icon: '🧭', priority: 2, keywords: ['แผนที่', 'นำทาง', 'gps'], handler: () => { this.speak(`กำลังเปิด Google Maps นำทางไปยังพื้นที่ ${bestArea[0]} ครับบอส`, false); this.executeMapRouting(bestItems); } },
+              { label: `โชว์รายการพื้นที่ ${bestArea[0]}`, icon: '📋', priority: 1, keywords: ['โชว์', 'รายการ', 'หน้าจอ'], handler: () => { this.displayCustomListOnDashboard(bestItems, `งานคงเหลือพื้นที่แนะนำ: ${bestArea[0]}`); this.speak(`แสดงรายการพื้นที่ ${bestArea[0]} บนหน้าจอเรียบร้อยครับบอส`, false); } }
+            ]
+          );
+        });
+      }
+
+      analyzeGpsReadiness() {
+        this.ensureData(false, (all) => {
+          const pending = all.filter(i => i.status === 'งานคงเหลือ');
+          const validGps = pending.filter(i => this.hasValidNumericGps(i));
+          const noReadyGps = pending.filter(i => !this.hasValidNumericGps(i));
+          this.promptChoices(
+            `จากงานคงเหลือ <b>${pending.length} งาน</b>: มีพิกัดพร้อมลุย <b>${validGps.length} งาน</b> และยังไม่มีพิกัด <b>${noReadyGps.length} งาน</b> ต้องการดูรายการไหนครับ?`,
+            [
+              { label: `ไม่มีพิกัด (${noReadyGps.length})`, icon: '⚠️', priority: 2, keywords: ['ไม่มีพิกัด', 'ขาดพิกัด', 'ไม่มี'], handler: () => { this.displayCustomListOnDashboard(noReadyGps, 'งานคงเหลือที่ยังไม่มีพิกัด'); this.speak(`แสดงรายการที่ยังไม่มีพิกัดจำนวน ${noReadyGps.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false); } },
+              { label: `มีพิกัดพร้อมลุย (${validGps.length})`, icon: '📍', priority: 1, keywords: ['มีพิกัด', 'พร้อมลุย', 'พร้อม'], handler: () => { this.displayCustomListOnDashboard(validGps, 'งานคงเหลือที่มีพิกัดพร้อมนำทาง'); this.speak(`แสดงรายการที่มีพิกัดพร้อมลุยจำนวน ${validGps.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false); } }
+            ]
+          );
+        });
+      }
+
+      performSearchAndThink(keyword, isFollowUp) {
+        const statusTab = document.querySelector('#status-tab');
+        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
+        const searchBox = document.getElementById('dash-search');
+        if (searchBox) { searchBox.value = keyword; filterDashboard(); }
+        const terms = keyword.toLowerCase().split(/\s+/);
+        const matched = (globalDashResults || []).filter(item => {
+          const fullText = `${item.pea} ${item.name} ${item.location} ${item.reason} ${item.status} ${item.sheetName}`.toLowerCase();
+          return terms.every(t => fullText.includes(t));
+        });
+        this.resetConversation(false);
+        this.speak(matched.length === 0 ? `ไม่พบใบงานที่ตรงกับ "${keyword}" เลยครับบอส` : `แสดง <b>${matched.length} ใบงาน</b> ที่เกี่ยวกับ ${keyword} บนหน้าจอเรียบร้อยครับบอส`, false);
+      }
+
+      executeMapRouting(items) {
+        let url = "https://www.google.com/maps/dir/Current+Location/";
+        items.slice(0, 9).forEach(item => {
+          const cleanGps = item.gps.trim().replace(/\s/g, '');
+          if (!cleanGps.toLowerCase().includes('http')) url += cleanGps + "/";
+        });
+        window.open(url, '_blank');
+      }
+
+      cleanText(text) {
+        return text
+          .replace(/ช่วย|กรอง|หา|ค้นหา|ใบงาน|ที่อยู่|ในโซน|เอาเฉพาะ|เฉพาะ|เปิดดู|ดูงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|สิ/g, '')
+          .replace(/\s+/g, ' ').trim();
+      }
+    }
+
+    const jarvisBrain = new JarvisVoiceBrain();
+    function toggleJarvis() {
+      if (!isAdminUser) return;
+      jarvisBrain.toggleListening();
+    }
+
+    // =========================================================================
+    // ฟังก์ชันเดิมของระบบส่งงาน & Dashboard
+    // =========================================================================
     function getDirectImageUrl(url) {
       if (!url) return '';
       let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -784,7 +2501,6 @@
       document.getElementById('tableModalTitle').innerText = `รายละเอียดสถานะ: ${filterStatus}`;
       let thead = '';
       let tbody = '';
-      
       let filteredData = (filterStatus === 'ทั้งหมด') ? globalDashResults : globalDashResults.filter(item => item.status === filterStatus);
       
       if (filteredData.length === 0) {
@@ -818,1700 +2534,12 @@
 
     function exportTableToExcel() {
       const table = document.getElementById("detailDataTreeTable");
-      if (!table || table.rows.length <= 1) {
-        alert("ไม่มีข้อมูลสำหรับ Export");
-        return;
-      }
+      if (!table || table.rows.length <= 1) { alert("ไม่มีข้อมูลสำหรับ Export"); return; }
       const currentStatusTitle = document.getElementById('tableModalTitle').innerText.replace('รายละเอียดสถานะ: ', '').trim();
       const monthFilter = document.getElementById('filter-month').value;
       const fileName = `รายงานใบงาน_${currentStatusTitle}_เดือน_${monthFilter}.xlsx`;
-      
       const wb = XLSX.utils.table_to_book(table, {sheet: "Sheet1"});
       XLSX.writeFile(wb, fileName);
-    }
-
-    // =========================================================================
-    // 🤖 J.A.R.V.I.S Smart Voice Brain v5.2
-    // (Create New Month Sheet with Formulas + Incomplete Audit + Duplicate Sync)
-    // =========================================================================
-    class JarvisVoiceBrain {
-      constructor() {
-        this.state = {
-          mode: 'IDLE',           // IDLE | AWAITING_CHOICE | AWAITING_FILTER | AWAITING_INTENT
-          choices: [],            // [{ label, icon, priority, keywords: [], handler: fn }, ...]
-          defaultAllHandler: null,
-          lastKeywords: [],
-          lastMatchedItems: [],
-          duplicateContext: null,
-          uncertainQueue: []
-        };
-        this.STORAGE_KEY = 'jarvis_pea_voice_memory_v1';
-        this.memory = this.loadMemory();
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        this.isListening = false;
-        this.subtitleTimer = null;
-        this.initSpeech();
-      }
-
-      unlockAudioEngine() {
-        if (!('speechSynthesis' in window)) return;
-        try {
-          const silent = new SpeechSynthesisUtterance('');
-          silent.volume = 0;
-          window.speechSynthesis.speak(silent);
-        } catch (e) {}
-      }
-
-      loadMemory() {
-        try {
-          const saved = localStorage.getItem(this.STORAGE_KEY);
-          return saved ? JSON.parse(saved) : { frequentCommands: {}, lastVisit: null };
-        } catch (e) {
-          return { frequentCommands: {}, lastVisit: null };
-        }
-      }
-
-      saveCommandToMemory(cleanCommand) {
-        if (!cleanCommand || cleanCommand.length < 2) return;
-        const count = this.memory.frequentCommands[cleanCommand] || 0;
-        this.memory.frequentCommands[cleanCommand] = count + 1;
-        this.memory.lastVisit = new Date().toISOString();
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.memory));
-        this.renderFrequentChips();
-      }
-
-      getTopFrequentCommands(limit = 3) {
-        return Object.entries(this.memory.frequentCommands)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, limit)
-          .map(entry => entry[0]);
-      }
-
-      renderFrequentChips() {
-        const container = document.getElementById('admin-voice-chips-list');
-        if (!container) return;
-
-        const top = this.getTopFrequentCommands(3);
-        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S ด่วน:</span>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่')">➕ สร้างชีตเดือนใหม่</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด')">🩺 ใบงานไม่สมบูรณ์</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeAndSummarize()">📊 สรุปภาพรวม</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeCrossMonthDuplicates()">🔁 เช็กซ้ำข้ามเดือน</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.startAutoCloseDuplicates()">⚡ ปิดงานซ้ำอัตโนมัติ</button>`;
-
-        top.forEach(cmd => {
-          const safeCmd = cmd.replace(/'/g, "\\'");
-          html += `<button type="button" class="voice-chip" onclick="jarvisBrain.runQuickChip('${safeCmd}')">🕒 ${cmd}</button>`;
-        });
-
-        container.innerHTML = html;
-      }
-
-      runQuickChip(cmd) {
-        if (!isAdminUser) return;
-        this.unlockAudioEngine();
-        this.resetConversation(false);
-        this.saveCommandToMemory(cmd);
-        this.state.lastKeywords = [cmd];
-        this.performSearchAndThink(cmd, false);
-      }
-
-      showSubtitle(speaker, htmlText, autoHideMs = 10000, choiceButtons = []) {
-        if (!isAdminUser) return;
-        const box = document.getElementById('jarvis-subtitle');
-        if (!box) return;
-        clearTimeout(this.subtitleTimer);
-
-        let pillsHtml = '';
-        if (choiceButtons && choiceButtons.length > 0) {
-          pillsHtml = `<div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top border-secondary">` +
-            choiceButtons.map((c, idx) =>
-              `<button type="button" class="jarvis-choice-pill" onclick="jarvisBrain.triggerChoiceByIndex(${idx})">${c.icon || '👉'} ${c.label}</button>`
-            ).join('') +
-            `</div>`;
-        }
-
-        box.innerHTML = `
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="fw-bold text-info small">${speaker}</span>
-            <button type="button" class="btn-close btn-close-white" style="font-size:0.65rem;" onclick="document.getElementById('jarvis-subtitle').style.display='none'"></button>
-          </div>
-          <div>${htmlText}</div>
-          ${pillsHtml}
-        `;
-        box.style.display = 'block';
-        if (autoHideMs > 0) {
-          this.subtitleTimer = setTimeout(() => { box.style.display = 'none'; }, autoHideMs);
-        }
-      }
-
-      triggerChoiceByIndex(idx) {
-        if (!this.state.choices || !this.state.choices[idx]) return;
-        const chosen = this.state.choices[idx];
-        this.resetConversation(false);
-        chosen.handler();
-      }
-
-      promptChoices(htmlText, choices, defaultAllHandler = null) {
-        this.state.mode = 'AWAITING_CHOICE';
-        this.state.choices = choices;
-        this.state.defaultAllHandler = defaultAllHandler;
-        this.speak(htmlText, true, choices);
-      }
-
-      initSpeech() {
-        if (!this.recognition) return;
-        this.recognition.lang = 'th-TH';
-        this.recognition.interimResults = false;
-        this.recognition.maxAlternatives = 1;
-
-        this.recognition.onstart = () => {
-          this.isListening = true;
-          document.getElementById('jarvis-btn')?.classList.add('listening');
-          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-          const hint = this.state.mode === 'AWAITING_CHOICE'
-            ? 'พูดเลือกทางเลือก หรือแตะปุ่มด้านล่างได้เลยครับ'
-            : 'เชิญสั่งการได้เลยครับบอส';
-          this.showSubtitle('🎙️ J.A.R.V.I.S กำลังฟัง...', hint, 0, this.state.choices);
-        };
-
-        this.recognition.onresult = (event) => {
-          this.isListening = false;
-          const transcript = event.results[0][0].transcript.trim();
-          this.showSubtitle('🗣️ บอสสั่งว่า:', `"${transcript}"`, 5000);
-          this.handleInput(transcript);
-        };
-
-        this.recognition.onerror = (event) => {
-          this.isListening = false;
-          document.getElementById('jarvis-btn')?.classList.remove('listening');
-          if (event.error === 'no-speech' && this.state.mode === 'AWAITING_CHOICE' && this.state.choices.length > 0) {
-            this.showSubtitle('🤖 J.A.R.V.I.S:', 'บอสสามารถแตะเลือกทางเลือกจากปุ่มด้านล่าง หรือกดไมค์สั่งใหม่ได้ครับ', 14000, this.state.choices);
-            this.state.mode = 'IDLE';
-          } else if (event.error === 'no-speech' && this.state.mode !== 'IDLE') {
-            this.resetConversation(false);
-            this.speak("หากต้องการสั่งการเพิ่มเติม กดปุ่มไมค์ได้ตลอดครับบอส", false);
-          } else {
-            document.getElementById('jarvis-subtitle').style.display = 'none';
-          }
-        };
-
-        this.recognition.onend = () => {
-          this.isListening = false;
-          document.getElementById('jarvis-btn')?.classList.remove('listening');
-        };
-      }
-
-      toggleListening() {
-        if (!isAdminUser) return;
-        this.unlockAudioEngine();
-        if (this.isListening && this.recognition) {
-          try { this.recognition.stop(); } catch (e) {}
-          this.isListening = false;
-          document.getElementById('jarvis-btn')?.classList.remove('listening');
-          return;
-        }
-        this.startListening();
-      }
-
-      startListening() {
-        if (!isAdminUser) return;
-        if (!this.recognition) {
-          alert("เบราว์เซอร์นี้ไม่รองรับการสั่งงานด้วยเสียงครับ");
-          return;
-        }
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        try {
-          this.recognition.start();
-        } catch (e) {}
-      }
-
-      speak(htmlText, expectReply = false, choiceButtons = []) {
-        if (!isAdminUser) return;
-        this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 11000, choiceButtons);
-
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlText;
-        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
-
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-
-        const msg = new SpeechSynthesisUtterance(cleanSpeech);
-        msg.lang = 'th-TH';
-        msg.rate = 1.1;
-
-        msg.onend = () => {
-          if (expectReply && isAdminUser) {
-            setTimeout(() => this.startListening(), 400);
-          }
-        };
-
-        window.speechSynthesis.speak(msg);
-      }
-
-      resetConversation(clearDupContext = true) {
-        this.state.mode = 'IDLE';
-        this.state.choices = [];
-        this.state.defaultAllHandler = null;
-        this.state.lastKeywords = [];
-        this.state.lastMatchedItems = [];
-        if (clearDupContext) {
-          this.state.duplicateContext = null;
-          this.state.uncertainQueue = [];
-        }
-      }
-
-      callAPIAsync(action, params) {
-        return new Promise((resolve, reject) => {
-          fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: action, params: params })
-          })
-          .then(r => r.json())
-          .then(data => resolve(data))
-          .catch(err => reject(err));
-        });
-      }
-
-      ensureData(requireAllMonths, callback) {
-        const currentFilterMonth = document.getElementById('filter-month')?.value;
-        const needFetch = !globalDashResults || globalDashResults.length === 0 || (requireAllMonths && currentFilterMonth !== 'ALL');
-        if (needFetch) {
-          callAPI('getDashboardData', { month: requireAllMonths ? 'ALL' : (currentFilterMonth || 'ALL'), statusFilter: 'ทั้งหมด' }, (res) => {
-            if (requireAllMonths) {
-              const fm = document.getElementById('filter-month');
-              if (fm) fm.value = 'ALL';
-            }
-            globalDashResults = res.results || [];
-            document.getElementById('stat-total').innerText = res.stats.total;
-            document.getElementById('stat-pending').innerText = res.stats.pending;
-            document.getElementById('stat-contractor').innerText = res.stats.contractor;
-            document.getElementById('stat-emp').innerText = res.stats.employee;
-            document.getElementById('stat-completed').innerText = res.stats.completed;
-            callback(globalDashResults);
-          });
-        } else {
-          callback(globalDashResults);
-        }
-      }
-
-      displayCustomListOnDashboard(items, bannerTitle, alertType = 'info') {
-        const statusTab = document.querySelector('#status-tab');
-        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
-        const searchBox = document.getElementById('dash-search');
-        if (searchBox) searchBox.value = '';
-        const banner = `<div class="alert alert-${alertType} rounded-4 shadow-sm mb-3 fw-bold"><i class="bi bi-cpu-fill me-2"></i>${bannerTitle} (${items.length} รายการ)</div>`;
-        renderCardsList(items, banner);
-      }
-
-      exportCustomItemsToExcel(items, filePrefix) {
-        if (!items || items.length === 0) {
-          alert("ไม่มีข้อมูลสำหรับส่งออก Excel");
-          return;
-        }
-        const rows = items.map((it, idx) => ({
-          'ลำดับ': idx + 1,
-          'รอบเดือน': it.sheetName || '-',
-          'PEA เดิม': it.pea || '-',
-          'ชื่อผู้ใช้ไฟ': it.name || '-',
-          'สถานที่': it.location || '-',
-          'สาเหตุ': it.reason || '-',
-          'หน่วย PEA เดิม': it.colD || '-',
-          'PEA ใหม่': it.colF || '-',
-          'หน่วย PEA ใหม่': it.colG || '-',
-          'ผู้ดำเนินการ': it.operator || '-',
-          'สถานะ': it.status || '-',
-          'ข้อมูลที่ขาด/ไม่สมบูรณ์': it._missingNote || 'ครบถ้วน'
-        }));
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Incomplete_Report');
-        XLSX.writeFile(wb, `${filePrefix}.xlsx`);
-      }
-
-      hasValidNumericGps(item) {
-        if (!item || !item.gps) return false;
-        const g = item.gps.trim();
-        return g !== '' && !g.toLowerCase().includes('http') && !g.toLowerCase().includes('goo.gl');
-      }
-
-      // =======================================================================
-      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (v5.2)
-      // =======================================================================
-      handleInput(rawText) {
-        if (!isAdminUser) return;
-        const text = rawText.toLowerCase().trim();
-        const affirmative = /(ใช่|เอา|เปิด|แสดง|ตกลง|จัดไป|ได้เลย|ดู|นำทาง|ครับ|ค่ะ)/;
-
-        // 0. คำสั่งยกเลิก / เริ่มใหม่
-        if (/(ยกเลิก|เริ่มใหม่|พอแค่นี้|ไม่ต้องแล้ว)/.test(text)) {
-          this.resetConversation(true);
-          this.speak("รับทราบครับบอส ยกเลิกคำสั่งเรียบร้อยครับ", false);
-          return;
-        }
-
-        // 1. สั่งปิดงานที่ซ้ำกัน / เปลี่ยนสถานะเป็นส่งงานแล้ว
-        if (/(ปิดงานที่ซ้ำ|ปิดงานซ้ำ|ปิดรายการซ้ำ|เปลี่ยนสถานะ.*ส่งงาน|ปิดงาน.*ซ้ำ|อัปเดต.*ซ้ำ|ดำเนินการปิดงานซ้ำ)/.test(text)) {
-          this.startAutoCloseDuplicates();
-          return;
-        }
-
-        // 2. กรณีกำลังรอคำตอบจากทางเลือก (AWAITING_CHOICE)
-        if (this.state.mode === 'AWAITING_CHOICE' && this.state.choices.length > 0) {
-          if (/(ทั้งหมด|ทั้งคู่|สองอย่าง|รวมเลย)/.test(text) && this.state.defaultAllHandler) {
-            const fnAll = this.state.defaultAllHandler;
-            this.resetConversation(false);
-            fnAll();
-            return;
-          }
-
-          if (/(อันแรก|ตัวแรก|อย่างแรก|ข้อแรก|ข้อหนึ่ง|ข้อ 1|ตัวที่ 1)/.test(text)) {
-            const c0 = this.state.choices[0];
-            this.resetConversation(false);
-            c0.handler();
-            return;
-          }
-          if (/(อันหลัง|อันที่สอง|ตัวหลัง|ตัวที่สอง|อย่างหลัง|ข้อสอง|ข้อ 2|ตัวที่ 2)/.test(text) && this.state.choices[1]) {
-            const c1 = this.state.choices[1];
-            this.resetConversation(false);
-            c1.handler();
-            return;
-          }
-          if (/(ข้อสาม|ข้อ 3|ตัวที่ 3|อันที่สาม)/.test(text) && this.state.choices[2]) {
-            const c2 = this.state.choices[2];
-            this.resetConversation(false);
-            c2.handler();
-            return;
-          }
-
-          const sortedChoices = [...this.state.choices].sort((a, b) => (b.priority || 1) - (a.priority || 1));
-          for (const choice of sortedChoices) {
-            if (choice.keywords.some(kw => text.includes(kw))) {
-              this.resetConversation(false);
-              choice.handler();
-              return;
-            }
-          }
-
-          this.resetConversation(false);
-        }
-
-        // 3. กรณีกำลังรอกรองเพิ่มเติม (AWAITING_FILTER)
-        if (this.state.mode === 'AWAITING_FILTER') {
-          const extraKeyword = this.cleanText(text);
-          if (affirmative.test(text) && extraKeyword.length < 2 && this.state.lastKeywords.length > 0) {
-            const combinedQuery = this.state.lastKeywords.join(' ');
-            this.performSearchAndThink(combinedQuery, true);
-            return;
-          }
-          this.state.lastKeywords.push(extraKeyword);
-          const combinedQuery = this.state.lastKeywords.join(' ');
-          this.saveCommandToMemory(combinedQuery);
-          this.performSearchAndThink(combinedQuery, true);
-          return;
-        }
-
-        if (this.state.mode === 'AWAITING_INTENT') {
-          this.resetConversation(false);
-          if (/(สร้าง.*เดือน|สร้างชีต|เปิดรอบเดือน)/.test(text)) { this.promptCreateNewMonthSheet(text); return; }
-          if (/(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย)/.test(text)) { this.analyzeIncompleteByStatusAndMonth(text); return; }
-          if (/(สรุป|ภาพรวม|ยอด)/.test(text)) { this.analyzeAndSummarize(); return; }
-          if (/(ซ้ำ)/.test(text)) { this.analyzeCrossMonthDuplicates(); return; }
-          if (/(แนะนำ|ไปไหน|เริ่มตรงไหน)/.test(text)) { this.recommendBestRoute(); return; }
-          if (/(ด่วน|สำคัญ|ช็อต)/.test(text)) { this.analyzeImportantWork(false); return; }
-          if (/(สาเหตุ|เสียบ่อย|พัง)/.test(text)) { this.analyzeTopReasons(); return; }
-          if (/(พิกัด|gps)/i.test(text)) { this.analyzeGpsReadiness(); return; }
-        }
-
-        // --- วิเคราะห์เจตนาใหม่ ---
-
-        // [ใหม่ v5.2] สั่งสร้างชีตใบงานเดือนใหม่ใน Google Sheets (เช่น "สร้างใบงานเดือน 11", "สร้างชีตเดือนใหม่")
-        if (/(สร้าง|เปิดรอบ|เพิ่ม).*(ใบงาน|ชีต|ตาราง|รอบเดือน|เดือน)/.test(text) && /(เดือน|ชีต|รอบเดือน)/.test(text)) {
-          this.promptCreateNewMonthSheet(text);
-          return;
-        }
-
-        // [v5.1] วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
-        if (/(ไม่สมบูรณ์|ข้อมูลไม่ครบ|ไม่ครบถ้วน|ขาดรูป|ไม่มีรูป|ขาดหน่วย|ไม่มีหน่วย|ข้อมูลขาด|ตกหล่น)/.test(text)) {
-          this.analyzeIncompleteByStatusAndMonth(text);
-          return;
-        }
-
-        // คู่มือคำสั่งเสียง (Help)
-        if (/(ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
-          this.promptChoices(
-            "บอสสามารถสั่งให้ผม <b>สร้างชีตใบงานเดือนใหม่พร้อมสูตร</b>, <b>วิเคราะห์ใบงานที่ไม่สมบูรณ์แยกตามสถานะและเดือน</b>, <b>เช็ก PEA ซ้ำข้ามเดือนแล้วสั่งปิดงานอัตโนมัติ</b>, <b>สรุปภาพรวม</b> หรือ <b>ส่งออก Excel</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนครับ?",
-            [
-              { label: '➕ สร้างชีตเดือนใหม่', icon: '➕', priority: 2, keywords: ['สร้าง', 'เดือนใหม่', 'ชีต'], handler: () => this.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่') },
-              { label: '🩺 เช็กใบงานไม่สมบูรณ์', icon: '🩺', priority: 1, keywords: ['ไม่สมบูรณ์', 'ไม่ครบ'], handler: () => this.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด') }
-            ]
-          );
-          return;
-        }
-
-        // ส่งออกไฟล์ Excel ด้วยเสียง
-        if (/(export|เอ็กซ์เซล|ส่งออก|ดาวน์โหลดตาราง|โหลดตาราง)/i.test(text)) {
-          const curStatus = document.getElementById('filter-status')?.value || 'ทั้งหมด';
-          this.promptChoices(
-            `พร้อมส่งออกข้อมูลสถานะ <b>"${curStatus}"</b> เป็นไฟล์ Excel ครับบอส ต้องการให้ <b>ดาวน์โหลด Excel ทันที</b> หรือ <b>เปิดตารางตรวจสอบก่อน</b> ครับ?`,
-            [
-              {
-                label: 'ดาวน์โหลด Excel ทันที',
-                icon: '📥',
-                priority: 2,
-                keywords: ['ดาวน์โหลด', 'ทันที', 'ส่งออก', 'โหลดเลย', 'export'],
-                handler: () => {
-                  showTableModal(curStatus);
-                  setTimeout(() => exportTableToExcel(), 400);
-                  this.speak("เปิดตารางและดาวน์โหลดไฟล์ Excel เรียบร้อยครับบอส", false);
-                }
-              },
-              {
-                label: 'เปิดตารางตรวจสอบก่อน',
-                icon: '📊',
-                priority: 1,
-                keywords: ['ตาราง', 'ตรวจสอบ', 'เปิดดูก่อน'],
-                handler: () => {
-                  showTableModal(curStatus);
-                  this.speak("เปิดตารางรายละเอียดบนหน้าจอเรียบร้อยครับบอส", false);
-                }
-              }
-            ]
-          );
-          return;
-        }
-
-        // ประวัติคำสั่งที่ใช้บ่อย / ล้างความจำ
-        if (/(ล้างความจำ|ลบประวัติคำสั่ง)/.test(text)) {
-          localStorage.removeItem(this.STORAGE_KEY);
-          this.memory = { frequentCommands: {}, lastVisit: null };
-          this.renderFrequentChips();
-          this.speak("ล้างประวัติคำสั่งที่ใช้บ่อยเรียบร้อยครับบอส", false);
-          return;
-        }
-        if (/(คำถามที่ถามบ่อย|ใช้บ่อย|ประจำ|ค้นหาอะไรบ้าง)/.test(text)) {
-          const top = this.getTopFrequentCommands(2);
-          if (top.length === 0) {
-            this.speak("บอสยังไม่มีประวัติคำสั่งที่ใช้บ่อยครับ ลองสั่งค้นหาหรือสรุปงานได้เลยครับ", false);
-          } else {
-            this.promptChoices(
-              `คำสั่งที่บอสใช้บ่อยที่สุดคือ <b>"${top[0]}"</b> ครับ ต้องการให้ผม <b>ค้นหา "${top[0]}"</b> หรือ <b>สร้างชีตเดือนใหม่</b> ครับ?`,
-              [
-                { label: `ค้นหา "${top[0]}"`, icon: '🕒', priority: 2, keywords: [top[0].toLowerCase(), 'ค้นหา', 'เปิด'], handler: () => this.runQuickChip(top[0]) },
-                { label: '➕ สร้างชีตเดือนใหม่', icon: '➕', priority: 1, keywords: ['สร้าง', 'เดือนใหม่'], handler: () => this.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่') }
-              ]
-            );
-          }
-          return;
-        }
-
-        // เช็กรายการซ้ำข้ามเดือน
-        if (/(ซ้ำ|ซ้ำกัน|ซ้ำซ้อน|ชนกัน)/.test(text)) {
-          this.analyzeCrossMonthDuplicates();
-          return;
-        }
-
-        // วิเคราะห์รายการสำคัญ / งานด่วน
-        if (/(สำคัญ|งานด่วน|เร่งด่วน|ครั้งที่ 2|ครั้งที่ 3)/.test(text)) {
-          const isCompare = /(เดือนนี้|เดือนที่แล้ว|เดือนก่อน|เทียบ)/.test(text);
-          this.analyzeImportantWork(isCompare);
-          return;
-        }
-
-        // วิเคราะห์สาเหตุการชำรุดยอดฮิต
-        if (/(สาเหตุ|เสียบ่อย|พังบ่อย|ชำรุดอะไร|อันดับสาเหตุ)/.test(text)) {
-          this.analyzeTopReasons();
-          return;
-        }
-
-        // เช็กความพร้อมพิกัด GPS
-        if (/(พิกัด|gps|จีพีเอส)/i.test(text)) {
-          this.analyzeGpsReadiness();
-          return;
-        }
-
-        // เปรียบเทียบผลงานผู้รับเหมา vs พนักงาน
-        if (/(ผู้รับเหมา|ผรม|พนักงาน|พนง|เทียบผลงาน)/.test(text) && /(กี่|ยอด|สรุป|เท่าไหร่|ผลงาน|เทียบ)/.test(text)) {
-          this.analyzeOperatorPerformance();
-          return;
-        }
-
-        // เช็กยอดเฉพาะสถานะ
-        if (/(รอปิด|ยังไม่ได้ปิด|ตรวจงาน|ส่งงานแล้ว)/.test(text) && /(กี่|มี|ยอด|สรุป|ดู|เช็ก)/.test(text)) {
-          this.analyzePendingCloseOrders();
-          return;
-        }
-        if (/(คงเหลือ|เหลืออีก|ค้างอยู่)/.test(text) && /(กี่|มี|ยอด|สรุป|เท่าไหร่)/.test(text)) {
-          this.analyzeRemainingWork();
-          return;
-        }
-
-        // แนะนำจุดเริ่มงาน
-        if (/(แนะนำ|ไปไหนก่อน|เริ่มตรงไหน|วางแผน|โซนไหนเยอะ|พื้นที่ไหนเยอะ)/.test(text)) {
-          this.recommendBestRoute();
-          return;
-        }
-
-        // สรุปภาพรวม
-        if (/(สรุป|ภาพรวม|ความคืบหน้า|กี่เปอร์เซ็นต์|มีงานอะไรบ้าง)/.test(text)) {
-          this.analyzeAndSummarize();
-          return;
-        }
-
-        // ค้นหาเจาะจง
-        const cleaned = this.cleanText(text);
-        if (cleaned.length < 2) {
-          this.state.mode = 'AWAITING_INTENT';
-          this.speak(`ขออภัยครับบอส ผมได้ยินว่า "${rawText}" ไม่แน่ใจว่าบอสต้องการให้ <b>สร้างชีตเดือนใหม่</b>, <b>วิเคราะห์ใบงานไม่สมบูรณ์</b>, <b>เช็ก PEA ซ้ำข้ามเดือน</b> หรือ <b>สรุปภาพรวม</b> ครับ?`, true);
-          return;
-        }
-
-        this.saveCommandToMemory(cleaned);
-        this.state.lastKeywords = [cleaned];
-        this.performSearchAndThink(cleaned, false);
-      }
-
-      // =======================================================================
-      // ➕ [ใหม่ v5.2] สร้างชีตใบงานเดือนใหม่ใน Google Sheets (คัดลอกสูตร + ล้างข้อมูล)
-      // =======================================================================
-      getNextMonthSuggestionFromDropdown() {
-        const opts = [...document.querySelectorAll('#filter-month option')]
-          .map(o => o.value)
-          .filter(v => /^\d{2}\.\d{4}$/.test(v))
-          .sort((a, b) => {
-            const [mA, yA] = a.split('.').map(Number);
-            const [mB, yB] = b.split('.').map(Number);
-            return (yB * 100 + mB) - (yA * 100 + mA);
-          });
-
-        if (opts.length === 0) {
-          const now = new Date();
-          return {
-            latestSheet: null,
-            nextMonthNum: String(now.getMonth() + 1).padStart(2, '0'),
-            nextSheetName: `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`
-          };
-        }
-
-        const latest = opts[0];
-        const [m, y] = latest.split('.').map(Number);
-        const nextM = m + 1 > 12 ? 1 : m + 1;
-        const nextY = m + 1 > 12 ? y + 1 : y;
-        return {
-          latestSheet: latest,
-          nextMonthNum: String(nextM).padStart(2, '0'),
-          nextSheetName: `${String(nextM).padStart(2, '0')}.${nextY}`
-        };
-      }
-
-      promptCreateNewMonthSheet(rawText) {
-        const text = (rawText || '').toLowerCase();
-        const parsedMonth = this.parseMonthFromText(text);
-        const suggestion = this.getNextMonthSuggestionFromDropdown();
-
-        let targetMonthNum = parsedMonth ? parsedMonth.monthNum : suggestion.nextMonthNum;
-        let targetYear = suggestion.latestSheet ? Number(suggestion.latestSheet.split('.')[1]) : (new Date().getFullYear() + 543);
-        if (suggestion.latestSheet && Number(suggestion.latestSheet.split('.')[0]) === 12 && Number(targetMonthNum) === 1) {
-          targetYear += 1;
-        }
-        const targetSheetName = `${targetMonthNum}.${targetYear}`;
-        const fromText = suggestion.latestSheet ? `จากต้นแบบชีต <b>${suggestion.latestSheet}</b>` : 'จากต้นแบบชีตเดือนล่าสุด';
-
-        this.promptChoices(
-          `พร้อมสร้างชีตใบงานเดือนใหม่ชื่อ <b>"${targetSheetName}"</b> ${fromText} พร้อมคงสูตรคำนวณทั้งหมดและล้างข้อมูลเก่าให้เป็นตารางว่างครับบอส ยืนยันให้สร้างเลยไหมครับ?`,
-          [
-            {
-              label: `✅ สร้างชีต ${targetSheetName} เลย`,
-              icon: '✅',
-              priority: 2,
-              keywords: ['ยืนยัน', 'สร้างเลย', 'สร้าง', 'ใช่', 'เอาเลย', 'ตกลง', 'จัดไป'],
-              handler: () => this.executeCreateNewMonthSheet(targetMonthNum, targetSheetName)
-            },
-            {
-              label: '❌ ยกเลิก',
-              icon: '❌',
-              priority: 1,
-              keywords: ['ยกเลิก', 'ไม่ต้อง', 'ไม่เอา', 'ยังก่อน'],
-              handler: () => {
-                this.resetConversation(true);
-                this.speak("รับทราบครับบอส ยกเลิกการสร้างชีตเดือนใหม่เรียบร้อยครับ", false);
-              }
-            }
-          ]
-        );
-      }
-
-      async executeCreateNewMonthSheet(targetMonthNum, expectedSheetName) {
-        this.showSubtitle(
-          '⚙️ J.A.R.V.I.S กำลังสร้างชีตใหม่...',
-          `กำลังคัดลอกโครงสร้างและสูตรคำนวณไปยังชีต <b>${expectedSheetName}</b> ใน Google Sheets รอสักครู่ครับบอส...`,
-          0
-        );
-
-        try {
-          const res = await this.callAPIAsync('createNewMonthSheet', { targetMonth: targetMonthNum });
-          if (!res || !res.success) {
-            if (res && res.alreadyExists) {
-              const initRes = await this.callAPIAsync('getInitialData', {});
-              if (initRes && initRes.months) {
-                populateMonthDropdowns(initRes.months, res.sheetName);
-                loadDashboard();
-              }
-              this.speak(`ชีตเดือน <b>${res.sheetName}</b> มีอยู่ในระบบอยู่แล้วครับบอส ผมสลับหน้าจอมาที่เดือน ${res.sheetName} ให้เรียบร้อยครับ`, false);
-            } else {
-              this.speak(`ขออภัยครับบอส สร้างชีตไม่สำเร็จ: ${res?.message || 'กรุณาตรวจสอบว่าอัปเดตโค้ด createNewMonthSheet ใน Apps Script แล้วหรือยังครับ'}`, false);
-            }
-            return;
-          }
-
-          // โหลดรายชื่อเดือนใหม่จาก Google Sheets แล้วเลือกชีตใหม่ให้อัตโนมัติทันที
-          const initRes = await this.callAPIAsync('getInitialData', {});
-          if (initRes && initRes.months) {
-            populateMonthDropdowns(initRes.months, res.sheetName);
-            loadDashboard();
-          }
-
-          this.speak(
-            `สร้างชีตใบงานเดือน <b>${res.sheetName}</b> เรียบร้อยแล้วครับบอส! คัดลอกโครงสร้างและสูตรจาก <b>${res.templateUsed}</b> มาครบถ้วนพร้อมล้างข้อมูลเก่าให้เรียบร้อย และเลือกหน้าจอเป็นเดือน ${res.sheetName} ให้แล้วครับ`,
-            false
-          );
-        } catch (err) {
-          this.speak("เกิดข้อผิดพลาดในการเชื่อมต่อ Google Apps Script ครับบอส รบกวนตรวจสอบการ Deploy เวอร์ชันล่าสุดครับ", false);
-        }
-      }
-
-      // =======================================================================
-      // 🩺 [v5.1] วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
-      // =======================================================================
-      parseMonthFromText(text) {
-        const now = new Date();
-        if (/เดือนนี้/.test(text)) {
-          return { monthNum: String(now.getMonth() + 1).padStart(2, '0'), thaiName: 'เดือนนี้' };
-        }
-        if (/เดือนที่แล้ว|เดือนก่อน/.test(text)) {
-          const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          return { monthNum: String(prev.getMonth() + 1).padStart(2, '0'), thaiName: 'เดือนที่แล้ว' };
-        }
-
-        const monthRules = [
-          { num: '12', name: 'ธันวาคม (เดือน 12)', keys: ['ธันวาคม', 'ธันวา', 'ธ.ค.', 'เดือนสิบสอง', 'เดือน 12', 'เดือน12'] },
-          { num: '11', name: 'พฤศจิกายน (เดือน 11)', keys: ['พฤศจิกายน', 'พฤศจิกา', 'พ.ย.', 'เดือนสิบเอ็ด', 'เดือน 11', 'เดือน11'] },
-          { num: '10', name: 'ตุลาคม (เดือน 10)', keys: ['ตุลาคม', 'ตุลา', 'ต.ค.', 'เดือนสิบ', 'เดือน 10', 'เดือน10'] },
-          { num: '09', name: 'กันยายน (เดือน 9)', keys: ['กันยายน', 'กันยา', 'ก.ย.', 'เดือนเก้า', 'เดือน 9', 'เดือน09', 'เดือน 09'] },
-          { num: '08', name: 'สิงหาคม (เดือน 8)', keys: ['สิงหาคม', 'สิงหา', 'ส.ค.', 'เดือนแปด', 'เดือน 8', 'เดือน08', 'เดือน 08'] },
-          { num: '07', name: 'กรกฎาคม (เดือน 7)', keys: ['กรกฎาคม', 'กรกฎา', 'ก.ค.', 'เดือนเจ็ด', 'เดือน 7', 'เดือน07', 'เดือน 07'] },
-          { num: '06', name: 'มิถุนายน (เดือน 6)', keys: ['มิถุนายน', 'มิถุนา', 'มิ.ย.', 'เดือนหก', 'เดือน 6', 'เดือน06', 'เดือน 06'] },
-          { num: '05', name: 'พฤษภาคม (เดือน 5)', keys: ['พฤษภาคม', 'พฤษภา', 'พ.ค.', 'เดือนห้า', 'เดือน 5', 'เดือน05', 'เดือน 05'] },
-          { num: '04', name: 'เมษายน (เดือน 4)', keys: ['เมษายน', 'เมษา', 'เม.ย.', 'เดือนสี่', 'เดือน 4', 'เดือน04', 'เดือน 04'] },
-          { num: '03', name: 'มีนาคม (เดือน 3)', keys: ['มีนาคม', 'มีนา', 'มี.ค.', 'เดือนสาม', 'เดือน 3', 'เดือน03', 'เดือน 03'] },
-          { num: '02', name: 'กุมภาพันธ์ (เดือน 2)', keys: ['กุมภาพันธ์', 'กุมภา', 'ก.พ.', 'เดือนสอง', 'เดือน 2', 'เดือน02', 'เดือน 02'] },
-          { num: '01', name: 'มกราคม (เดือน 1)', keys: ['มกราคม', 'มกรา', 'ม.ค.', 'เดือนหนึ่ง', 'เดือน 1', 'เดือน01', 'เดือน 01'] }
-        ];
-
-        for (const rule of monthRules) {
-          if (rule.keys.some(k => text.includes(k))) {
-            return { monthNum: rule.num, thaiName: rule.name };
-          }
-        }
-        return null;
-      }
-
-      parseStatusFromText(text) {
-        if (/(ผรม|ผู้รับเหมา)/.test(text)) {
-          return { label: 'ผรม. ส่งงานแล้ว', filterFn: (s) => s === 'ผรม. ส่งงานแล้ว' };
-        }
-        if (/(พนง|พนักงาน|ผมต)/.test(text)) {
-          return { label: 'พนง. ดำเนินการ', filterFn: (s) => s === 'พนง. ดำเนินการ' };
-        }
-        if (/(เสร็จสมบูรณ์|ปิดใบสั่งแล้ว)/.test(text)) {
-          return { label: 'เสร็จสมบูรณ์', filterFn: (s) => s === 'เสร็จสมบูรณ์' };
-        }
-        if (/(งานคงเหลือ|คงเหลือ)/.test(text)) {
-          return { label: 'งานคงเหลือ', filterFn: (s) => s === 'งานคงเหลือ' };
-        }
-        if (/(ทุกสถานะ|ทั้งหมดทุกสถานะ)/.test(text)) {
-          return { label: 'ทุกสถานะ', filterFn: () => true };
-        }
-        return {
-          label: 'ส่งงานแล้ว (ผรม. + พนง.)',
-          filterFn: (s) => s === 'ผรม. ส่งงานแล้ว' || s === 'พนง. ดำเนินการ'
-        };
-      }
-
-      inspectSingleItemCompleteness(item) {
-        const missing = [];
-        const hasVal = (v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-';
-        const hasPhoto = (item.pic1 && String(item.pic1).startsWith('http')) ||
-                         (item.pic2 && String(item.pic2).startsWith('http'));
-
-        if (!hasPhoto) missing.push('ยังไม่มีรูปภาพ');
-        if (!hasVal(item.colD)) missing.push('ยังไม่มีหน่วย PEA เดิม');
-        if (!hasVal(item.colF)) missing.push('ยังไม่มีเลข PEA ใหม่');
-        if (!hasVal(item.colG)) missing.push('ยังไม่มีหน่วย PEA ใหม่');
-        if (!hasVal(item.operator)) missing.push('ยังไม่มีชื่อผู้ดำเนินการ');
-
-        return missing;
-      }
-
-      analyzeIncompleteByStatusAndMonth(rawText) {
-        const text = (rawText || '').toLowerCase();
-        const monthInfo = this.parseMonthFromText(text);
-        const statusInfo = this.parseStatusFromText(text);
-
-        this.speak("กำลังตรวจสอบความสมบูรณ์ของข้อมูลใบงาน รอสักครู่ครับบอส", false);
-
-        this.ensureData(true, (allData) => {
-          let targetMonthSheets = [];
-          let scopedItems = allData;
-
-          if (monthInfo) {
-            const mNum = monthInfo.monthNum;
-            const mNoZero = String(Number(mNum));
-            const monthRegex = new RegExp(`(^|[^0-9])(0?${mNoZero})[./]\\d{4}`);
-            scopedItems = allData.filter(it => monthRegex.test(String(it.sheetName || '')));
-            targetMonthSheets = [...new Set(scopedItems.map(it => it.sheetName))];
-
-            const fm = document.getElementById('filter-month');
-            if (fm && targetMonthSheets.length === 1) {
-              fm.value = targetMonthSheets[0];
-            }
-          }
-
-          const statusMatchedItems = scopedItems.filter(it => statusInfo.filterFn(it.status));
-          const incompleteItems = [];
-          const missingStats = {};
-
-          statusMatchedItems.forEach(it => {
-            const missingList = this.inspectSingleItemCompleteness(it);
-            if (missingList.length > 0) {
-              missingList.forEach(m => { missingStats[m] = (missingStats[m] || 0) + 1; });
-              incompleteItems.push({
-                ...it,
-                _missingNote: missingList.join(', ')
-              });
-            }
-          });
-
-          const monthLabel = monthInfo
-            ? `ใน${monthInfo.thaiName}${targetMonthSheets.length > 0 ? ` (${targetMonthSheets.join(', ')})` : ''}`
-            : 'ในทุกเดือน';
-
-          if (statusMatchedItems.length === 0) {
-            this.resetConversation(false);
-            this.displayCustomListOnDashboard([], `ไม่พบใบงานสถานะ "${statusInfo.label}" ${monthLabel}`, 'secondary');
-            this.speak(`ไม่พบใบงานสถานะ <b>${statusInfo.label}</b> ${monthLabel} ในระบบครับบอส`, false);
-            return;
-          }
-
-          if (incompleteItems.length === 0) {
-            this.resetConversation(false);
-            this.displayCustomListOnDashboard(statusMatchedItems, `✅ ใบงานสถานะ "${statusInfo.label}" ${monthLabel} ข้อมูลครบถ้วนทั้งหมด`, 'success');
-            this.speak(`ยอดเยี่ยมครับบอส! ใบงานสถานะ <b>${statusInfo.label}</b> ${monthLabel} ทั้งหมด <b>${statusMatchedItems.length} ใบงาน</b> มีข้อมูลครบถ้วนสมบูรณ์ทุกรายการ ไม่พบใบงานที่ไม่สมบูรณ์ครับ`, false);
-            return;
-          }
-
-          this.displayCustomListOnDashboard(
-            incompleteItems,
-            `🩺 ใบงานไม่สมบูรณ์ [${statusInfo.label}] ${monthLabel}`,
-            'danger'
-          );
-
-          let speechText = '';
-          if (incompleteItems.length <= 3) {
-            const detailsArr = incompleteItems.map((it, idx) =>
-              `ใบงานที่ ${idx + 1} PEA <b>${it.pea}</b> คุณ<b>${it.name}</b> ${it._missingNote}`
-            );
-            speechText = `พบใบงาน<b>${statusInfo.label}</b>ที่ไม่สมบูรณ์${monthLabel} จำนวน <b>${incompleteItems.length} ใบงาน</b>ครับบอส ได้แก่ ${detailsArr.join(' , ')} แสดงรายการทั้งหมดบนหน้าจอเรียบร้อยครับ ต้องการ <b>เปิดฟอร์มแก้ไขใบงานที่ 1</b> หรือ <b>ส่งออกรายการนี้เป็น Excel</b> ครับ?`;
-          } else {
-            const topMissingText = Object.entries(missingStats)
-              .sort((a, b) => b[1] - a[1])
-              .map(([k, v]) => `${k} ${v} ราย`)
-              .join(', ');
-            const first = incompleteItems[0];
-            const second = incompleteItems[1];
-            speechText = `พบใบงาน<b>${statusInfo.label}</b>ที่ไม่สมบูรณ์${monthLabel} จำนวน <b>${incompleteItems.length} ใบงาน</b>ครับบอส แบ่งเป็น ${topMissingText} เช่น ใบงานที่ 1 PEA <b>${first.pea}</b> คุณ<b>${first.name}</b> ${first._missingNote} และใบงานที่ 2 PEA <b>${second.pea}</b> คุณ<b>${second.name}</b> ${second._missingNote} ผมนำรายการที่ไม่สมบูรณ์ทั้งหมด <b>${incompleteItems.length} ใบงาน</b> ขึ้นมาโชว์บนหน้าจอให้แล้วครับ ต้องการ <b>เปิดฟอร์มแก้ไขใบงานที่ 1</b> หรือ <b>ส่งออกรายการนี้เป็น Excel</b> ครับ?`;
-          }
-
-          const firstItem = incompleteItems[0];
-          this.promptChoices(
-            speechText,
-            [
-              {
-                label: `📝 แก้ไขใบงานที่ 1 (PEA ${firstItem.pea})`,
-                icon: '📝',
-                priority: 2,
-                keywords: ['แก้ไข', 'เปิดฟอร์ม', 'ใบงานที่ 1', 'ใบแรก', 'กรอกเพิ่ม'],
-                handler: () => {
-                  this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${firstItem.pea} ให้บอสแก้ไขข้อมูลครับ`, false);
-                  processPendingWork(firstItem.pea, firstItem.sheetName);
-                }
-              },
-              {
-                label: `📥 ส่งออก Excel (${incompleteItems.length} ราย)`,
-                icon: '📥',
-                priority: 1,
-                keywords: ['excel', 'เอ็กซ์เซล', 'ส่งออก', 'ดาวน์โหลด'],
-                handler: () => {
-                  this.exportCustomItemsToExcel(incompleteItems, `รายงานใบงานไม่สมบูรณ์_${statusInfo.label}`);
-                  this.speak(`ส่งออกไฟล์ Excel รายการที่ไม่สมบูรณ์ทั้งหมด ${incompleteItems.length} รายการ เรียบร้อยครับบอส`, false);
-                }
-              }
-            ]
-          );
-        });
-      }
-
-      // =======================================================================
-      // 🔍 ระบบตรวจสอบความครบถ้วนของข้อมูลใบงานซ้ำ (Data Integrity Audit Engine)
-      // =======================================================================
-      auditSourceCompleteness(sourceItem) {
-        const missing = [];
-        const hasVal = (v) => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim() !== '-';
-        const hasPhoto = (sourceItem.pic1 && String(sourceItem.pic1).startsWith('http')) ||
-                         (sourceItem.pic2 && String(sourceItem.pic2).startsWith('http'));
-
-        if (!hasVal(sourceItem.colF)) missing.push('เลข PEA ใหม่');
-        if (!hasVal(sourceItem.colD)) missing.push('หน่วย PEA เก่า');
-        if (!hasVal(sourceItem.colG)) missing.push('หน่วย PEA ใหม่');
-        if (!hasVal(sourceItem.operator)) missing.push('ชื่อผู้ดำเนินการ');
-        if (!hasPhoto) missing.push('รูปถ่ายหน้างาน');
-
-        return {
-          isComplete: missing.length === 0,
-          missingFields: missing
-        };
-      }
-
-      evaluateDuplicateReadiness(allData) {
-        const monthSheets = [...new Set(allData.map(i => i.sheetName))]
-          .filter(name => /^\d{2}\.\d{4}$/.test(name))
-          .sort((a, b) => {
-            const [mA, yA] = a.split('.').map(Number);
-            const [mB, yB] = b.split('.').map(Number);
-            return (yB * 100 + mB) - (yA * 100 + mA);
-          });
-
-        if (monthSheets.length < 2) return null;
-
-        const now = new Date();
-        const curKey = `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`;
-        const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const prevKey = `${String(prevDate.getMonth() + 1).padStart(2, '0')}.${prevDate.getFullYear() + 543}`;
-
-        const targetThisMonth = monthSheets.includes(curKey) ? curKey : monthSheets[0];
-        const targetLastMonth = (monthSheets.includes(prevKey) && targetThisMonth === curKey)
-          ? prevKey
-          : monthSheets.find(m => m !== targetThisMonth);
-
-        const thisItems = allData.filter(i => i.sheetName === targetThisMonth && i.pea && i.pea !== '-');
-        const lastItems = allData.filter(i => i.sheetName === targetLastMonth && i.pea && i.pea !== '-');
-
-        const thisPeas = new Set(thisItems.map(i => i.pea.trim()));
-        const lastPeas = new Set(lastItems.map(i => i.pea.trim()));
-        const dupPeas = [...thisPeas].filter(pea => lastPeas.has(pea));
-
-        const readyToAutoClose = [];
-        const uncertainList = [];
-        const bothPendingList = [];
-        const alreadyDoneList = [];
-
-        dupPeas.forEach(pea => {
-          const pairRows = [...thisItems, ...lastItems].filter(i => i.pea.trim() === pea);
-          const pendingRow = pairRows.find(r => r.status === 'งานคงเหลือ');
-          const completedRows = pairRows.filter(r => r.status !== 'งานคงเหลือ');
-          completedRows.sort((a, b) => (a.status === 'เสร็จสมบูรณ์' ? -1 : 1));
-          const sourceRow = completedRows[0] || null;
-
-          if (!pendingRow && sourceRow) {
-            alreadyDoneList.push(sourceRow);
-          } else if (pendingRow && !sourceRow) {
-            bothPendingList.push(pendingRow);
-          } else if (pendingRow && sourceRow) {
-            const audit = this.auditSourceCompleteness(sourceRow);
-            if (audit.isComplete) {
-              readyToAutoClose.push({ pendingItem: pendingRow, sourceItem: sourceRow, missingFields: [] });
-            } else {
-              uncertainList.push({ pendingItem: pendingRow, sourceItem: sourceRow, missingFields: audit.missingFields });
-            }
-          }
-        });
-
-        const dupSet = new Set(dupPeas);
-        const allMatchedRows = [...thisItems, ...lastItems]
-          .filter(i => dupSet.has(i.pea.trim()))
-          .sort((a, b) => String(a.pea).localeCompare(String(b.pea)));
-
-        return {
-          targetThisMonth,
-          targetLastMonth,
-          dupPeas,
-          readyToAutoClose,
-          uncertainList,
-          bothPendingList,
-          alreadyDoneList,
-          allMatchedRows
-        };
-      }
-
-      // เช็กรายการซ้ำข้ามเดือน + วิเคราะห์ความพร้อมปิดงานอัตโนมัติ
-      analyzeCrossMonthDuplicates() {
-        this.speak("กำลังตรวจสอบหมายเลข PEA ที่ซ้ำกัน และตรวจความครบถ้วนของข้อมูล รอสักครู่ครับบอส", false);
-        this.ensureData(true, (allData) => {
-          const ctx = this.evaluateDuplicateReadiness(allData);
-          if (!ctx) {
-            this.resetConversation(true);
-            this.speak("ในระบบมีข้อมูลชีตเดือนไม่ถึง 2 เดือน จึงยังไม่สามารถเทียบรายการซ้ำข้ามเดือนได้ครับบอส", false);
-            return;
-          }
-
-          if (ctx.dupPeas.length === 0) {
-            this.resetConversation(true);
-            this.speak(`ตรวจสอบแล้วครับบอส ระหว่างรอบเดือน <b>${ctx.targetThisMonth}</b> กับ <b>${ctx.targetLastMonth}</b> ไม่มีหมายเลข PEA ซ้ำกันเลยครับ`, false);
-            return;
-          }
-
-          this.state.duplicateContext = ctx;
-          this.displayCustomListOnDashboard(ctx.allMatchedRows, `รายการ PEA ซ้ำกัน (${ctx.targetThisMonth} vs ${ctx.targetLastMonth})`);
-
-          const readyCount = ctx.readyToAutoClose.length;
-          const uncertainCount = ctx.uncertainList.length;
-          const actionableTotal = readyCount + uncertainCount;
-
-          if (actionableTotal > 0) {
-            this.promptChoices(
-              `พบ PEA ซ้ำกัน <b>${ctx.dupPeas.length} ราย</b> ครับบอส โดยมีงานคงเหลือที่ปิดตามรอบก่อนได้ <b>${actionableTotal} ราย</b> (ข้อมูลครบพร้อมปิดทันที <b>${readyCount} ราย</b>, ข้อมูลไม่ครบต้องถามบอสก่อน <b>${uncertainCount} ราย</b>) ต้องการให้ผม <b>ดำเนินการปิดงานที่ซ้ำกันเลย</b> หรือ <b>ดูเฉพาะรายที่ไม่แน่ใจ</b> ครับ?`,
-              [
-                {
-                  label: `⚡ ปิดงานที่ซ้ำกัน (${actionableTotal} ราย)`,
-                  icon: '⚡',
-                  priority: 2,
-                  keywords: ['ปิดงาน', 'ปิดเลย', 'เปลี่ยนสถานะ', 'ส่งงานแล้ว', 'ดำเนินการ'],
-                  handler: () => this.startAutoCloseDuplicates()
-                },
-                {
-                  label: `⚠️ ดูรายที่ข้อมูลไม่ครบ (${uncertainCount})`,
-                  icon: '⚠️',
-                  priority: 1,
-                  keywords: ['ไม่แน่ใจ', 'ไม่ครบ', 'ขาดข้อมูล', 'ตรวจสอบ'],
-                  handler: () => {
-                    if (uncertainCount === 0) {
-                      this.speak("ไม่มีรายการที่ข้อมูลไม่ครบครับบอส ทุกรายข้อมูลครบ 100% พร้อมปิดงานทันทีครับ", false);
-                    } else {
-                      const items = ctx.uncertainList.map(u => ({ ...u.pendingItem, _missingNote: u.missingFields.join(', ') }));
-                      this.displayCustomListOnDashboard(items, 'รายการซ้ำที่ข้อมูลรอบก่อนไม่ครบ (รอการตัดสินใจ)', 'warning');
-                      this.state.uncertainQueue = [...ctx.uncertainList];
-                      this.askNextUncertainItem();
-                    }
-                  }
-                }
-              ]
-            );
-          } else {
-            this.promptChoices(
-              `พบ PEA ซ้ำกัน <b>${ctx.dupPeas.length} ราย</b> ครับบอส (ส่งงานเรียบร้อยแล้ว ${ctx.alreadyDoneList.length} ราย, ยังค้างทั้งคู่ ${ctx.bothPendingList.length} ราย) ต้องการ <b>ดูคู่ที่ซ้ำทั้งหมด</b> หรือ <b>สรุปภาพรวมงาน</b> ครับ?`,
-              [
-                {
-                  label: `ดูคู่ที่ซ้ำทั้งหมด (${ctx.allMatchedRows.length})`,
-                  icon: '🔁',
-                  priority: 2,
-                  keywords: ['ซ้ำ', 'ทั้งหมด', 'ดู'],
-                  handler: () => this.speak(`แสดงคู่รายการที่ซ้ำทั้งหมด ${ctx.allMatchedRows.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false)
-                },
-                {
-                  label: 'สรุปภาพรวมงาน',
-                  icon: '📊',
-                  priority: 1,
-                  keywords: ['สรุป', 'ภาพรวม'],
-                  handler: () => this.analyzeAndSummarize()
-                }
-              ]
-            );
-          }
-        });
-      }
-
-      // ระบบสั่งปิดงานซ้ำอัตโนมัติ + ดึงรายการที่ไม่แน่ใจขึ้นมาถามบอสทีละราย
-      startAutoCloseDuplicates() {
-        const runWithContext = (ctx) => {
-          if (!ctx || (ctx.readyToAutoClose.length === 0 && ctx.uncertainList.length === 0)) {
-            this.resetConversation(true);
-            this.speak("ตรวจสอบแล้ว ไม่พบรายการซ้ำที่ค้างรอปิดงานในรอบเดือนนี้ครับบอส", false);
-            return;
-          }
-          this.executeBatchSyncAndAskUncertain(ctx);
-        };
-
-        if (this.state.duplicateContext) {
-          runWithContext(this.state.duplicateContext);
-        } else {
-          this.speak("กำลังค้นหารายการซ้ำและตรวจสอบความครบถ้วนของข้อมูลสักครู่ครับบอส", false);
-          this.ensureData(true, (allData) => {
-            const ctx = this.evaluateDuplicateReadiness(allData);
-            this.state.duplicateContext = ctx;
-            runWithContext(ctx);
-          });
-        }
-      }
-
-      async syncSingleDuplicateRow(pairObj) {
-        const { pendingItem, sourceItem } = pairObj;
-        const searchRes = await this.callAPIAsync('searchWork', {
-          month: pendingItem.sheetName,
-          query: pendingItem.pea
-        });
-        if (!searchRes || !searchRes.success || !searchRes.data) {
-          throw new Error(`ไม่พบข้อมูลแถวของ PEA ${pendingItem.pea} ในชีต ${pendingItem.sheetName}`);
-        }
-
-        const rowArray = [...searchRes.data];
-        while (rowArray.length < globalHeaders.length) rowArray.push('');
-
-        if (sourceItem.colD !== undefined && sourceItem.colD !== '') rowArray[3] = sourceItem.colD;
-        if (sourceItem.colF !== undefined && sourceItem.colF !== '') rowArray[5] = sourceItem.colF;
-        if (sourceItem.colG !== undefined && sourceItem.colG !== '') rowArray[6] = sourceItem.colG;
-
-        const baseReason = sourceItem.reason || pendingItem.reason || '';
-        const refNote = `(ส่งงานแล้วตามรอบ ${sourceItem.sheetName})`;
-        rowArray[7] = baseReason.includes(sourceItem.sheetName) ? baseReason : `${baseReason} ${refNote}`.trim();
-
-        if (sourceItem.pic1 && String(sourceItem.pic1).startsWith('http')) rowArray[8] = sourceItem.pic1;
-        if (sourceItem.pic2 && String(sourceItem.pic2).startsWith('http')) rowArray[9] = sourceItem.pic2;
-        rowArray[10] = (sourceItem.operator && sourceItem.operator !== '-') ? sourceItem.operator : 'พนง.ผมต.';
-
-        const saveRes = await this.callAPIAsync('saveData', {
-          mode: 'ucube',
-          month: pendingItem.sheetName,
-          rowIndex: searchRes.rowIndex,
-          formData: rowArray
-        });
-
-        if (!saveRes || !saveRes.success) {
-          throw new Error(saveRes?.message || `บันทึกข้อมูล PEA ${pendingItem.pea} ไม่สำเร็จ`);
-        }
-        return saveRes;
-      }
-
-      async executeBatchSyncAndAskUncertain(ctx) {
-        const readyList = ctx.readyToAutoClose || [];
-        const uncertainList = ctx.uncertainList || [];
-        let autoClosedCount = 0;
-
-        if (readyList.length > 0) {
-          this.showSubtitle('⚙️ J.A.R.V.I.S กำลังดำเนินการ...', `กำลังปิดงานรายการที่ข้อมูลครบถ้วน <b>${readyList.length} ราย</b> อัตโนมัติ รอสักครู่ครับบอส...`, 0);
-          for (const pair of readyList) {
-            try {
-              await this.syncSingleDuplicateRow(pair);
-              autoClosedCount++;
-            } catch (err) {
-              console.error('Auto-sync error:', err);
-              uncertainList.push({
-                ...pair,
-                missingFields: ['เกิดข้อผิดพลาดขณะอัปเดตอัตโนมัติ']
-              });
-            }
-          }
-        }
-
-        loadDashboard();
-
-        if (uncertainList.length === 0) {
-          this.resetConversation(true);
-          this.speak(`ดำเนินการเรียบร้อยครับบอส! ปิดงานรายการที่ซ้ำกันและข้อมูลครบถ้วนทั้งหมด <b>${autoClosedCount} ราย</b> เปลี่ยนสถานะเป็น <b>ส่งงานแล้ว</b> เรียบร้อยครับ`, false);
-          return;
-        }
-
-        const uncertainPendingItems = uncertainList.map(u => ({ ...u.pendingItem, _missingNote: u.missingFields.join(', ') }));
-        this.displayCustomListOnDashboard(uncertainPendingItems, '⚠️ รายการซ้ำที่ข้อมูลรอบก่อนไม่ครบ (รอการยืนยันจากบอส)', 'warning');
-
-        this.state.uncertainQueue = [...uncertainList];
-        const prefixText = autoClosedCount > 0
-          ? `ผมปิดงานรายการที่ข้อมูลครบให้แล้ว <b>${autoClosedCount} ราย</b> ครับบอส ส่วนอีก <b>${uncertainList.length} ราย</b> ข้อมูลยังไม่ครบจึงไม่แน่ใจ — `
-          : `พบรายการซ้ำ <b>${uncertainList.length} ราย</b> ที่ข้อมูลรอบก่อนหน้ายังไม่ครบครับบอส — `;
-
-        this.askNextUncertainItem(prefixText);
-      }
-
-      askNextUncertainItem(prefixText = '') {
-        if (!this.state.uncertainQueue || this.state.uncertainQueue.length === 0) {
-          this.resetConversation(true);
-          loadDashboard();
-          this.speak("ตรวจสอบและจัดการรายการซ้ำครบทุกรายการเรียบร้อยแล้วครับบอส!", false);
-          return;
-        }
-
-        const current = this.state.uncertainQueue[0];
-        const { pendingItem, sourceItem, missingFields } = current;
-        const missingText = missingFields.join(', ');
-
-        this.displayCustomListOnDashboard(
-          [{ ...pendingItem, _missingNote: missingText }],
-          `⚠️ รอยืนยัน: PEA ${pendingItem.pea} (รอบ ${sourceItem.sheetName} ขาด: ${missingText})`,
-          'warning'
-        );
-
-        this.promptChoices(
-          `${prefixText}รายการ PEA <b>${pendingItem.pea}</b> คุณ<b>${pendingItem.name}</b> (ข้อมูลรอบ ${sourceItem.sheetName} ขาด: <b>${missingText}</b>) จะให้ผม <b>ปิดงานเป็นส่งงานแล้วเลย</b>, <b>เปิดฟอร์มกรอกเพิ่ม</b> หรือ <b>ข้ามรายการนี้</b> ครับ?`,
-          [
-            {
-              label: '✅ ปิดเป็นส่งงานแล้วเลย',
-              icon: '✅',
-              priority: 2,
-              keywords: ['ปิดเลย', 'ปิดงาน', 'ส่งงานแล้ว', 'ยืนยัน', 'ใช่', 'เอาเลย'],
-              handler: async () => {
-                this.showSubtitle('⚙️ กำลังอัปเดตสถานะ...', `กำลังเปลี่ยนสถานะ PEA <b>${pendingItem.pea}</b> เป็นส่งงานแล้วครับบอส...`, 0);
-                try {
-                  await this.syncSingleDuplicateRow(current);
-                  this.state.uncertainQueue.shift();
-                  this.askNextUncertainItem(`เปลี่ยนสถานะ PEA <b>${pendingItem.pea}</b> เป็นส่งงานแล้วเรียบร้อยครับ — `);
-                } catch (e) {
-                  this.state.uncertainQueue.shift();
-                  this.askNextUncertainItem(`ขออภัยครับ อัปเดต PEA ${pendingItem.pea} ไม่สำเร็จ (${e.message}) — `);
-                }
-              }
-            },
-            {
-              label: '📝 เปิดฟอร์มกรอกเพิ่ม',
-              icon: '📝',
-              priority: 2,
-              keywords: ['เปิดฟอร์ม', 'กรอกเพิ่ม', 'แก้ไข', 'กรอกข้อมูล'],
-              handler: () => {
-                this.resetConversation(true);
-                this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${pendingItem.pea} ให้บอสกรอกข้อมูลเพิ่มเติมครับ`, false);
-                processPendingWork(pendingItem.pea, pendingItem.sheetName);
-              }
-            },
-            {
-              label: '⏭️ ข้ามรายการนี้',
-              icon: '⏭️',
-              priority: 1,
-              keywords: ['ข้าม', 'ไม่ต้อง', 'ยังไม่ปิด', 'ผ่าน'],
-              handler: () => {
-                this.state.uncertainQueue.shift();
-                this.askNextUncertainItem(`ข้ามรายการ PEA <b>${pendingItem.pea}</b> ไว้ก่อนครับ — `);
-              }
-            }
-          ]
-        );
-      }
-
-      // =======================================================================
-      // สรุปภาพรวม & หมวดวิเคราะห์อื่นๆ
-      // =======================================================================
-      analyzeAndSummarize() {
-        this.ensureData(false, (all) => {
-          const total = all.length;
-          const pendingList = all.filter(i => i.status === 'งานคงเหลือ');
-          const waitingCloseList = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ');
-          const completedCount = all.filter(i => i.status === 'เสร็จสมบูรณ์').length;
-          const donePercent = total > 0 ? Math.round(((waitingCloseList.length + completedCount) / total) * 100) : 0;
-
-          this.promptChoices(
-            `สรุปภาพรวมครับบอส จากทั้งหมด <b>${total} ใบงาน</b> ดำเนินการหน้างานแล้ว <b>${donePercent}%</b> ครับ แบ่งเป็น งานคงเหลือ <b>${pendingList.length}</b>, ส่งงานรอปิดใบสั่ง <b>${waitingCloseList.length}</b> และปิดเสร็จสมบูรณ์ <b>${completedCount}</b> ใบงานครับ ต้องการให้เปิดดูรายการ <b>งานคงเหลือ</b> หรือรายการ <b>รอปิดใบสั่ง</b> ครับ?`,
-            [
-              {
-                label: `งานคงเหลือ (${pendingList.length})`,
-                icon: '⏳',
-                priority: 2,
-                keywords: ['งานคงเหลือ', 'คงเหลือ', 'ค้าง'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(pendingList, 'รายการงานคงเหลือทั้งหมด');
-                  this.speak(`แสดงงานคงเหลือ ${pendingList.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              },
-              {
-                label: `รอปิดใบสั่ง (${waitingCloseList.length})`,
-                icon: '📋',
-                priority: 1,
-                keywords: ['รอปิด', 'ส่งงานแล้ว', 'ตรวจสอบ', 'ปิดใบสั่ง'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(waitingCloseList, 'รายการส่งงานแล้ว (รอตรวจสอบ/ปิดใบสั่ง)');
-                  this.speak(`แสดงรายการรอปิดใบสั่ง ${waitingCloseList.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              }
-            ],
-            () => {
-              this.displayCustomListOnDashboard(all, 'ใบงานทั้งหมดในรอบที่เลือก');
-              this.speak(`แสดงใบงานทั้งหมด ${all.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-            }
-          );
-        });
-      }
-
-      analyzeRemainingWork() {
-        this.ensureData(false, (all) => {
-          const pending = all.filter(i => i.status === 'งานคงเหลือ');
-          const urgent = pending.filter(i => this.isImportantItem(i));
-
-          this.promptChoices(
-            `ตอนนี้มี <b>งานคงเหลือ</b> ทั้งหมด <b>${pending.length} รายการ</b> ครับบอส (เป็นงานด่วน/ช็อตไหม้/ค้างซ้ำ <b>${urgent.length} รายการ</b>) ต้องการเปิดดูเฉพาะ <b>งานด่วนคงเหลือ</b> หรือ <b>งานคงเหลือทั้งหมด</b> ครับ?`,
-            [
-              {
-                label: `งานด่วนคงเหลือ (${urgent.length})`,
-                icon: '🔥',
-                priority: 2,
-                keywords: ['ด่วน', 'ช็อตไหม้', 'สำคัญ', 'ซ้ำ'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(urgent, 'งานด่วน / ช็อตไหม้ ที่ยังคงเหลือ');
-                  this.speak(`แสดงงานด่วนคงเหลือ ${urgent.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              },
-              {
-                label: `คงเหลือทั้งหมด (${pending.length})`,
-                icon: '📋',
-                priority: 1,
-                keywords: ['คงเหลือ', 'ทั้งหมด', 'ทั่วไป'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(pending, 'รายการงานคงเหลือทั้งหมด');
-                  this.speak(`แสดงงานคงเหลือทั้งหมด ${pending.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              }
-            ]
-          );
-        });
-      }
-
-      analyzePendingCloseOrders() {
-        this.ensureData(false, (all) => {
-          const contractorWait = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
-          const empWait = all.filter(i => i.status === 'พนง. ดำเนินการ');
-          const totalWait = contractorWait.length + empWait.length;
-
-          this.promptChoices(
-            `มีใบงานที่ส่งแล้วและ <b>รอตรวจสอบเพื่อปิดใบสั่ง</b> ทั้งหมด <b>${totalWait} รายการ</b> ครับบอส แบ่งเป็น <b>ผรม. ส่งงานแล้ว ${contractorWait.length} ราย</b> และ <b>พนง. ดำเนินการ ${empWait.length} ราย</b> ต้องการเปิดดูของ <b>ผู้รับเหมา</b> หรือ <b>พนักงาน</b> ครับ?`,
-            [
-              {
-                label: `ผรม. ส่งงานแล้ว (${contractorWait.length})`,
-                icon: '👷',
-                priority: 1,
-                keywords: ['ผู้รับเหมา', 'ผรม'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(contractorWait, 'ผรม. ส่งงานแล้ว (รอปิดใบสั่ง)');
-                  this.speak(`แสดงรายการ ผรม. ส่งงานแล้ว ${contractorWait.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              },
-              {
-                label: `พนง. ดำเนินการ (${empWait.length})`,
-                icon: '⚡',
-                priority: 1,
-                keywords: ['พนักงาน', 'พนง', 'ผมต'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(empWait, 'พนง. ดำเนินการ (รอปิดใบสั่ง)');
-                  this.speak(`แสดงรายการ พนง. ดำเนินการ ${empWait.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              }
-            ],
-            () => {
-              const allWait = [...contractorWait, ...empWait];
-              this.displayCustomListOnDashboard(allWait, 'รายการรอปิดใบสั่งทั้งหมด (ผรม. + พนง.)');
-              this.speak(`แสดงรายการรอปิดใบสั่งทั้งหมด ${allWait.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-            }
-          );
-        });
-      }
-
-      analyzeOperatorPerformance() {
-        this.ensureData(false, (all) => {
-          const contractor = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
-          const emp = all.filter(i => i.status === 'พนง. ดำเนินการ');
-
-          this.promptChoices(
-            `ยอดส่งงานปัจจุบัน <b>ผู้รับเหมา</b> ส่งงานแล้ว <b>${contractor.length} รายการ</b> และ <b>พนักงาน</b> ดำเนินการ <b>${emp.length} รายการ</b> ครับบอส ต้องการเปิดดูรายการของ <b>ผู้รับเหมา</b> หรือ <b>พนักงาน</b> บนหน้าจอครับ?`,
-            [
-              {
-                label: `ผลงานผู้รับเหมา (${contractor.length})`,
-                icon: '👷',
-                priority: 1,
-                keywords: ['ผู้รับเหมา', 'ผรม'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(contractor, 'ผลงานผู้รับเหมา (ผรม. ส่งงานแล้ว)');
-                  this.speak(`แสดงผลงานผู้รับเหมา ${contractor.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              },
-              {
-                label: `ผลงานพนักงาน (${emp.length})`,
-                icon: '⚡',
-                priority: 1,
-                keywords: ['พนักงาน', 'พนง', 'ผมต'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(emp, 'ผลงานพนักงาน (พนง. ดำเนินการ)');
-                  this.speak(`แสดงผลงานพนักงาน ${emp.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              }
-            ],
-            () => {
-              const combined = [...contractor, ...emp];
-              this.displayCustomListOnDashboard(combined, 'ผลงานส่งงานรวม (ผู้รับเหมา + พนักงาน)');
-              this.speak(`แสดงผลงานส่งงานรวมทั้งหมด ${combined.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-            }
-          );
-        });
-      }
-
-      isImportantItem(item) {
-        const sheet = (item.sheetName || '').toLowerCase();
-        const reason = (item.reason || '').toLowerCase();
-        return sheet.includes('ด่วน') || reason.includes('ช็อตไหม้') || /ครั้งที่\s*[2-9]/.test(reason);
-      }
-
-      analyzeImportantWork(isCompareMonths) {
-        this.ensureData(isCompareMonths, (allData) => {
-          if (isCompareMonths) {
-            const monthSheets = [...new Set(allData.map(i => i.sheetName))]
-              .filter(name => /^\d{2}\.\d{4}$/.test(name))
-              .sort((a, b) => {
-                const [mA, yA] = a.split('.').map(Number);
-                const [mB, yB] = b.split('.').map(Number);
-                return (yB * 100 + mB) - (yA * 100 + mA);
-              });
-
-            const now = new Date();
-            const curKey = `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`;
-            const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            const prevKey = `${String(prevDate.getMonth() + 1).padStart(2, '0')}.${prevDate.getFullYear() + 543}`;
-
-            const thisM = monthSheets.includes(curKey) ? curKey : (monthSheets[0] || curKey);
-            const lastM = (monthSheets.includes(prevKey) && thisM === curKey) ? prevKey : (monthSheets.find(m => m !== thisM) || prevKey);
-
-            const impThis = allData.filter(i => i.sheetName === thisM && this.isImportantItem(i));
-            const impLast = allData.filter(i => i.sheetName === lastM && this.isImportantItem(i));
-            const pendingThis = impThis.filter(i => i.status === 'งานคงเหลือ');
-
-            this.promptChoices(
-              `สรุปรายการสำคัญครับบอส รอบเดือน <b>${thisM}</b> มี <b>${impThis.length} ราย</b> (คงเหลือ ${pendingThis.length} ราย) ส่วนเดือนก่อนหน้า <b>${lastM}</b> มี <b>${impLast.length} ราย</b> ครับ ต้องการเปิดดูรายการสำคัญของ <b>เดือนนี้ (${thisM})</b> หรือ <b>เดือนที่แล้ว (${lastM})</b> ครับ?`,
-              [
-                {
-                  label: `เดือนนี้ ${thisM} (${impThis.length})`,
-                  icon: '📅',
-                  priority: 1,
-                  keywords: ['เดือนนี้', 'ปัจจุบัน', thisM],
-                  handler: () => {
-                    this.displayCustomListOnDashboard(impThis, `รายการสำคัญรอบเดือน ${thisM}`);
-                    this.speak(`แสดงรายการสำคัญรอบเดือน ${thisM} จำนวน ${impThis.length} รายการ เรียบร้อยครับบอส`, false);
-                  }
-                },
-                {
-                  label: `เดือนที่แล้ว ${lastM} (${impLast.length})`,
-                  icon: '🗓️',
-                  priority: 1,
-                  keywords: ['เดือนที่แล้ว', 'เดือนก่อน', 'ที่แล้ว', lastM],
-                  handler: () => {
-                    this.displayCustomListOnDashboard(impLast, `รายการสำคัญรอบเดือน ${lastM}`);
-                    this.speak(`แสดงรายการสำคัญรอบเดือน ${lastM} จำนวน ${impLast.length} รายการ เรียบร้อยครับบอส`, false);
-                  }
-                }
-              ]
-            );
-          } else {
-            const impAll = allData.filter(i => this.isImportantItem(i));
-            const impPending = impAll.filter(i => i.status === 'งานคงเหลือ');
-
-            this.promptChoices(
-              `พบรายการสำคัญและงานด่วนทั้งหมด <b>${impAll.length} รายการ</b> และยังเป็น <b>งานคงเหลือ ${impPending.length} รายการ</b> ครับบอส ต้องการเปิดดูเฉพาะ <b>งานสำคัญที่ยังค้าง</b> หรือ <b>รายการสำคัญทั้งหมด</b> ครับ?`,
-              [
-                {
-                  label: `สำคัญที่ยังค้าง (${impPending.length})`,
-                  icon: '⏳',
-                  priority: 2,
-                  keywords: ['ค้าง', 'คงเหลือ', 'ยังไม่เสร็จ'],
-                  handler: () => {
-                    this.displayCustomListOnDashboard(impPending, 'รายการสำคัญ / งานด่วน ที่ยังคงเหลือ');
-                    this.speak(`แสดงรายการสำคัญที่ยังค้าง ${impPending.length} รายการ เรียบร้อยครับบอส`, false);
-                  }
-                },
-                {
-                  label: `สำคัญทั้งหมด (${impAll.length})`,
-                  icon: '🔥',
-                  priority: 1,
-                  keywords: ['สำคัญทั้งหมด', 'ทั้งหมด', 'ทุกสถานะ'],
-                  handler: () => {
-                    this.displayCustomListOnDashboard(impAll, 'รายการสำคัญ / งานด่วน / งานค้างซ้ำ ทั้งหมด');
-                    this.speak(`แสดงรายการสำคัญทั้งหมด ${impAll.length} รายการ เรียบร้อยครับบอส`, false);
-                  }
-                }
-              ]
-            );
-          }
-        });
-      }
-
-      analyzeTopReasons() {
-        this.ensureData(false, (all) => {
-          const counts = {};
-          all.forEach(i => {
-            const r = (i.reason || 'ไม่ระบุสาเหตุ').trim();
-            counts[r] = (counts[r] || 0) + 1;
-          });
-          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-          if (sorted.length === 0) {
-            this.speak("ยังไม่มีข้อมูลสาเหตุการชำรุดให้วิเคราะห์ครับบอส", false);
-            return;
-          }
-
-          const top1 = sorted[0];
-          const top2 = sorted[1] || null;
-          const top1Items = all.filter(i => (i.reason || 'ไม่ระบุสาเหตุ').trim() === top1[0]);
-
-          if (top2) {
-            const top2Items = all.filter(i => (i.reason || 'ไม่ระบุสาเหตุ').trim() === top2[0]);
-            this.promptChoices(
-              `สาเหตุที่พบมากที่สุดอันดับ 1 คือ <b>${top1[0]}</b> (${top1[1]} ราย) รองลงมาอันดับ 2 คือ <b>${top2[0]}</b> (${top2[1]} ราย) ครับบอส ต้องการกรองดูสาเหตุ <b>${top1[0]}</b> หรือ <b>${top2[0]}</b> บนหน้าจอครับ?`,
-              [
-                {
-                  label: `${top1[0]} (${top1[1]})`,
-                  icon: '1️⃣',
-                  priority: 2,
-                  keywords: [top1[0].toLowerCase(), 'อันดับ 1', 'อันดับหนึ่ง'],
-                  handler: () => {
-                    this.displayCustomListOnDashboard(top1Items, `กรองตามสาเหตุ: ${top1[0]}`);
-                    this.speak(`แสดงรายการสาเหตุ ${top1[0]} จำนวน ${top1Items.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                  }
-                },
-                {
-                  label: `${top2[0]} (${top2[1]})`,
-                  icon: '2️⃣',
-                  priority: 1,
-                  keywords: [top2[0].toLowerCase(), 'อันดับ 2', 'อันดับสอง'],
-                  handler: () => {
-                    this.displayCustomListOnDashboard(top2Items, `กรองตามสาเหตุ: ${top2[0]}`);
-                    this.speak(`แสดงรายการสาเหตุ ${top2[0]} จำนวน ${top2Items.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                  }
-                }
-              ]
-            );
-          } else {
-            this.displayCustomListOnDashboard(top1Items, `กรองตามสาเหตุ: ${top1[0]}`);
-            this.speak(`สาเหตุที่พบมากที่สุดคือ <b>${top1[0]}</b> จำนวน ${top1[1]} ราย แสดงบนหน้าจอเรียบร้อยครับบอส`, false);
-          }
-        });
-      }
-
-      recommendBestRoute() {
-        this.ensureData(false, (all) => {
-          const pendingWithGps = all.filter(i => i.status === 'งานคงเหลือ' && this.hasValidNumericGps(i));
-          if (pendingWithGps.length === 0) {
-            this.speak("ตอนนี้ไม่มีงานคงเหลือที่มีพิกัดตัวเลขพร้อมนำทางครับบอส", false);
-            return;
-          }
-          const areaCount = {};
-          pendingWithGps.forEach(item => {
-            const loc = (item.location || 'ไม่ระบุ').trim();
-            areaCount[loc] = (areaCount[loc] || 0) + 1;
-          });
-          const bestArea = Object.entries(areaCount).sort((a, b) => b[1] - a[1])[0];
-          const bestItems = pendingWithGps.filter(i => (i.location || '').trim() === bestArea[0]);
-
-          this.promptChoices(
-            `ผมวิเคราะห์แล้ว แนะนำให้เริ่มที่พื้นที่ <b>${bestArea[0]}</b> ก่อนครับ เพราะมีงานคงเหลือพร้อมพิกัดกระจุกตัวมากที่สุด <b>${bestArea[1]} ใบงาน</b> ต้องการ <b>เปิด Google Maps นำทาง</b> หรือ <b>โชว์รายการพื้นที่นี้บนหน้าจอ</b> ครับ?`,
-            [
-              {
-                label: `เปิดแผนที่นำทาง (${bestItems.length} จุด)`,
-                icon: '🧭',
-                priority: 2,
-                keywords: ['แผนที่', 'นำทาง', 'gps', 'google maps', 'เปิดแมพ'],
-                handler: () => {
-                  this.speak(`กำลังเปิด Google Maps นำทางไปยังพื้นที่ ${bestArea[0]} จำนวน ${bestItems.length} จุดครับบอส`, false);
-                  this.executeMapRouting(bestItems);
-                }
-              },
-              {
-                label: `โชว์รายการพื้นที่ ${bestArea[0]}`,
-                icon: '📋',
-                priority: 1,
-                keywords: ['โชว์', 'รายการ', 'หน้าจอ', 'ดูรายละเอียด'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(bestItems, `งานคงเหลือพื้นที่แนะนำ: ${bestArea[0]}`);
-                  this.speak(`แสดงรายการพื้นที่ ${bestArea[0]} จำนวน ${bestItems.length} ใบงาน บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              }
-            ]
-          );
-        });
-      }
-
-      analyzeGpsReadiness() {
-        this.ensureData(false, (all) => {
-          const pending = all.filter(i => i.status === 'งานคงเหลือ');
-          const validGps = pending.filter(i => this.hasValidNumericGps(i));
-          const urlGps = pending.filter(i => i.gps && (i.gps.toLowerCase().includes('http') || i.gps.toLowerCase().includes('goo.gl')));
-          const missingGps = pending.filter(i => !i.gps || i.gps.trim() === '');
-          const noReadyGps = [...missingGps, ...urlGps];
-
-          const urlWarn = urlGps.length > 0 ? ` (รวม ${urlGps.length} งานที่พิกัดยังเป็นลิงก์ URL)` : '';
-
-          this.promptChoices(
-            `ตรวจสอบความพร้อมพิกัดจากงานคงเหลือ <b>${pending.length} งาน</b> ครับบอส: มีพิกัดตัวเลขพร้อมลุย <b>${validGps.length} งาน</b> และยังไม่มีพิกัด/ต้องแก้ไข <b>${noReadyGps.length} งาน</b>${urlWarn} ต้องการเปิดดูรายการที่ <b>ไม่มีพิกัด</b> หรือรายการที่ <b>มีพิกัดพร้อมลุย</b> ครับ?`,
-            [
-              {
-                label: `ไม่มีพิกัด/ต้องแก้ (${noReadyGps.length})`,
-                icon: '⚠️',
-                priority: 2,
-                keywords: ['ไม่มีพิกัด', 'ขาดพิกัด', 'ยังไม่ลงพิกัด', 'ต้องแก้', 'ไม่มี'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(noReadyGps, 'งานคงเหลือที่ยังไม่มีพิกัด / พิกัดเป็นลิงก์ URL');
-                  this.speak(`แสดงรายการที่ยังไม่มีพิกัดจำนวน ${noReadyGps.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              },
-              {
-                label: `มีพิกัดพร้อมลุย (${validGps.length})`,
-                icon: '📍',
-                priority: 1,
-                keywords: ['มีพิกัด', 'พร้อมลุย', 'พร้อมนำทาง', 'พร้อม', 'มี'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(validGps, 'งานคงเหลือที่มีพิกัดตัวเลขพร้อมนำทาง');
-                  this.speak(`แสดงรายการที่มีพิกัดพร้อมลุยจำนวน ${validGps.length} รายการ บนหน้าจอเรียบร้อยครับบอส`, false);
-                }
-              }
-            ]
-          );
-        });
-      }
-
-      performSearchAndThink(keyword, isFollowUp) {
-        const statusTab = document.querySelector('#status-tab');
-        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
-        
-        const searchBox = document.getElementById('dash-search');
-        if (searchBox) {
-          searchBox.value = keyword;
-          filterDashboard();
-        }
-
-        const terms = keyword.toLowerCase().split(/\s+/);
-        const matched = (globalDashResults || []).filter(item => {
-          const fullText = `${item.pea} ${item.name} ${item.location} ${item.reason} ${item.status} ${item.sheetName}`.toLowerCase();
-          return terms.every(t => fullText.includes(t));
-        });
-
-        this.state.lastMatchedItems = matched;
-
-        if (matched.length === 0) {
-          this.resetConversation(false);
-          this.speak(`ไม่พบใบงานที่ตรงกับ "${keyword}" เลยครับบอส ลองระบุชื่อพื้นที่หรือสาเหตุอื่นดูไหมครับ?`, false);
-        } else if (matched.length === 1) {
-          const item = matched[0];
-          const isPending = item.status === 'งานคงเหลือ';
-          const primaryLabel = isPending ? 'เปิดฟอร์มส่งงาน' : 'เปิดตรวจสอบ/ปิดใบสั่ง';
-          const primaryHandler = () => {
-            if (isPending) {
-              this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${item.pea} ให้ครับบอส`, false);
-              processPendingWork(item.pea, item.sheetName);
-            } else {
-              this.speak(`กำลังเปิดหน้าต่างตรวจสอบใบงาน PEA ${item.pea} ให้ครับบอส`, false);
-              viewCompletedWork(encodeURIComponent(JSON.stringify(item)));
-            }
-          };
-
-          if (this.hasValidNumericGps(item)) {
-            this.promptChoices(
-              `พบ 1 ใบงานครับบอส PEA <b>${item.pea}</b> คุณ${item.name} สถานะ <b>${item.status}</b> ต้องการ <b>${primaryLabel}</b> หรือ <b>เปิดแผนที่นำทาง GPS</b> เลยครับ?`,
-              [
-                { label: primaryLabel, icon: '📝', priority: 1, keywords: ['ฟอร์ม', 'ส่งงาน', 'ตรวจสอบ', 'ปิดใบสั่ง', 'เปิดใบงาน'], handler: primaryHandler },
-                {
-                  label: 'เปิดแผนที่นำทาง GPS',
-                  icon: '🗺️',
-                  priority: 2,
-                  keywords: ['แผนที่', 'นำทาง', 'พิกัด', 'gps'],
-                  handler: () => {
-                    this.speak(`กำลังเปิดแผนที่นำทางไปยัง PEA ${item.pea} ครับบอส`, false);
-                    this.executeMapRouting([item]);
-                  }
-                }
-              ]
-            );
-          } else {
-            this.promptChoices(
-              `พบ 1 ใบงานครับบอส PEA <b>${item.pea}</b> คุณ${item.name} สถานะ <b>${item.status}</b> ต้องการ <b>${primaryLabel}</b> หรือ <b>ดูรายการบนหน้าจอ</b> ครับ?`,
-              [
-                { label: primaryLabel, icon: '📝', priority: 2, keywords: ['ฟอร์ม', 'ส่งงาน', 'ตรวจสอบ', 'ปิดใบสั่ง', 'เปิดใบงาน'], handler: primaryHandler },
-                { label: 'ดูรายการบนหน้าจอ', icon: '📋', priority: 1, keywords: ['หน้าจอ', 'รายการ', 'ไม่ต้อง'], handler: () => this.speak(`แสดงข้อมูล PEA ${item.pea} บนหน้าจอเรียบร้อยครับบอส`, false) }
-              ]
-            );
-          }
-        } else if (matched.length > 10 && !isFollowUp) {
-          const pendingInMatch = matched.filter(m => m.status === 'งานคงเหลือ');
-          this.promptChoices(
-            `พบถึง <b>${matched.length} ใบงาน</b> ครับบอส ค่อนข้างเยอะเลย ต้องการกรองเฉพาะ <b>งานคงเหลือ (${pendingInMatch.length})</b> หรือ <b>แสดงทั้งหมด (${matched.length})</b> ครับ?`,
-            [
-              {
-                label: `เฉพาะงานคงเหลือ (${pendingInMatch.length})`,
-                icon: '⏳',
-                priority: 2,
-                keywords: ['งานคงเหลือ', 'คงเหลือ', 'ค้าง'],
-                handler: () => {
-                  this.displayCustomListOnDashboard(pendingInMatch, `ค้นหา "${keyword}" (เฉพาะงานคงเหลือ)`);
-                  this.speak(`กรองเฉพาะงานคงเหลือจำนวน ${pendingInMatch.length} ใบงาน เรียบร้อยครับบอส`, false);
-                }
-              },
-              {
-                label: `แสดงทั้งหมด (${matched.length})`,
-                icon: '📋',
-                priority: 1,
-                keywords: ['ทั้งหมด', 'ทุกสถานะ'],
-                handler: () => this.speak(`แสดงทั้งหมด ${matched.length} ใบงาน บนหน้าจอเรียบร้อยครับบอส`, false)
-              }
-            ]
-          );
-        } else {
-          const withGps = matched.filter(m => this.hasValidNumericGps(m) && m.status === 'งานคงเหลือ');
-          if (withGps.length > 0 && withGps.length <= 9) {
-            this.promptChoices(
-              `พบ <b>${matched.length} ใบงาน</b> ครับ และมี <b>${withGps.length} งานคงเหลือ</b> ที่มีพิกัดพร้อมนำทาง ต้องการ <b>เปิดแผนที่นำทาง</b> หรือ <b>ดูรายการบนหน้าจอ</b> ครับ?`,
-              [
-                {
-                  label: `เปิดแผนที่นำทาง (${withGps.length} จุด)`,
-                  icon: '🧭',
-                  priority: 2,
-                  keywords: ['แผนที่', 'นำทาง', 'gps', 'เปิดแมพ'],
-                  handler: () => {
-                    this.speak(`กำลังเปิดแผนที่นำทางทั้ง ${withGps.length} จุดครับบอส`, false);
-                    this.executeMapRouting(withGps);
-                  }
-                },
-                {
-                  label: `ดูรายการบนหน้าจอ (${matched.length})`,
-                  icon: '📋',
-                  priority: 1,
-                  keywords: ['รายการ', 'หน้าจอ', 'ดูบนหน้าจอ', 'ไม่ต้อง'],
-                  handler: () => this.speak(`แสดง ${matched.length} ใบงาน ที่เกี่ยวกับ ${keyword} บนหน้าจอเรียบร้อยครับบอส`, false)
-                }
-              ]
-            );
-          } else {
-            this.resetConversation(false);
-            this.speak(`แสดง <b>${matched.length} ใบงาน</b> ที่เกี่ยวกับ ${keyword} บนหน้าจอเรียบร้อยครับบอส`, false);
-          }
-        }
-      }
-
-      executeMapRouting(items) {
-        let url = "https://www.google.com/maps/dir/Current+Location/";
-        items.slice(0, 9).forEach(item => {
-          const cleanGps = item.gps.trim().replace(/\s/g, '');
-          if (!cleanGps.toLowerCase().includes('http')) url += cleanGps + "/";
-        });
-        window.open(url, '_blank');
-      }
-
-      cleanText(text) {
-        let kw = text
-          .replace(/ช่วย|กรอง|หา|ค้นหา|ใบงาน|ที่อยู่|ในโซน|เอาเฉพาะ|เฉพาะ|เปิดดู|ดูงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|สิ/g, '')
-          .replace(/กับ|และ|เว้นวรรค/g, ' ');
-        const knownReasons = ["ช็อตไหม้", "น้ำเข้า", "ผ้ามัว", "ไม่หมุน", "ติดขัด", "ชำรุด", "ขั้วต่อ", "แป้นผุ"];
-        knownReasons.forEach(reason => {
-          if (kw.includes(reason)) kw = kw.replace(new RegExp(reason, 'g'), ' ' + reason + ' ');
-        });
-        return kw.replace(/\s+/g, ' ').trim();
-      }
-    }
-
-    const jarvisBrain = new JarvisVoiceBrain();
-    function toggleJarvis() {
-      if (!isAdminUser) return;
-      jarvisBrain.toggleListening();
     }
   </script>
 </body>
