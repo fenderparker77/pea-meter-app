@@ -421,7 +421,7 @@
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.1 เรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.2 เรียบร้อยครับ", false);
       }
     }
 
@@ -464,16 +464,26 @@
       callAPI('getInitialData', {}, initApp);
     };
 
-    function initApp(res) {
-      globalHeaders = res.headers;
+    function populateMonthDropdowns(months, selectedMonth = null) {
       const monthSelect = document.getElementById('month-select');
       const filterMonth = document.getElementById('filter-month');
+      monthSelect.innerHTML = '';
+      filterMonth.innerHTML = '';
       monthSelect.add(new Option("-- แสดงทั้งหมด --", "ALL"));
       filterMonth.add(new Option("-- แสดงทั้งหมด --", "ALL"));
-      res.months.forEach(month => {
+      (months || []).forEach(month => {
         monthSelect.add(new Option(month, month));
         filterMonth.add(new Option(month, month));
       });
+      if (selectedMonth && (months || []).includes(selectedMonth)) {
+        monthSelect.value = selectedMonth;
+        filterMonth.value = selectedMonth;
+      }
+    }
+
+    function initApp(res) {
+      globalHeaders = res.headers;
+      populateMonthDropdowns(res.months);
       loadDashboard();
     }
 
@@ -723,7 +733,6 @@
           if (item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
           if (item.status === 'พนง. ดำเนินการ') statusBadgeList = '<span class="badge text-white float-end" style="background:#9b59b6;">พนง.ส่งงาน</span>';
 
-          // ป้ายแจ้งจุดที่ขาด (แสดงอัตโนมัติเมื่อวิเคราะห์ใบงานที่ไม่สมบูรณ์)
           let missingAlertHtml = item._missingNote
             ? `<div class="mt-2 ps-2"><span class="badge bg-danger-subtle text-danger border border-danger-subtle text-wrap text-start"><i class="bi bi-exclamation-triangle-fill me-1"></i>ใบงานที่ ${idx + 1} ข้อมูลไม่สมบูรณ์: ${item._missingNote}</span></div>`
             : '';
@@ -822,8 +831,8 @@
     }
 
     // =========================================================================
-    // 🤖 J.A.R.V.I.S Smart Voice Brain v5.1
-    // (Incomplete Audit by Status & Month + Auto-Close Duplicates + Dual-Branch)
+    // 🤖 J.A.R.V.I.S Smart Voice Brain v5.2
+    // (Create New Month Sheet with Formulas + Incomplete Audit + Duplicate Sync)
     // =========================================================================
     class JarvisVoiceBrain {
       constructor() {
@@ -886,11 +895,11 @@
 
         const top = this.getTopFrequentCommands(3);
         let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S ด่วน:</span>`;
+        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่')">➕ สร้างชีตเดือนใหม่</button>`;
         html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด')">🩺 ใบงานไม่สมบูรณ์</button>`;
         html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeAndSummarize()">📊 สรุปภาพรวม</button>`;
         html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeCrossMonthDuplicates()">🔁 เช็กซ้ำข้ามเดือน</button>`;
         html += `<button type="button" class="voice-chip" onclick="jarvisBrain.startAutoCloseDuplicates()">⚡ ปิดงานซ้ำอัตโนมัติ</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeGpsReadiness()">📍 เช็กพิกัด GPS</button>`;
 
         top.forEach(cmd => {
           const safeCmd = cmd.replace(/'/g, "\\'");
@@ -1131,7 +1140,7 @@
       }
 
       // =======================================================================
-      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (v5.1)
+      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (v5.2)
       // =======================================================================
       handleInput(rawText) {
         if (!isAdminUser) return;
@@ -1208,6 +1217,7 @@
 
         if (this.state.mode === 'AWAITING_INTENT') {
           this.resetConversation(false);
+          if (/(สร้าง.*เดือน|สร้างชีต|เปิดรอบเดือน)/.test(text)) { this.promptCreateNewMonthSheet(text); return; }
           if (/(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย)/.test(text)) { this.analyzeIncompleteByStatusAndMonth(text); return; }
           if (/(สรุป|ภาพรวม|ยอด)/.test(text)) { this.analyzeAndSummarize(); return; }
           if (/(ซ้ำ)/.test(text)) { this.analyzeCrossMonthDuplicates(); return; }
@@ -1219,7 +1229,13 @@
 
         // --- วิเคราะห์เจตนาใหม่ ---
 
-        // [ใหม่ v5.1] วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
+        // [ใหม่ v5.2] สั่งสร้างชีตใบงานเดือนใหม่ใน Google Sheets (เช่น "สร้างใบงานเดือน 11", "สร้างชีตเดือนใหม่")
+        if (/(สร้าง|เปิดรอบ|เพิ่ม).*(ใบงาน|ชีต|ตาราง|รอบเดือน|เดือน)/.test(text) && /(เดือน|ชีต|รอบเดือน)/.test(text)) {
+          this.promptCreateNewMonthSheet(text);
+          return;
+        }
+
+        // [v5.1] วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
         if (/(ไม่สมบูรณ์|ข้อมูลไม่ครบ|ไม่ครบถ้วน|ขาดรูป|ไม่มีรูป|ขาดหน่วย|ไม่มีหน่วย|ข้อมูลขาด|ตกหล่น)/.test(text)) {
           this.analyzeIncompleteByStatusAndMonth(text);
           return;
@@ -1228,10 +1244,10 @@
         // คู่มือคำสั่งเสียง (Help)
         if (/(ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
           this.promptChoices(
-            "บอสสามารถสั่งให้ผม <b>วิเคราะห์ใบงานที่ไม่สมบูรณ์แยกตามสถานะและเดือน</b>, <b>เช็ก PEA ซ้ำข้ามเดือนแล้วสั่งปิดงานอัตโนมัติ</b>, <b>สรุปภาพรวม</b>, <b>เช็กพิกัด GPS</b> หรือ <b>ส่งออก Excel</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนครับ?",
+            "บอสสามารถสั่งให้ผม <b>สร้างชีตใบงานเดือนใหม่พร้อมสูตร</b>, <b>วิเคราะห์ใบงานที่ไม่สมบูรณ์แยกตามสถานะและเดือน</b>, <b>เช็ก PEA ซ้ำข้ามเดือนแล้วสั่งปิดงานอัตโนมัติ</b>, <b>สรุปภาพรวม</b> หรือ <b>ส่งออก Excel</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนครับ?",
             [
-              { label: '🩺 เช็กใบงานไม่สมบูรณ์', icon: '🩺', priority: 2, keywords: ['ไม่สมบูรณ์', 'ไม่ครบ'], handler: () => this.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด') },
-              { label: '🔁 เช็ก PEA ซ้ำข้ามเดือน', icon: '🔁', priority: 1, keywords: ['ซ้ำ'], handler: () => this.analyzeCrossMonthDuplicates() }
+              { label: '➕ สร้างชีตเดือนใหม่', icon: '➕', priority: 2, keywords: ['สร้าง', 'เดือนใหม่', 'ชีต'], handler: () => this.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่') },
+              { label: '🩺 เช็กใบงานไม่สมบูรณ์', icon: '🩺', priority: 1, keywords: ['ไม่สมบูรณ์', 'ไม่ครบ'], handler: () => this.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด') }
             ]
           );
           return;
@@ -1283,10 +1299,10 @@
             this.speak("บอสยังไม่มีประวัติคำสั่งที่ใช้บ่อยครับ ลองสั่งค้นหาหรือสรุปงานได้เลยครับ", false);
           } else {
             this.promptChoices(
-              `คำสั่งที่บอสใช้บ่อยที่สุดคือ <b>"${top[0]}"</b> ครับ ต้องการให้ผม <b>ค้นหา "${top[0]}"</b> หรือ <b>เช็กใบงานที่ไม่สมบูรณ์</b> ครับ?`,
+              `คำสั่งที่บอสใช้บ่อยที่สุดคือ <b>"${top[0]}"</b> ครับ ต้องการให้ผม <b>ค้นหา "${top[0]}"</b> หรือ <b>สร้างชีตเดือนใหม่</b> ครับ?`,
               [
                 { label: `ค้นหา "${top[0]}"`, icon: '🕒', priority: 2, keywords: [top[0].toLowerCase(), 'ค้นหา', 'เปิด'], handler: () => this.runQuickChip(top[0]) },
-                { label: '🩺 เช็กใบงานไม่สมบูรณ์', icon: '🩺', priority: 1, keywords: ['ไม่สมบูรณ์'], handler: () => this.analyzeIncompleteByStatusAndMonth('วิเคราะห์ใบงานส่งงานแล้วที่ไม่สมบูรณ์ทั้งหมด') }
+                { label: '➕ สร้างชีตเดือนใหม่', icon: '➕', priority: 1, keywords: ['สร้าง', 'เดือนใหม่'], handler: () => this.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่') }
               ]
             );
           }
@@ -1350,7 +1366,7 @@
         const cleaned = this.cleanText(text);
         if (cleaned.length < 2) {
           this.state.mode = 'AWAITING_INTENT';
-          this.speak(`ขออภัยครับบอส ผมได้ยินว่า "${rawText}" ไม่แน่ใจว่าบอสต้องการให้ <b>วิเคราะห์ใบงานไม่สมบูรณ์</b>, <b>เช็ก PEA ซ้ำข้ามเดือน</b>, <b>สรุปภาพรวม</b> หรือ <b>เช็กพิกัด GPS</b> ครับ?`, true);
+          this.speak(`ขออภัยครับบอส ผมได้ยินว่า "${rawText}" ไม่แน่ใจว่าบอสต้องการให้ <b>สร้างชีตเดือนใหม่</b>, <b>วิเคราะห์ใบงานไม่สมบูรณ์</b>, <b>เช็ก PEA ซ้ำข้ามเดือน</b> หรือ <b>สรุปภาพรวม</b> ครับ?`, true);
           return;
         }
 
@@ -1360,7 +1376,116 @@
       }
 
       // =======================================================================
-      // 🩺 [ใหม่ v5.1] วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
+      // ➕ [ใหม่ v5.2] สร้างชีตใบงานเดือนใหม่ใน Google Sheets (คัดลอกสูตร + ล้างข้อมูล)
+      // =======================================================================
+      getNextMonthSuggestionFromDropdown() {
+        const opts = [...document.querySelectorAll('#filter-month option')]
+          .map(o => o.value)
+          .filter(v => /^\d{2}\.\d{4}$/.test(v))
+          .sort((a, b) => {
+            const [mA, yA] = a.split('.').map(Number);
+            const [mB, yB] = b.split('.').map(Number);
+            return (yB * 100 + mB) - (yA * 100 + mA);
+          });
+
+        if (opts.length === 0) {
+          const now = new Date();
+          return {
+            latestSheet: null,
+            nextMonthNum: String(now.getMonth() + 1).padStart(2, '0'),
+            nextSheetName: `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`
+          };
+        }
+
+        const latest = opts[0];
+        const [m, y] = latest.split('.').map(Number);
+        const nextM = m + 1 > 12 ? 1 : m + 1;
+        const nextY = m + 1 > 12 ? y + 1 : y;
+        return {
+          latestSheet: latest,
+          nextMonthNum: String(nextM).padStart(2, '0'),
+          nextSheetName: `${String(nextM).padStart(2, '0')}.${nextY}`
+        };
+      }
+
+      promptCreateNewMonthSheet(rawText) {
+        const text = (rawText || '').toLowerCase();
+        const parsedMonth = this.parseMonthFromText(text);
+        const suggestion = this.getNextMonthSuggestionFromDropdown();
+
+        let targetMonthNum = parsedMonth ? parsedMonth.monthNum : suggestion.nextMonthNum;
+        let targetYear = suggestion.latestSheet ? Number(suggestion.latestSheet.split('.')[1]) : (new Date().getFullYear() + 543);
+        if (suggestion.latestSheet && Number(suggestion.latestSheet.split('.')[0]) === 12 && Number(targetMonthNum) === 1) {
+          targetYear += 1;
+        }
+        const targetSheetName = `${targetMonthNum}.${targetYear}`;
+        const fromText = suggestion.latestSheet ? `จากต้นแบบชีต <b>${suggestion.latestSheet}</b>` : 'จากต้นแบบชีตเดือนล่าสุด';
+
+        this.promptChoices(
+          `พร้อมสร้างชีตใบงานเดือนใหม่ชื่อ <b>"${targetSheetName}"</b> ${fromText} พร้อมคงสูตรคำนวณทั้งหมดและล้างข้อมูลเก่าให้เป็นตารางว่างครับบอส ยืนยันให้สร้างเลยไหมครับ?`,
+          [
+            {
+              label: `✅ สร้างชีต ${targetSheetName} เลย`,
+              icon: '✅',
+              priority: 2,
+              keywords: ['ยืนยัน', 'สร้างเลย', 'สร้าง', 'ใช่', 'เอาเลย', 'ตกลง', 'จัดไป'],
+              handler: () => this.executeCreateNewMonthSheet(targetMonthNum, targetSheetName)
+            },
+            {
+              label: '❌ ยกเลิก',
+              icon: '❌',
+              priority: 1,
+              keywords: ['ยกเลิก', 'ไม่ต้อง', 'ไม่เอา', 'ยังก่อน'],
+              handler: () => {
+                this.resetConversation(true);
+                this.speak("รับทราบครับบอส ยกเลิกการสร้างชีตเดือนใหม่เรียบร้อยครับ", false);
+              }
+            }
+          ]
+        );
+      }
+
+      async executeCreateNewMonthSheet(targetMonthNum, expectedSheetName) {
+        this.showSubtitle(
+          '⚙️ J.A.R.V.I.S กำลังสร้างชีตใหม่...',
+          `กำลังคัดลอกโครงสร้างและสูตรคำนวณไปยังชีต <b>${expectedSheetName}</b> ใน Google Sheets รอสักครู่ครับบอส...`,
+          0
+        );
+
+        try {
+          const res = await this.callAPIAsync('createNewMonthSheet', { targetMonth: targetMonthNum });
+          if (!res || !res.success) {
+            if (res && res.alreadyExists) {
+              const initRes = await this.callAPIAsync('getInitialData', {});
+              if (initRes && initRes.months) {
+                populateMonthDropdowns(initRes.months, res.sheetName);
+                loadDashboard();
+              }
+              this.speak(`ชีตเดือน <b>${res.sheetName}</b> มีอยู่ในระบบอยู่แล้วครับบอส ผมสลับหน้าจอมาที่เดือน ${res.sheetName} ให้เรียบร้อยครับ`, false);
+            } else {
+              this.speak(`ขออภัยครับบอส สร้างชีตไม่สำเร็จ: ${res?.message || 'กรุณาตรวจสอบว่าอัปเดตโค้ด createNewMonthSheet ใน Apps Script แล้วหรือยังครับ'}`, false);
+            }
+            return;
+          }
+
+          // โหลดรายชื่อเดือนใหม่จาก Google Sheets แล้วเลือกชีตใหม่ให้อัตโนมัติทันที
+          const initRes = await this.callAPIAsync('getInitialData', {});
+          if (initRes && initRes.months) {
+            populateMonthDropdowns(initRes.months, res.sheetName);
+            loadDashboard();
+          }
+
+          this.speak(
+            `สร้างชีตใบงานเดือน <b>${res.sheetName}</b> เรียบร้อยแล้วครับบอส! คัดลอกโครงสร้างและสูตรจาก <b>${res.templateUsed}</b> มาครบถ้วนพร้อมล้างข้อมูลเก่าให้เรียบร้อย และเลือกหน้าจอเป็นเดือน ${res.sheetName} ให้แล้วครับ`,
+            false
+          );
+        } catch (err) {
+          this.speak("เกิดข้อผิดพลาดในการเชื่อมต่อ Google Apps Script ครับบอส รบกวนตรวจสอบการ Deploy เวอร์ชันล่าสุดครับ", false);
+        }
+      }
+
+      // =======================================================================
+      // 🩺 [v5.1] วิเคราะห์ใบงานที่ไม่สมบูรณ์ แยกตามสถานะและเดือน
       // =======================================================================
       parseMonthFromText(text) {
         const now = new Date();
@@ -1372,7 +1497,6 @@
           return { monthNum: String(prev.getMonth() + 1).padStart(2, '0'), thaiName: 'เดือนที่แล้ว' };
         }
 
-        // เรียงจากคำยาวไปสั้น เพื่อป้องกัน "เดือนสิบ" จับโดน "เดือนสิบสอง" หรือ "เดือน 1" จับโดน "เดือน 10"
         const monthRules = [
           { num: '12', name: 'ธันวาคม (เดือน 12)', keys: ['ธันวาคม', 'ธันวา', 'ธ.ค.', 'เดือนสิบสอง', 'เดือน 12', 'เดือน12'] },
           { num: '11', name: 'พฤศจิกายน (เดือน 11)', keys: ['พฤศจิกายน', 'พฤศจิกา', 'พ.ย.', 'เดือนสิบเอ็ด', 'เดือน 11', 'เดือน11'] },
@@ -1393,41 +1517,25 @@
             return { monthNum: rule.num, thaiName: rule.name };
           }
         }
-        return null; // ไม่ได้ระบุเดือนเจาะจง
+        return null;
       }
 
       parseStatusFromText(text) {
         if (/(ผรม|ผู้รับเหมา)/.test(text)) {
-          return {
-            label: 'ผรม. ส่งงานแล้ว',
-            filterFn: (s) => s === 'ผรม. ส่งงานแล้ว'
-          };
+          return { label: 'ผรม. ส่งงานแล้ว', filterFn: (s) => s === 'ผรม. ส่งงานแล้ว' };
         }
         if (/(พนง|พนักงาน|ผมต)/.test(text)) {
-          return {
-            label: 'พนง. ดำเนินการ',
-            filterFn: (s) => s === 'พนง. ดำเนินการ'
-          };
+          return { label: 'พนง. ดำเนินการ', filterFn: (s) => s === 'พนง. ดำเนินการ' };
         }
         if (/(เสร็จสมบูรณ์|ปิดใบสั่งแล้ว)/.test(text)) {
-          return {
-            label: 'เสร็จสมบูรณ์',
-            filterFn: (s) => s === 'เสร็จสมบูรณ์'
-          };
+          return { label: 'เสร็จสมบูรณ์', filterFn: (s) => s === 'เสร็จสมบูรณ์' };
         }
         if (/(งานคงเหลือ|คงเหลือ)/.test(text)) {
-          return {
-            label: 'งานคงเหลือ',
-            filterFn: (s) => s === 'งานคงเหลือ'
-          };
+          return { label: 'งานคงเหลือ', filterFn: (s) => s === 'งานคงเหลือ' };
         }
         if (/(ทุกสถานะ|ทั้งหมดทุกสถานะ)/.test(text)) {
-          return {
-            label: 'ทุกสถานะ',
-            filterFn: () => true
-          };
+          return { label: 'ทุกสถานะ', filterFn: () => true };
         }
-        // ค่าเริ่มต้นเมื่อสั่ง "ใบงานส่งงานแล้วที่ไม่สมบูรณ์" หรือไม่ได้ระบุสถานะย่อย
         return {
           label: 'ส่งงานแล้ว (ผรม. + พนง.)',
           filterFn: (s) => s === 'ผรม. ส่งงานแล้ว' || s === 'พนง. ดำเนินการ'
@@ -1457,7 +1565,6 @@
         this.speak("กำลังตรวจสอบความสมบูรณ์ของข้อมูลใบงาน รอสักครู่ครับบอส", false);
 
         this.ensureData(true, (allData) => {
-          // 1. กรองตามเดือน (ถ้าบอสระบุเดือน)
           let targetMonthSheets = [];
           let scopedItems = allData;
 
@@ -1468,17 +1575,13 @@
             scopedItems = allData.filter(it => monthRegex.test(String(it.sheetName || '')));
             targetMonthSheets = [...new Set(scopedItems.map(it => it.sheetName))];
 
-            // อัปเดตตัวเลือกเดือนในหน้า UI ให้สอดคล้องถ้าเจอชีตเดียว
             const fm = document.getElementById('filter-month');
             if (fm && targetMonthSheets.length === 1) {
               fm.value = targetMonthSheets[0];
             }
           }
 
-          // 2. กรองตามสถานะ
           const statusMatchedItems = scopedItems.filter(it => statusInfo.filterFn(it.status));
-
-          // 3. ตรวจเช็กความสมบูรณ์ทีละใบงาน
           const incompleteItems = [];
           const missingStats = {};
 
@@ -1497,7 +1600,6 @@
             ? `ใน${monthInfo.thaiName}${targetMonthSheets.length > 0 ? ` (${targetMonthSheets.join(', ')})` : ''}`
             : 'ในทุกเดือน';
 
-          // กรณีไม่พบรายการในสถานะ/เดือนนั้นเลย
           if (statusMatchedItems.length === 0) {
             this.resetConversation(false);
             this.displayCustomListOnDashboard([], `ไม่พบใบงานสถานะ "${statusInfo.label}" ${monthLabel}`, 'secondary');
@@ -1505,7 +1607,6 @@
             return;
           }
 
-          // กรณีข้อมูลครบถ้วน 100% ทุกใบงาน!
           if (incompleteItems.length === 0) {
             this.resetConversation(false);
             this.displayCustomListOnDashboard(statusMatchedItems, `✅ ใบงานสถานะ "${statusInfo.label}" ${monthLabel} ข้อมูลครบถ้วนทั้งหมด`, 'success');
@@ -1513,14 +1614,12 @@
             return;
           }
 
-          // แสดงรายการที่ไม่สมบูรณ์ทั้งหมดบนหน้าจอแอปทันที!
           this.displayCustomListOnDashboard(
             incompleteItems,
             `🩺 ใบงานไม่สมบูรณ์ [${statusInfo.label}] ${monthLabel}`,
             'danger'
           );
 
-          // สร้างข้อความเสียง: ถ้า <= 3 รายการ อ่านรายละเอียดครบทุกใบงาน / ถ้า > 3 รายการ สรุปยอด + ยกตัวอย่างใบงานที่ 1-2 แต่โชว์ทั้งหมดบนหน้าจอ
           let speechText = '';
           if (incompleteItems.length <= 3) {
             const detailsArr = incompleteItems.map((it, idx) =>
@@ -1658,7 +1757,7 @@
         };
       }
 
-      // [หมวด 5] เช็กรายการซ้ำข้ามเดือน + วิเคราะห์ความพร้อมปิดงานอัตโนมัติ
+      // เช็กรายการซ้ำข้ามเดือน + วิเคราะห์ความพร้อมปิดงานอัตโนมัติ
       analyzeCrossMonthDuplicates() {
         this.speak("กำลังตรวจสอบหมายเลข PEA ที่ซ้ำกัน และตรวจความครบถ้วนของข้อมูล รอสักครู่ครับบอส", false);
         this.ensureData(true, (allData) => {
@@ -1735,7 +1834,7 @@
         });
       }
 
-      // ⚡ ระบบสั่งปิดงานซ้ำอัตโนมัติ + ดึงรายการที่ไม่แน่ใจขึ้นมาถามบอสทีละราย
+      // ระบบสั่งปิดงานซ้ำอัตโนมัติ + ดึงรายการที่ไม่แน่ใจขึ้นมาถามบอสทีละราย
       startAutoCloseDuplicates() {
         const runWithContext = (ctx) => {
           if (!ctx || (ctx.readyToAutoClose.length === 0 && ctx.uncertainList.length === 0)) {
@@ -1900,7 +1999,7 @@
       }
 
       // =======================================================================
-      // [หมวด 1] สรุปภาพรวม & ความคืบหน้า
+      // สรุปภาพรวม & หมวดวิเคราะห์อื่นๆ
       // =======================================================================
       analyzeAndSummarize() {
         this.ensureData(false, (all) => {
@@ -1942,7 +2041,6 @@
         });
       }
 
-      // [หมวด 2A] เช็กงานคงเหลือ
       analyzeRemainingWork() {
         this.ensureData(false, (all) => {
           const pending = all.filter(i => i.status === 'งานคงเหลือ');
@@ -1976,7 +2074,6 @@
         });
       }
 
-      // [หมวด 2B] เช็กงานรอปิดใบสั่ง
       analyzePendingCloseOrders() {
         this.ensureData(false, (all) => {
           const contractorWait = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
@@ -2016,7 +2113,6 @@
         });
       }
 
-      // [หมวด 3] วิเคราะห์ผลงาน ผู้รับเหมา vs พนักงาน
       analyzeOperatorPerformance() {
         this.ensureData(false, (all) => {
           const contractor = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
@@ -2055,7 +2151,6 @@
         });
       }
 
-      // [หมวด 4] วิเคราะห์รายการสำคัญ / งานด่วน
       isImportantItem(item) {
         const sheet = (item.sheetName || '').toLowerCase();
         const reason = (item.reason || '').toLowerCase();
@@ -2143,7 +2238,6 @@
         });
       }
 
-      // [หมวด 6] วิเคราะห์สาเหตุการชำรุดยอดฮิต
       analyzeTopReasons() {
         this.ensureData(false, (all) => {
           const counts = {};
@@ -2195,7 +2289,6 @@
         });
       }
 
-      // [หมวด 7] แนะนำจุดเริ่มงาน & จัดเส้นทาง GPS
       recommendBestRoute() {
         this.ensureData(false, (all) => {
           const pendingWithGps = all.filter(i => i.status === 'งานคงเหลือ' && this.hasValidNumericGps(i));
@@ -2239,7 +2332,6 @@
         });
       }
 
-      // [หมวด 8] เช็กความพร้อมพิกัด GPS
       analyzeGpsReadiness() {
         this.ensureData(false, (all) => {
           const pending = all.filter(i => i.status === 'งานคงเหลือ');
@@ -2278,7 +2370,6 @@
         });
       }
 
-      // [หมวด 9] ค้นหาเจาะจง
       performSearchAndThink(keyword, isFollowUp) {
         const statusTab = document.querySelector('#status-tab');
         if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
