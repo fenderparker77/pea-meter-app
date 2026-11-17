@@ -82,14 +82,42 @@
     .meter-capture-card.new-meter { border-left: 5px solid #2ecc71; }
     .meter-capture-card.backup-meter { border-left: 5px solid #3498db; }
 
+    .capture-action-btn {
+      font-size: 0.86rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+
     .ocr-result-box {
       background: #f8f9fa;
       border: 1px dashed #6c757d;
       border-radius: 12px;
       padding: 10px 12px;
       margin-top: 10px;
-      font-size: 0.86rem;
+      font-size: 0.85rem;
       display: none;
+    }
+    .meter-type-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      margin: 2px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #fff;
+      color: #495057;
+      border: 1px solid #adb5bd;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .meter-type-pill.active {
+      background: #0d6efd;
+      color: #fff;
+      border-color: #0d6efd;
+      box-shadow: 0 2px 6px rgba(13, 110, 253, 0.3);
     }
     .ocr-token-pill {
       display: inline-block;
@@ -126,8 +154,8 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 82%;
-      height: 52%;
+      width: 84%;
+      height: 55%;
       border: 2.5px solid #00d2ff;
       border-radius: 14px;
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
@@ -352,12 +380,12 @@
               </select>
             </div>
             <div class="col-6">
-              <label class="form-label fw-bold text-secondary">ประจำเดือน:</label>
+              <label class="form-label fw-bold text-secondary">ประจำเดือน / ชื่อใบงาน:</label>
               <select id="filter-month" class="form-select" onchange="loadDashboard()"></select>
             </div>
           </div>
           <div class="mt-4">
-            <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 ค้นหาแบบตรงตัวใส่ฟันหนู (เช่น &quot;ครั้งที่ 3&quot;)" onkeyup="filterDashboard()">
+            <input type="text" id="dash-search" class="form-control rounded-pill px-4" placeholder="🔍 พิมพ์ค้นหาข้อมูลต่างๆ จากสถานะ / ชื่อใบงาน ที่ระบุไว้ด้านบน" onkeyup="filterDashboard()">
           </div>
 
           <!-- 🧠 แผงคำสั่งอัจฉริยะที่ใช้บ่อย (แสดงเฉพาะโหมด Admin) -->
@@ -675,7 +703,7 @@
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S เวอร์ชัน 5.3 พร้อมระบบสแกนมิเตอร์เรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S พร้อมระบบสแกนมิเตอร์รุ่นอัปเกรดเรียบร้อยครับ", false);
       }
     }
 
@@ -773,17 +801,22 @@
     }
 
     // =========================================================================
-    // 📷 Smart Meter OCR & Dual Camera Engine
-    // รองรับ: PEA.No เก่า (col-8), PEA.No ใหม่ (col-9), และ ภาพถ่ายสำรอง (backup)
+    // 📷 Smart Meter OCR & Dual Camera Engine (รองรับมาตรฐานมิเตอร์ กฟภ. 3 แบบ)
+    // 1. จานหมุน 15(45)A (400 rev/kWh) -> อ่านครบทั้ง 5 หลัก (00002 -> 2)
+    // 2. จานหมุน 5(15)A (1200 rev/kWh) -> อ่าน 4 หลักแรก ตัดหลักขวาสุดทิ้ง (0002.8 -> 2)
+    // 3. มิเตอร์ E (Electronic จอ LCD) -> อ่านจำนวนเต็มจากจอ LCD (00015.4 -> 15)
     // =========================================================================
     class SmartMeterOCR {
       constructor() {
-        this.activeTargetInputId = null; // 'col-8' | 'col-9' | 'extra-backup-pic'
-        this.activePreviewId = null;     // 'preview-8' | 'preview-9' | 'preview-backup'
-        this.activeMeterRole = null;     // 'old' | 'new' | 'backup'
+        this.activeTargetInputId = null;
+        this.activePreviewId = null;
+        this.activeMeterRole = null;
         this.mediaStream = null;
         this.torchOn = false;
-        this.lastExtractedTokens = { old: [], new: [] };
+        this.lastScanState = {
+          old: { parsed: null, meterType: '15_45A' },
+          new: { parsed: null, meterType: '15_45A' }
+        };
       }
 
       resolveFieldIds() {
@@ -794,10 +827,13 @@
 
         (globalHeaders || []).forEach((h, idx) => {
           const title = String(h || '').toLowerCase();
-          if (title.includes('pea') && (title.includes('เก่า') || title.includes('เดิม'))) oldPeaIdx = idx;
-          else if (title.includes('หน่วย') && (title.includes('เก่า') || title.includes('เดิม'))) oldKwhIdx = idx;
-          else if (title.includes('pea') && title.includes('ใหม่')) newPeaIdx = idx;
-          else if (title.includes('หน่วย') && title.includes('ใหม่')) newKwhIdx = idx;
+          if (title.includes('pea') && (title.includes('เก่า') || title.includes('เดิม'))) {
+            oldPeaIdx = idx;
+            if (globalHeaders[idx + 1] && String(globalHeaders[idx + 1]).includes('หน่วย')) oldKwhIdx = idx + 1;
+          } else if (title.includes('pea') && title.includes('ใหม่')) {
+            newPeaIdx = idx;
+            if (globalHeaders[idx + 1] && String(globalHeaders[idx + 1]).includes('หน่วย')) newKwhIdx = idx + 1;
+          }
         });
 
         return {
@@ -806,6 +842,43 @@
           newPeaEl: document.getElementById(`col-${newPeaIdx}`),
           newKwhEl: document.getElementById(`col-${newKwhIdx}`)
         };
+      }
+
+      // แปลงตัวเลขดิบบนหน้าปัดเป็นหน่วย kWh ตามชนิดมิเตอร์ กฟภ.
+      calculateKwhByMeterType(rawDigitsOrDecimal, meterType) {
+        const str = String(rawDigitsOrDecimal || '').trim();
+        if (!str) return { kwhValue: '', formulaNote: '' };
+
+        if (meterType === '5_15A') {
+          // มิเตอร์ 5(15)A (1200 รอบ/หน่วย): อ่านเพียง 4 หลักแรกจากซ้ายไปขวา ตัดหลักขวาสุดทิ้ง
+          if (str.includes('.')) {
+            const intPart = str.split('.')[0].replace(/\D/g, '');
+            const fourDigits = intPart.slice(0, 4);
+            const val = fourDigits ? String(Number(fourDigits)) : '';
+            return { kwhValue: val, formulaNote: `4 หลักแรกของ ${str} = ${val}` };
+          }
+          const digitsOnly = str.replace(/\D/g, '');
+          if (digitsOnly.length >= 5) {
+            const fourDigits = digitsOnly.slice(0, 4);
+            const dropped = digitsOnly.slice(4, 5);
+            const val = String(Number(fourDigits));
+            return { kwhValue: val, formulaNote: `${fourDigits}[${dropped}] (ตัดหลักท้าย) = ${val}` };
+          }
+          const val = digitsOnly ? String(Number(digitsOnly)) : '';
+          return { kwhValue: val, formulaNote: `${digitsOnly} = ${val}` };
+        }
+
+        if (meterType === 'ELECTRONIC') {
+          // มิเตอร์ E (Electronic LCD): อ่านจำนวนเต็มจากจอ LCD
+          const intPart = str.split('.')[0].replace(/\D/g, '');
+          const val = intPart ? String(Number(intPart)) : '';
+          return { kwhValue: val, formulaNote: `จอ LCD (${str}) = ${val}` };
+        }
+
+        // ค่าเริ่มต้น: จานหมุน 15(45)A (400 รอบ/หน่วย) -> อ่านครบทั้ง 5 หลัก
+        const intPart = str.split('.')[0].replace(/\D/g, '');
+        const val = intPart ? String(Number(intPart)) : '';
+        return { kwhValue: val, formulaNote: `5 หลักเต็ม (${intPart}) = ${val}` };
       }
 
       // 1. เปิดกล้องถ่ายภาพเรียลไทม์ (WebRTC + Fallback Native Camera)
@@ -823,13 +896,13 @@
         if (role === 'old') {
           titleEl.innerHTML = '<i class="bi bi-camera-fill me-1 text-warning"></i> ถ่ายภาพ PEA.No เก่า (มิเตอร์เดิม)';
           reticleBox.style.display = 'block';
-          reticleLabel.innerText = 'วางป้ายเลข PEA.No เก่า และหน่วยเดิมในกรอบ';
-          hintEl.innerHTML = 'ถ่ายให้เห็นเลข <b>PEA.No เก่า</b> และตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ';
+          reticleLabel.innerText = 'วางเลข PEA.No เก่า และช่องตัวเลขหน่วยในกรอบ';
+          hintEl.innerHTML = 'ถ่ายให้เห็นเลข <b>PEA.No เก่า</b> และช่องตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ';
         } else if (role === 'new') {
           titleEl.innerHTML = '<i class="bi bi-camera-fill me-1 text-success"></i> ถ่ายภาพ PEA.No ใหม่ (มิเตอร์ใหม่)';
           reticleBox.style.display = 'block';
-          reticleLabel.innerText = 'วางป้ายเลข PEA.No ใหม่ และหน่วยใหม่ในกรอบ';
-          hintEl.innerHTML = 'ถ่ายให้เห็นเลข <b>PEA.No ใหม่</b> และตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ';
+          reticleLabel.innerText = 'วางเลข PEA.No ใหม่ และช่องตัวเลขหน่วยในกรอบ';
+          hintEl.innerHTML = 'ถ่ายให้เห็นเลข <b>PEA.No ใหม่</b> และช่องตัวเลขหน่วย <b>kWh</b> ชัดเจน ระบบจะอ่านค่าให้อัตโนมัติ';
         } else {
           titleEl.innerHTML = '<i class="bi bi-camera-fill me-1 text-info"></i> ถ่ายภาพสำรองหน้างาน';
           reticleBox.style.display = 'none';
@@ -924,7 +997,7 @@
         reader.readAsDataURL(file);
       }
 
-      // 3. บีบอัดภาพเก็บลงฟอร์ม + ส่งเข้า AI OCR (สำหรับ PEA.No เก่า และ PEA.No ใหม่)
+      // 3. บีบอัดภาพเก็บลงฟอร์ม + เตรียมภาพ 2 โหมดส่งเข้า AI OCR (อ่านป้าย + อ่านช่องหน่วย kWh)
       async processCapturedCanvas(sourceCanvas, targetInputId, previewId, role) {
         const maxW = 1280;
         let targetW = sourceCanvas.width;
@@ -950,21 +1023,31 @@
           previewEl.style.display = 'block';
         }
 
-        // ถ้าเป็นภาพถ่ายสำรอง ไม่ต้องสั่ง AI OCR อ่านทับช่องมิเตอร์
         if (role === 'backup') return;
 
-        const ocrCanvas = document.createElement('canvas');
-        ocrCanvas.width = targetW;
-        ocrCanvas.height = targetH;
-        const ocrCtx = ocrCanvas.getContext('2d');
-        ocrCtx.filter = 'grayscale(100%) contrast(145%) brightness(105%)';
-        ocrCtx.drawImage(saveCanvas, 0, 0);
+        // ภาพชุดที่ 1: ปรับความคมชัดปานกลางสำหรับอ่านป้ายชื่อ + เลข PEA
+        const fullOcrCanvas = document.createElement('canvas');
+        fullOcrCanvas.width = targetW;
+        fullOcrCanvas.height = targetH;
+        const fullCtx = fullOcrCanvas.getContext('2d');
+        fullCtx.filter = 'grayscale(100%) contrast(140%) brightness(105%)';
+        fullCtx.drawImage(saveCanvas, 0, 0);
 
-        await this.runOcrScan(ocrCanvas, role);
+        // ภาพชุดที่ 2: โฟกัสช่วงกลางถึงล่างของมิเตอร์ (บริเวณหน้าปัดตัวเลขหน่วย kWh) + เร่ง Contrast สูง
+        const cropY = Math.round(targetH * 0.35);
+        const cropH = targetH - cropY;
+        const registerCanvas = document.createElement('canvas');
+        registerCanvas.width = targetW;
+        registerCanvas.height = cropH;
+        const regCtx = registerCanvas.getContext('2d');
+        regCtx.filter = 'grayscale(100%) contrast(185%) brightness(112%)';
+        regCtx.drawImage(saveCanvas, 0, cropY, targetW, cropH, 0, 0, targetW, cropH);
+
+        await this.runOcrScan(fullOcrCanvas, registerCanvas, role);
       }
 
-      // 4. รัน AI OCR อ่านข้อความและแยกเลข PEA + หน่วย kWh
-      async runOcrScan(ocrCanvas, role) {
+      // 4. รัน AI OCR สองจังหวะเพื่อให้ได้ทั้งเลข PEA และเลขหน่วย kWh ที่แยกช่องหน้าปัด
+      async runOcrScan(fullOcrCanvas, registerCanvas, role) {
         const resultBox = document.getElementById(`ocr-result-${role}`);
         if (!resultBox) return;
 
@@ -972,71 +1055,144 @@
         resultBox.innerHTML = `
           <div class="d-flex align-items-center text-primary fw-bold">
             <span class="spinner-border spinner-border-sm me-2"></span>
-            AI กำลังสแกนอ่านหมายเลข ${role === 'old' ? 'PEA.No เก่า' : 'PEA.No ใหม่'} และหน่วย kWh...
+            AI กำลังสแกนอ่านเลข ${role === 'old' ? 'PEA.No เก่า' : 'PEA.No ใหม่'} และหน้าปัดหน่วย kWh...
           </div>
         `;
 
         try {
           if (!window.Tesseract) throw new Error('ไม่สามารถโหลดโมดูล Tesseract OCR ได้');
-          const { data: { text } } = await Tesseract.recognize(ocrCanvas, 'eng');
-          const parsed = this.extractMeterNumbers(text, role);
-          this.lastExtractedTokens[role] = parsed.allTokens;
-          this.applyAndRenderOcrResult(parsed, role);
+
+          const [fullRes, regRes] = await Promise.all([
+            Tesseract.recognize(fullOcrCanvas, 'eng'),
+            Tesseract.recognize(registerCanvas, 'eng')
+          ]);
+
+          const parsed = this.extractMeterData(fullRes.data.text || '', regRes.data.text || '', role);
+          this.lastScanState[role] = {
+            parsed: parsed,
+            meterType: parsed.detectedMeterType
+          };
+          this.applyAndRenderOcrResult(role);
         } catch (err) {
           resultBox.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle"></i> สแกนตัวเลขไม่สำเร็จ สามารถกรอกตัวเลขในช่องด้านบนได้ตามปกติครับ</span>`;
         }
       }
 
-      extractMeterNumbers(rawText, role) {
-        const cleanText = (rawText || '').replace(/[|]/g, '1').replace(/[Oo]/g, '0');
-        const lines = cleanText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      // 5. ตัวคัดกรองเลข PEA + แยกชุดตัวเลขหน้าปัดจานหมุน/LCD (รองรับตัวเลขมีช่องว่าง เช่น "0 0 0 0 2")
+      extractMeterData(fullText, regText, role) {
+        const normalizeOcr = (txt) => (txt || '')
+          .replace(/[|lI]/g, '1')
+          .replace(/[OoQD]/g, '0')
+          .replace(/[Ss]/g, '5')
+          .replace(/[Bb]/g, '8');
 
-        let peaCandidates = [];
-        let kwhCandidates = [];
-        let allTokens = [];
+        const rawCombined = `${fullText}\n${regText}`;
+        const lowerFull = (fullText || '').toLowerCase();
 
-        const peaLabelRegex = /(?:PEA|NO|S\/N)[.\s:#-]*([0-9]{2}[-\s]?[0-9]{6,10}|[0-9]{7,13})/gi;
-        let match;
-        while ((match = peaLabelRegex.exec(cleanText)) !== null) {
-          const val = match[1].replace(/\s+/g, '');
-          if (!peaCandidates.includes(val)) peaCandidates.push(val);
+        // ตรวจจับชนิดมิเตอร์เบื้องต้นจากข้อความบนป้าย
+        let detectedMeterType = '15_45A';
+        if (/5\s*\(\s*15\s*\)|1200\s*rev/i.test(lowerFull)) {
+          detectedMeterType = '5_15A';
+        } else if (/electronic|static|lcd|1\s*phase\s*2\s*wire\s*static/i.test(lowerFull)) {
+          detectedMeterType = 'ELECTRONIC';
+        } else if (/15\s*\(\s*45\s*\)|400\s*rev/i.test(lowerFull)) {
+          detectedMeterType = '15_45A';
         }
 
-        lines.forEach(line => {
-          const lower = line.toLowerCase();
-          if (lower.includes('hz') || lower.includes('imp') || lower.includes('class') || lower.includes('iec')) return;
+        let peaCandidates = [];
+        let kwhRawCandidates = [];
+        let allTokens = [];
 
-          const numMatches = line.match(/\b\d{2}-\d{6,10}\b|\b\d{4,13}\b/g) || [];
-          numMatches.forEach(num => {
-            if (/^(202[0-9]|220|230|240|380|400)$/.test(num)) return;
-            if (!allTokens.includes(num)) allTokens.push(num);
+        // 5.1 ค้นหาหมายเลข PEA (7-13 หลัก)
+        const peaLabelRegex = /(?:PEA|NO|S\/N)[.\s:#-]*([0-9OoIl|]{2}[-\s]?[0-9OoIl|]{6,10}|[0-9OoIl|]{7,13})/gi;
+        let match;
+        while ((match = peaLabelRegex.exec(rawCombined)) !== null) {
+          const cleanPea = normalizeOcr(match[1]).replace(/\s+/g, '');
+          if (cleanPea.replace(/\D/g, '').length >= 7 && !peaCandidates.includes(cleanPea)) {
+            peaCandidates.push(cleanPea);
+          }
+        }
 
-            const digitsOnly = num.replace(/\D/g, '');
-            if (digitsOnly.length >= 7) {
+        // 5.2 วิเคราะห์ทีละบรรทัดเพื่อหาชุดตัวเลขหน้าปัดหน่วย (รวมถึงเลขที่แยกช่องหน้าปัด เช่น "0 0 0 0 2")
+        const inspectLines = (txtBlock, prioritizeRegister) => {
+          const lines = (txtBlock || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+          lines.forEach(line => {
+            const lowerLine = line.toLowerCase();
+            if (lowerLine.includes('hz') || lowerLine.includes('imp') || lowerLine.includes('class') || lowerLine.includes('iec') || lowerLine.includes('rev/kwh')) return;
+
+            const normLine = normalizeOcr(line);
+
+            // ก) หาเลข PEA ยาว 7-13 หลักที่ไม่ได้มีคำนำหน้า
+            const longNums = normLine.match(/\b\d{2}-\d{6,10}\b|\b\d{7,13}\b/g) || [];
+            longNums.forEach(num => {
               if (!peaCandidates.includes(num)) peaCandidates.push(num);
-            } else if (digitsOnly.length >= 4 && digitsOnly.length <= 6) {
-              if (!kwhCandidates.includes(num)) kwhCandidates.push(num);
-            }
-          });
-        });
+              if (!allTokens.includes(num)) allTokens.push(num);
+            });
 
-        if (role === 'new' && kwhCandidates.length > 1) {
-          kwhCandidates.sort((a, b) => Number(a) - Number(b));
+            // ข) หาเลขหน้าปัดหน่วย 4-6 หลัก (ทั้งแบบติดกัน "00002", มีทศนิยม "0002.8", หรือแยกช่อง drum "0 0 0 0 2")
+            // ตัดเลข PEA ยาวๆ ออกจากบรรทัดก่อนเพื่อไม่ให้ปนกัน
+            const lineWithoutPea = normLine.replace(/\b\d{7,13}\b/g, ' ');
+            const spacedDrumMatches = lineWithoutPea.match(/(?:\d[\s.,-]*){4,6}/g) || [];
+
+            spacedDrumMatches.forEach(rawSeq => {
+              // กรณีมีจุดทศนิยมชัดเจน เช่น 0002.8 หรือ 00015.4
+              const hasDecimal = /\d+\.\d+/.test(rawSeq.replace(/\s+/g, ''));
+              const compact = hasDecimal
+                ? rawSeq.replace(/\s+/g, '').replace(/[^0-9.]/g, '')
+                : rawSeq.replace(/\D/g, '');
+
+              const digitCount = compact.replace(/\D/g, '').length;
+              if (digitCount < 4 || digitCount > 6) return;
+              if (/^(202[0-9]|220|230|240|380|400)$/.test(compact)) return;
+
+              if (!allTokens.includes(compact)) allTokens.push(compact);
+              if (prioritizeRegister) {
+                kwhRawCandidates.unshift(compact);
+              } else if (!kwhRawCandidates.includes(compact)) {
+                kwhRawCandidates.push(compact);
+              }
+            });
+          });
+        };
+
+        inspectLines(fullText, false);
+        inspectLines(regText, true);
+
+        // ตัดค่าซ้ำใน kwhRawCandidates
+        kwhRawCandidates = [...new Set(kwhRawCandidates)];
+
+        // สำหรับมิเตอร์ใหม่ หน่วยเริ่มต้นมักเป็นเลขน้อยๆ เช่น 00000, 00001, 00002
+        if (role === 'new' && kwhRawCandidates.length > 1) {
+          kwhRawCandidates.sort((a, b) => Number(a.replace(/\D/g, '')) - Number(b.replace(/\D/g, '')));
         }
 
         return {
           detectedPea: peaCandidates[0] || '',
-          detectedKwh: kwhCandidates[0] || '',
+          detectedRawKwh: kwhRawCandidates[0] || '',
+          detectedMeterType: detectedMeterType,
           allTokens: allTokens
         };
       }
 
-      applyAndRenderOcrResult(parsed, role) {
+      // เปลี่ยนชนิดมิเตอร์จากปุ่ม Pill และคำนวณหน่วยลงช่องฟอร์มทันที
+      setMeterType(role, newMeterType) {
+        if (!this.lastScanState[role]) return;
+        this.lastScanState[role].meterType = newMeterType;
+        this.applyAndRenderOcrResult(role);
+      }
+
+      // 6. เติมค่าลงช่องฟอร์ม + ตรวจสอบเลข PEA เก่า + แสดงตัวเลือกชนิดมิเตอร์
+      applyAndRenderOcrResult(role) {
         const resultBox = document.getElementById(`ocr-result-${role}`);
+        const state = this.lastScanState[role];
+        if (!resultBox || !state || !state.parsed) return;
+
+        const { detectedPea, detectedRawKwh, allTokens } = state.parsed;
+        const meterType = state.meterType;
         const fields = this.resolveFieldIds();
         const workMode = document.getElementById('work-mode')?.value || 'ucube';
 
-        const { detectedPea, detectedKwh, allTokens } = parsed;
+        const kwhCalc = this.calculateKwhByMeterType(detectedRawKwh, meterType);
         let statusHtml = '';
 
         if (role === 'old') {
@@ -1056,10 +1212,10 @@
             }
           }
 
-          if (detectedKwh && fields.oldKwhEl) {
-            fields.oldKwhEl.value = detectedKwh;
+          if (kwhCalc.kwhValue !== '' && fields.oldKwhEl) {
+            fields.oldKwhEl.value = kwhCalc.kwhValue;
             this.flashInput(fields.oldKwhEl);
-            statusHtml += `<div class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> เติมหน่วย PEA.No เก่า: ${detectedKwh}</div>`;
+            statusHtml += `<div class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> เติมหน่วย PEA.No เก่า: <u>${kwhCalc.kwhValue}</u> <span class="text-muted fw-normal">(${kwhCalc.formulaNote})</span></div>`;
           }
         } else if (role === 'new') {
           if (detectedPea && fields.newPeaEl) {
@@ -1067,16 +1223,26 @@
             this.flashInput(fields.newPeaEl);
             statusHtml += `<div class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> เติม PEA.No ใหม่: ${detectedPea}</div>`;
           }
-          if (detectedKwh && fields.newKwhEl) {
-            fields.newKwhEl.value = detectedKwh;
+          if (kwhCalc.kwhValue !== '' && fields.newKwhEl) {
+            fields.newKwhEl.value = kwhCalc.kwhValue;
             this.flashInput(fields.newKwhEl);
-            statusHtml += `<div class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> เติมหน่วย PEA.No ใหม่: ${detectedKwh}</div>`;
+            statusHtml += `<div class="text-primary fw-bold"><i class="bi bi-lightning-charge-fill"></i> เติมหน่วย PEA.No ใหม่: <u>${kwhCalc.kwhValue}</u> <span class="text-muted fw-normal">(${kwhCalc.formulaNote})</span></div>`;
           }
         }
 
         if (!statusHtml) {
           statusHtml = `<div class="text-warning-emphasis fw-bold"><i class="bi bi-info-circle"></i> AI อ่านตัวเลขไม่ชัดเจน สามารถจิ้มเลือกตัวเลขด้านล่างหรือพิมพ์เองได้เลยครับ</div>`;
         }
+
+        // แถบเลือกชนิดมิเตอร์ (15(45)A / 5(15)A / มิเตอร์ E) สำหรับสลับกฎการอ่านหน่วยทันที
+        const meterTypeSelectorHtml = `
+          <div class="mt-2 pt-2 border-top">
+            <span class="text-muted small d-block mb-1">ชนิดมิเตอร์ (แตะเพื่อสลับวิธีคำนวณหน่วย):</span>
+            <span class="meter-type-pill ${meterType === '15_45A' ? 'active' : ''}" onclick="smartMeterOCR.setMeterType('${role}', '15_45A')">จานหมุน 15(45)A (5 หลัก)</span>
+            <span class="meter-type-pill ${meterType === '5_15A' ? 'active' : ''}" onclick="smartMeterOCR.setMeterType('${role}', '5_15A')">จานหมุน 5(15)A (4 หลักแรก)</span>
+            <span class="meter-type-pill ${meterType === 'ELECTRONIC' ? 'active' : ''}" onclick="smartMeterOCR.setMeterType('${role}', 'ELECTRONIC')">มิเตอร์ E (จอ LCD)</span>
+          </div>
+        `;
 
         let pillsHtml = '';
         if (allTokens.length > 0) {
@@ -1088,27 +1254,31 @@
           </div>`;
         }
 
-        resultBox.innerHTML = statusHtml + pillsHtml;
+        resultBox.innerHTML = statusHtml + meterTypeSelectorHtml + pillsHtml;
       }
 
       applyTokenChoice(role, tokenVal) {
         const fields = this.resolveFieldIds();
         const isPeaLength = tokenVal.replace(/\D/g, '').length >= 7;
+        const meterType = this.lastScanState[role]?.meterType || '15_45A';
 
-        if (role === 'old') {
-          const targetEl = isPeaLength ? fields.oldPeaEl : fields.oldKwhEl;
-          if (targetEl && !targetEl.readOnly) {
-            targetEl.value = tokenVal;
-            this.flashInput(targetEl);
-          } else if (fields.oldKwhEl) {
-            fields.oldKwhEl.value = tokenVal;
-            this.flashInput(fields.oldKwhEl);
+        if (isPeaLength) {
+          const targetPeaEl = (role === 'old') ? fields.oldPeaEl : fields.newPeaEl;
+          if (targetPeaEl && !targetPeaEl.readOnly) {
+            targetPeaEl.value = tokenVal;
+            this.flashInput(targetPeaEl);
           }
-        } else if (role === 'new') {
-          const targetEl = isPeaLength ? fields.newPeaEl : fields.newKwhEl;
-          if (targetEl) {
-            targetEl.value = tokenVal;
-            this.flashInput(targetEl);
+        } else {
+          if (this.lastScanState[role]?.parsed) {
+            this.lastScanState[role].parsed.detectedRawKwh = tokenVal;
+            this.applyAndRenderOcrResult(role);
+          } else {
+            const calc = this.calculateKwhByMeterType(tokenVal, meterType);
+            const targetKwhEl = (role === 'old') ? fields.oldKwhEl : fields.newKwhEl;
+            if (targetKwhEl) {
+              targetKwhEl.value = calc.kwhValue;
+              this.flashInput(targetKwhEl);
+            }
           }
         }
       }
@@ -2723,7 +2893,6 @@
         } else if (i === 10) {
           fieldsHtml += `<div class="mb-3"><label class="form-label text-secondary fw-bold">${title}</label><input type="text" class="form-control p-2" id="col-${i}" list="operator-list" value="${val}"></div>`;
         } else if (i === 8 || i === 9) {
-          // ตั้งชื่อตามจริง: PEA.No เก่า (i === 8) และ PEA.No ใหม่ (i === 9)
           const isOld = (i === 8);
           const role = isOld ? 'old' : 'new';
           const cardTitle = isOld ? 'PEA.No เก่า' : 'PEA.No ใหม่';
@@ -2745,15 +2914,15 @@
 
               <div class="row g-2">
                 <div class="col-6">
-                  <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm"
+                  <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm capture-action-btn"
                     onclick="smartMeterOCR.openRealtimeCamera('col-${i}', 'preview-${i}', '${role}', 'native-cam-${i}')">
                     <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพเรียลไทม์
                   </button>
                 </div>
                 <div class="col-6">
-                  <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-bold py-2 bg-white"
+                  <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-bold py-2 bg-white capture-action-btn"
                     onclick="document.getElementById('file-upload-${i}').click()">
-                    <i class="bi bi-folder2-open me-1"></i> อัปโหลดในเครื่อง
+                    <i class="bi bi-folder2-open me-1"></i> อัปโหลดไฟล์
                   </button>
                 </div>
               </div>
@@ -2775,7 +2944,6 @@
         }
       }
 
-      // เพิ่มช่องภาพถ่ายสำรอง (รองรับทั้งถ่ายเรียลไทม์ + อัปโหลดไฟล์ในเครื่อง)
       const directBackupUrl = getDirectImageUrl(backupPicVal);
       const backupImgPreview = backupPicVal && backupPicVal.startsWith('http')
         ? `<img id="preview-backup" src="${directBackupUrl}" class="image-preview" style="display:block;">`
@@ -2789,15 +2957,15 @@
 
           <div class="row g-2">
             <div class="col-6">
-              <button type="button" class="btn btn-info text-dark w-100 rounded-pill fw-bold py-2 shadow-sm"
+              <button type="button" class="btn btn-info text-dark w-100 rounded-pill fw-bold py-2 shadow-sm capture-action-btn"
                 onclick="smartMeterOCR.openRealtimeCamera('extra-backup-pic', 'preview-backup', 'backup', 'native-cam-backup')">
                 <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพสำรอง
               </button>
             </div>
             <div class="col-6">
-              <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-bold py-2 bg-white"
+              <button type="button" class="btn btn-outline-secondary w-100 rounded-pill fw-bold py-2 bg-white capture-action-btn"
                 onclick="document.getElementById('file-upload-backup').click()">
-                <i class="bi bi-folder2-open me-1"></i> อัปโหลดในเครื่อง
+                <i class="bi bi-folder2-open me-1"></i> อัปโหลดไฟล์
               </button>
             </div>
           </div>
@@ -2812,7 +2980,6 @@
           ${backupImgPreview}
         </div>
 
-        <!-- เพิ่มช่องหมายเหตุอีก 1 ช่อง -->
         <div class="mb-3">
           <label class="form-label text-secondary fw-bold"><i class="bi bi-chat-left-text me-1"></i> หมายเหตุ</label>
           <textarea class="form-control p-2" id="extra-remark" rows="2" placeholder="ระบุหมายเหตุเพิ่มเติมหน้างาน (ถ้ามี)...">${remarkVal}</textarea>
