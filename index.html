@@ -793,702 +793,519 @@
       XLSX.writeFile(wb, fileName);
     }
 
-    // =========================================================================
-    // 🤖 J.A.R.V.I.S Smart Voice Brain v3.0 (12 หมวดคำถาม-ตอบอัจฉริยะหน้างาน)
-    // =========================================================================
-    class JarvisVoiceBrain {
-      constructor() {
-        this.state = {
-          mode: 'IDLE',              // IDLE | AWAITING_FILTER | AWAITING_CONFIRM | AWAITING_INTENT | AWAITING_CUSTOM_LIST | AWAITING_OPEN_FORM
-          lastKeywords: [],
-          lastMatchedItems: [],
-          customItems: [],
-          pendingAction: null
-        };
-        this.STORAGE_KEY = 'jarvis_pea_voice_memory_v1';
-        this.memory = this.loadMemory();
+   // =========================================================
+// 🤖 J.A.R.V.I.S Smart Voice v4.0 (Dual-Branch Multi-Choice)
+// สำหรับ: ระบบรับ-ส่งงาน สับเปลี่ยนมิเตอร์ PEA
+// =========================================================
+class JarvisVoiceBrain {
+  constructor() {
+    this.state = {
+      mode: 'IDLE',           // 'IDLE' | 'AWAITING_CHOICE' | 'AWAITING_INTENT'
+      choices: [],            // [{ label, icon, keywords: [], handler: fn }, ...]
+      defaultAllHandler: null // ทำงานเมื่อตอบว่า "ทั้งหมด" หรือ "ทั้งคู่"
+    };
+    this.STORAGE_KEY = 'jarvis_replace_meter_memory_v2';
+    this.memory = this.loadMemory();
+    this.activeRecognition = null;
+    this.isListening = false;
+    this.subtitleTimer = null;
+    this.SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  }
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        this.subtitleTimer = null;
-        this.initSpeech();
-      }
+  loadMemory() {
+    try {
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      return saved ? JSON.parse(saved) : { frequentCommands: {} };
+    } catch (e) { return { frequentCommands: {} }; }
+  }
 
-      // --- ระบบความจำระยะยาว (Long-term Habit Memory) ---
-      loadMemory() {
-        try {
-          const saved = localStorage.getItem(this.STORAGE_KEY);
-          return saved ? JSON.parse(saved) : { frequentCommands: {}, lastVisit: null };
-        } catch (e) {
-          return { frequentCommands: {}, lastVisit: null };
+  saveCommandToMemory(cleanCmd) {
+    if (!cleanCmd || cleanCmd.length < 2) return;
+    this.memory.frequentCommands[cleanCmd] = (this.memory.frequentCommands[cleanCmd] || 0) + 1;
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.memory));
+  }
+
+  unlockAudioEngine() {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      const silent = new SpeechSynthesisUtterance('');
+      silent.volume = 0;
+      window.speechSynthesis.speak(silent);
+    } catch (e) {}
+  }
+
+  // แสดงกล่องข้อความ + ปุ่มกดทางเลือก (Quick Choice Pills)
+  showSubtitle(speaker, htmlText, autoHideMs = 9500, choiceButtons = []) {
+    const box = document.getElementById('jarvis-subtitle');
+    if (!box) return;
+    clearTimeout(this.subtitleTimer);
+
+    let pillsHtml = '';
+    if (choiceButtons && choiceButtons.length > 0) {
+      pillsHtml = `<div class="d-flex flex-wrap gap-2 mt-2 pt-2 border-top border-secondary">` +
+        choiceButtons.map((c, idx) =>
+          `<button type="button" class="btn btn-sm btn-outline-info rounded-pill fw-bold" style="font-size:0.78rem;" onclick="jarvisBrain.triggerChoiceByIndex(${idx})">${c.icon || '👉'} ${c.label}</button>`
+        ).join('') +
+        `</div>`;
+    }
+
+    box.innerHTML = `<div class="fw-bold text-info small mb-1">${speaker}</div><div>${htmlText}</div>${pillsHtml}`;
+    box.style.display = 'block';
+    if (autoHideMs > 0) {
+      this.subtitleTimer = setTimeout(() => { box.style.display = 'none'; }, autoHideMs);
+    }
+  }
+
+  triggerChoiceByIndex(idx) {
+    if (!this.state.choices || !this.state.choices[idx]) return;
+    const chosen = this.state.choices[idx];
+    this.resetConversation();
+    chosen.handler();
+  }
+
+  toggleListening() {
+    this.unlockAudioEngine();
+    if (this.isListening && this.activeRecognition) {
+      try { this.activeRecognition.stop(); } catch (e) {}
+      this.isListening = false;
+      document.getElementById('jarvis-btn')?.classList.remove('listening');
+      return;
+    }
+    this.startListening();
+  }
+
+  startListening() {
+    if (!this.SpeechRecognitionClass) {
+      this.showSubtitle('⚠️ แจ้งเตือนระบบเสียง', 'เบราว์เซอร์ไม่รองรับไมค์ในหน้าเว็บ แนะนำใช้ Google Chrome ครับบอส', 8000);
+      return;
+    }
+
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (this.activeRecognition) {
+      try { this.activeRecognition.abort(); } catch (e) {}
+      this.activeRecognition = null;
+    }
+
+    try {
+      const rec = new this.SpeechRecognitionClass();
+      rec.lang = 'th-TH';
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+      let finalTranscript = '';
+
+      rec.onstart = () => {
+        this.isListening = true;
+        document.getElementById('jarvis-btn')?.classList.add('listening');
+        const hint = this.state.mode === 'AWAITING_CHOICE'
+          ? 'เลือกทางเลือกที่ต้องการได้เลยครับ (หรือแตะปุ่มด้านล่าง)'
+          : 'เชิญสั่งการเกี่ยวกับงานสับเปลี่ยนมิเตอร์ได้เลยครับบอส';
+        this.showSubtitle('🎙️ J.A.R.V.I.S กำลังฟัง...', hint, 0, this.state.choices);
+      };
+
+      rec.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalTranscript += t;
+          else interim += t;
         }
-      }
-
-      saveCommandToMemory(cleanCommand) {
-        if (!cleanCommand || cleanCommand.length < 2) return;
-        const count = this.memory.frequentCommands[cleanCommand] || 0;
-        this.memory.frequentCommands[cleanCommand] = count + 1;
-        this.memory.lastVisit = new Date().toISOString();
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.memory));
-        this.renderFrequentChips();
-      }
-
-      getTopFrequentCommands(limit = 3) {
-        return Object.entries(this.memory.frequentCommands)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, limit)
-          .map(entry => entry[0]);
-      }
-
-      renderFrequentChips() {
-        const container = document.getElementById('admin-voice-chips-list');
-        if (!container) return;
-
-        const top = this.getTopFrequentCommands(3);
-        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S ด่วน:</span>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeAndSummarize()">📊 สรุปภาพรวม</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeCrossMonthDuplicates()">🔁 เช็กซ้ำข้ามเดือน</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.recommendBestRoute()">🧭 แนะนำจุดเริ่มงาน</button>`;
-        html += `<button type="button" class="voice-chip" onclick="jarvisBrain.analyzeTopReasons()">🔧 สาเหตุพบบ่อย</button>`;
-
-        top.forEach(cmd => {
-          const safeCmd = cmd.replace(/'/g, "\\'");
-          html += `<button type="button" class="voice-chip" onclick="jarvisBrain.runQuickChip('${safeCmd}')">🕒 ${cmd}</button>`;
-        });
-
-        container.innerHTML = html;
-      }
-
-      runQuickChip(cmd) {
-        if (!isAdminUser) return;
-        this.saveCommandToMemory(cmd);
-        this.state.lastKeywords = [cmd];
-        this.performSearchAndThink(cmd, false);
-      }
-
-      // --- ระบบแสดงข้อความและเสียงพูด ---
-      showSubtitle(speaker, text, autoHideMs = 8000) {
-        if (!isAdminUser) return;
-        const box = document.getElementById('jarvis-subtitle');
-        if (!box) return;
-        clearTimeout(this.subtitleTimer);
-        box.innerHTML = `<div class="fw-bold text-info small mb-1">${speaker}</div><div>${text}</div>`;
-        box.style.display = 'block';
-        if (autoHideMs > 0) {
-          this.subtitleTimer = setTimeout(() => { box.style.display = 'none'; }, autoHideMs);
-        }
-      }
-
-      initSpeech() {
-        if (!this.recognition) return;
-        this.recognition.lang = 'th-TH';
-        this.recognition.interimResults = false;
-        this.recognition.maxAlternatives = 1;
-
-        this.recognition.onstart = () => {
-          document.getElementById('jarvis-btn')?.classList.add('listening');
-          window.speechSynthesis.cancel();
-          this.showSubtitle('🎙️ J.A.R.V.I.S กำลังฟัง...', 'เชิญสั่งการได้เลยครับบอส', 0);
-        };
-
-        this.recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript.trim();
-          this.showSubtitle('🗣️ บอสสั่งว่า:', `"${transcript}"`, 5000);
-          this.handleInput(transcript);
-        };
-
-        this.recognition.onerror = (event) => {
+        if (interim) this.showSubtitle('🎙️ กำลังฟัง...', `"${interim}..."`, 0, this.state.choices);
+        if (finalTranscript.trim()) {
+          this.isListening = false;
           document.getElementById('jarvis-btn')?.classList.remove('listening');
-          if (event.error === 'no-speech' && this.state.mode !== 'IDLE') {
-            this.resetConversation();
-            this.speak("หากต้องการสั่งการเพิ่มเติม กดปุ่มไมค์ได้ตลอดครับบอส", false);
-          } else {
-            document.getElementById('jarvis-subtitle').style.display = 'none';
-          }
-        };
-
-        this.recognition.onend = () => {
-          document.getElementById('jarvis-btn')?.classList.remove('listening');
-        };
-      }
-
-      startListening() {
-        if (!isAdminUser) return;
-        if (!this.recognition) {
-          alert("เบราว์เซอร์นี้ไม่รองรับการสั่งงานด้วยเสียงครับ");
-          return;
+          this.handleInput(finalTranscript.trim());
         }
-        window.speechSynthesis.cancel();
-        try {
-          this.recognition.start();
-        } catch (e) {}
-      }
+      };
 
-      speak(htmlText, expectReply = false) {
-        if (!isAdminUser) return;
-        this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 8500);
-
-        // แปลง HTML เป็นข้อความล้วนก่อนพูดออกเสียง จะได้ไม่อ่านแท็ก
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlText;
-        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
-
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-
-        const msg = new SpeechSynthesisUtterance(cleanSpeech);
-        msg.lang = 'th-TH';
-        msg.rate = 1.1;
-
-        msg.onend = () => {
-          if (expectReply && isAdminUser) {
-            setTimeout(() => this.startListening(), 400);
-          }
-        };
-
-        window.speechSynthesis.speak(msg);
-      }
-
-      resetConversation() {
-        this.state = {
-          mode: 'IDLE',
-          lastKeywords: [],
-          lastMatchedItems: [],
-          customItems: [],
-          pendingAction: null
-        };
-      }
-
-      //Helper: ดึงข้อมูลล่าสุดให้มั่นใจว่ามีข้อมูลครบ (ดึง ALL เมื่อต้องเทียบข้ามเดือน)
-      ensureData(requireAllMonths, callback) {
-        const currentFilterMonth = document.getElementById('filter-month')?.value;
-        const needFetch = !globalDashResults || globalDashResults.length === 0 || (requireAllMonths && currentFilterMonth !== 'ALL');
-        if (needFetch) {
-          callAPI('getDashboardData', { month: requireAllMonths ? 'ALL' : (currentFilterMonth || 'ALL'), statusFilter: 'ทั้งหมด' }, (res) => {
-            if (requireAllMonths) {
-              const fm = document.getElementById('filter-month');
-              if (fm) fm.value = 'ALL';
-            }
-            globalDashResults = res.results || [];
-            document.getElementById('stat-total').innerText = res.stats.total;
-            document.getElementById('stat-pending').innerText = res.stats.pending;
-            document.getElementById('stat-contractor').innerText = res.stats.contractor;
-            document.getElementById('stat-emp').innerText = res.stats.employee;
-            document.getElementById('stat-completed').innerText = res.stats.completed;
-            callback(globalDashResults);
-          });
-        } else {
-          callback(globalDashResults);
+      rec.onerror = (event) => {
+        this.isListening = false;
+        document.getElementById('jarvis-btn')?.classList.remove('listening');
+        if (event.error === 'no-speech' && this.state.mode !== 'IDLE') {
+          // คงปุ่มทางเลือกไว้บนหน้าจอให้บอสกดได้แม้ไม่พูดต่อ
+          this.showSubtitle('🤖 J.A.R.V.I.S:', 'บอสสามารถแตะเลือกจากปุ่มด้านล่าง หรือกดไมค์เพื่อสั่งใหม่ได้ครับ', 10000, this.state.choices);
+          this.state.mode = 'IDLE';
         }
+      };
+
+      rec.onend = () => {
+        this.isListening = false;
+        document.getElementById('jarvis-btn')?.classList.remove('listening');
+      };
+
+      this.activeRecognition = rec;
+      rec.start();
+    } catch (e) {
+      this.isListening = false;
+      document.getElementById('jarvis-btn')?.classList.remove('listening');
+    }
+  }
+
+  speak(htmlText, expectReply = false, choiceButtons = []) {
+    this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 10000, choiceButtons);
+
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlText;
+    const plainText = (temp.textContent || temp.innerText || '').trim();
+
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(plainText);
+    msg.lang = 'th-TH';
+    msg.rate = 1.1;
+    msg.onend = () => {
+      if (expectReply) {
+        setTimeout(() => this.startListening(), 400);
+      }
+    };
+    window.speechSynthesis.speak(msg);
+  }
+
+  // ตั้งค่าโหมดรอคำตอบแบบ 2 ทางเลือก (Dual-Branch Prompt)
+  promptChoices(htmlText, choices, defaultAllHandler = null) {
+    this.state.mode = 'AWAITING_CHOICE';
+    this.state.choices = choices;
+    this.state.defaultAllHandler = defaultAllHandler;
+    this.speak(htmlText, true, choices);
+  }
+
+  resetConversation() {
+    this.state = { mode: 'IDLE', choices: [], defaultAllHandler: null };
+  }
+
+  // =========================================================================
+  // 🧠 ตัวกลางประมวลผลคำพูด & ตีความทางเลือก
+  // =========================================================================
+  handleInput(rawText) {
+    const text = rawText.toLowerCase().trim();
+
+    if (/(ยกเลิก|เริ่มใหม่|พอแค่นี้|ไม่ต้องแล้ว|ปิดหน้าต่าง)/.test(text)) {
+      this.resetConversation();
+      this.speak("รับทราบครับบอส ยกเลิกคำสั่งเรียบร้อยครับ", false);
+      return;
+    }
+
+    // 1. กรณีกำลังรอให้บอสเลือกทางเลือก (AWAITING_CHOICE)
+    if (this.state.mode === 'AWAITING_CHOICE' && this.state.choices.length > 0) {
+      // เช็กคำว่า "ทั้งหมด / ทั้งคู่ / ดูรวม"
+      if (/(ทั้งหมด|ทั้งคู่|สองอย่าง|รวมเลย)/.test(text) && this.state.defaultAllHandler) {
+        const fnAll = this.state.defaultAllHandler;
+        this.resetConversation();
+        fnAll();
+        return;
       }
 
-      //Helper: แสดงชุดรายการเฉพาะกิจบนหน้า Dashboard
-      displayCustomListOnDashboard(items, bannerTitle) {
-        const statusTab = document.querySelector('#status-tab');
-        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
-        const searchBox = document.getElementById('dash-search');
-        if (searchBox) searchBox.value = '';
-        const banner = `<div class="alert alert-info rounded-4 shadow-sm mb-3 fw-bold"><i class="bi bi-cpu-fill me-2"></i>${bannerTitle} (${items.length} รายการ)</div>`;
-        renderCardsList(items, banner);
+      // เช็กลำดับ "อันแรก / ข้อหนึ่ง" vs "อันหลัง / อันที่สอง / ข้อสอง"
+      if (/(อันแรก|ตัวแรก|อย่างแรก|ข้อแรก|ข้อหนึ่ง|ข้อ 1|ตัวที่ 1)/.test(text)) {
+        const c0 = this.state.choices[0];
+        this.resetConversation();
+        c0.handler();
+        return;
+      }
+      if (/(อันหลัง|อันที่สอง|ตัวหลัง|ตัวที่สอง|อย่างหลัง|ข้อสอง|ข้อ 2|ตัวที่ 2)/.test(text) && this.state.choices[1]) {
+        const c1 = this.state.choices[1];
+        this.resetConversation();
+        c1.handler();
+        return;
       }
 
-      // =======================================================================
-      // 🧠 สมองกลวิเคราะห์เจตนาและสนทนาโต้ตอบ (12 หมวดคำถาม-ตอบ)
-      // =======================================================================
-      handleInput(rawText) {
-        if (!isAdminUser) return;
-        const text = rawText.toLowerCase().trim();
-        const affirmative = /(ใช่|เอา|เปิด|แสดง|ตกลง|จัดไป|ได้เลย|ดู|นำทาง|ครับ|ค่ะ)/;
-
-        // 0. คำสั่งยกเลิก / เริ่มใหม่ ใช้ได้ทุกจังหวะ
-        if (/(ยกเลิก|เริ่มใหม่|พอแค่นี้|ไม่ต้องแล้ว)/.test(text)) {
+      // เช็ก Keyword เฉพาะของแต่ละทางเลือก (เรียงจากคำเฉพาะเจาะจงก่อน เพื่อกันคำว่า "มีพิกัด" ซ้อนกับ "ไม่มีพิกัด")
+      const sortedChoices = [...this.state.choices].sort((a, b) => b.priority - a.priority);
+      for (const choice of sortedChoices) {
+        if (choice.keywords.some(kw => text.includes(kw))) {
           this.resetConversation();
-          this.speak("รับทราบครับบอส ยกเลิกคำสั่งเรียบร้อยครับ", false);
+          choice.handler();
           return;
         }
-
-        // --- จัดการการสนทนาต่อเนื่อง (Multi-turn Follow-up) ---
-        if (this.state.mode === 'AWAITING_CONFIRM') {
-          if (affirmative.test(text)) {
-            if (this.state.pendingAction === 'OPEN_MAP') {
-              this.speak("กำลังเปิดแผนที่นำทางให้ครับบอส", false);
-              this.executeMapRouting(this.state.lastMatchedItems);
-            }
-          } else {
-            this.speak("รับทราบครับบอส แสดงรายการไว้บนหน้าจอก่อนนะครับ", false);
-          }
-          this.resetConversation();
-          return;
-        }
-
-        if (this.state.mode === 'AWAITING_CUSTOM_LIST') {
-          if (affirmative.test(text)) {
-            const items = this.state.customItems || [];
-            const title = this.state.pendingAction || 'รายการที่ J.A.R.V.I.S คัดกรอง';
-            this.displayCustomListOnDashboard(items, title);
-            this.speak(`ดึงรายการทั้งหมด ${items.length} รายการ มาแสดงบนหน้าจอเรียบร้อยครับบอส`, false);
-          } else {
-            this.speak("รับทราบครับบอส หากต้องการดูเมื่อไหร่สั่งได้เลยครับ", false);
-          }
-          this.resetConversation();
-          return;
-        }
-
-        if (this.state.mode === 'AWAITING_OPEN_FORM') {
-          if (affirmative.test(text) && this.state.customItems.length > 0) {
-            const target = this.state.customItems[0];
-            this.resetConversation();
-            this.speak(`กำลังเปิดแบบฟอร์มใบงาน PEA ${target.pea} ให้ครับบอส`, false);
-            processPendingWork(target.pea, target.sheetName);
-          } else {
-            this.resetConversation();
-            this.speak("รับทราบครับบอส", false);
-          }
-          return;
-        }
-
-        if (this.state.mode === 'AWAITING_FILTER') {
-          const extraKeyword = this.cleanText(text);
-          if (affirmative.test(text) && extraKeyword.length < 2 && this.state.lastKeywords.length > 0) {
-            const combinedQuery = this.state.lastKeywords.join(' ');
-            this.performSearchAndThink(combinedQuery, true);
-            return;
-          }
-          this.state.lastKeywords.push(extraKeyword);
-          const combinedQuery = this.state.lastKeywords.join(' ');
-          this.saveCommandToMemory(combinedQuery);
-          this.performSearchAndThink(combinedQuery, true);
-          return;
-        }
-
-        if (this.state.mode === 'AWAITING_INTENT') {
-          this.resetConversation();
-          if (/(สรุป|ภาพรวม|ยอด)/.test(text)) { this.analyzeAndSummarize(); return; }
-          if (/(ซ้ำ)/.test(text)) { this.analyzeCrossMonthDuplicates(); return; }
-          if (/(แนะนำ|ไปไหน|เริ่มตรงไหน)/.test(text)) { this.recommendBestRoute(); return; }
-          if (/(ด่วน|สำคัญ|ช็อต)/.test(text)) { this.analyzeImportantWork(false); return; }
-          if (/(สาเหตุ|เสียบ่อย|พัง)/.test(text)) { this.analyzeTopReasons(); return; }
-        }
-
-        // --- วิเคราะห์เจตนาใหม่ทั้ง 12 หมวด ---
-
-        // หมวด 12: คู่มือคำสั่งเสียง (Help)
-        if (/(ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
-          this.state.mode = 'AWAITING_INTENT';
-          this.speak("บอสสามารถสั่งให้ผม <b>สรุปภาพรวม</b>, <b>เช็กรายการซ้ำข้ามเดือน</b>, <b>เช็กงานสำคัญหรืองานด่วน</b>, <b>วิเคราะห์สาเหตุเสียบ่อย</b>, <b>แนะนำจุดเริ่มงานพร้อมนำทาง</b> หรือ <b>ส่งออกไฟล์ Excel</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนดีครับ?", true);
-          return;
-        }
-
-        // หมวด 10: ส่งออกไฟล์ Excel ด้วยเสียง
-        if (/(export|เอ็กซ์เซล|ส่งออก|ดาวน์โหลดตาราง|โหลดตาราง)/i.test(text)) {
-          this.speak("กำลังเปิดตารางและส่งออกไฟล์ Excel ให้ครับบอส", false);
-          showTableModal(document.getElementById('filter-status')?.value || 'ทั้งหมด');
-          setTimeout(() => exportTableToExcel(), 500);
-          return;
-        }
-
-        // หมวด 11: ประวัติคำสั่งที่ใช้บ่อย / ล้างความจำ
-        if (/(ล้างความจำ|ลบประวัติคำสั่ง)/.test(text)) {
-          localStorage.removeItem(this.STORAGE_KEY);
-          this.memory = { frequentCommands: {}, lastVisit: null };
-          this.renderFrequentChips();
-          this.speak("ล้างประวัติคำสั่งที่ใช้บ่อยเรียบร้อยครับบอส", false);
-          return;
-        }
-        if (/(คำถามที่ถามบ่อย|ใช้บ่อย|ประจำ|ค้นหาอะไรบ้าง)/.test(text)) {
-          const top = this.getTopFrequentCommands(3);
-          if (top.length === 0) {
-            this.speak("บอสยังไม่มีประวัติคำสั่งที่ใช้บ่อยครับ ลองสั่งค้นหาหรือสรุปงานได้เลยครับ", false);
-          } else {
-            this.speak(`คำสั่งที่บอสใช้บ่อยที่สุดคือ <b>${top.join(', ')}</b> ครับ ต้องการเรียกดูอันไหนบอกได้เลยครับ`, true);
-            this.state.mode = 'AWAITING_FILTER';
-            this.state.lastKeywords = [];
-          }
-          return;
-        }
-
-        // หมวด 5: เช็กรายการซ้ำข้ามเดือน
-        if (/(ซ้ำ|ซ้ำกัน|ซ้ำซ้อน|ชนกัน)/.test(text)) {
-          this.analyzeCrossMonthDuplicates();
-          return;
-        }
-
-        // หมวด 4: วิเคราะห์รายการสำคัญ / งานด่วน / เทียบเดือนนี้กับเดือนที่แล้ว
-        if (/(สำคัญ|งานด่วน|เร่งด่วน|ครั้งที่ 2|ครั้งที่ 3)/.test(text)) {
-          const isCompare = /(เดือนนี้|เดือนที่แล้ว|เดือนก่อน|เทียบ)/.test(text);
-          this.analyzeImportantWork(isCompare);
-          return;
-        }
-
-        // หมวด 6: วิเคราะห์สาเหตุการชำรุดยอดฮิต
-        if (/(สาเหตุ|เสียบ่อย|พังบ่อย|ชำรุดอะไร|อันดับสาเหตุ)/.test(text)) {
-          this.analyzeTopReasons();
-          return;
-        }
-
-        // หมวด 8: เช็กความพร้อมพิกัด GPS
-        if (/(พิกัด|gps|จีพีเอส)/i.test(text)) {
-          this.analyzeGpsReadiness();
-          return;
-        }
-
-        // หมวด 3: เปรียบเทียบผลงานผู้รับเหมา vs พนักงาน
-        if (/(ผู้รับเหมา|ผรม|พนักงาน|พนง|เทียบผลงาน)/.test(text) && /(กี่|ยอด|สรุป|เท่าไหร่|ผลงาน|เทียบ)/.test(text)) {
-          this.analyzeOperatorPerformance();
-          return;
-        }
-
-        // หมวด 2: เช็กยอดเฉพาะสถานะ (งานคงเหลือ / รอปิดใบสั่ง / เสร็จสมบูรณ์)
-        if (/(รอปิด|ยังไม่ได้ปิด|ตรวจงาน|ส่งงานแล้ว)/.test(text) && /(กี่|มี|ยอด|สรุป|ดู|เช็ก)/.test(text)) {
-          this.analyzePendingCloseOrders();
-          return;
-        }
-        if (/(คงเหลือ|เหลืออีก|ค้างอยู่)/.test(text) && /(กี่|มี|ยอด|สรุป|เท่าไหร่)/.test(text)) {
-          this.analyzeRemainingWork();
-          return;
-        }
-
-        // หมวด 7: แนะนำจุดเริ่มงาน / จัดเส้นทางอัจฉริยะ
-        if (/(แนะนำ|ไปไหนก่อน|เริ่มตรงไหน|วางแผน|โซนไหนเยอะ|พื้นที่ไหนเยอะ)/.test(text)) {
-          this.recommendBestRoute();
-          return;
-        }
-
-        // หมวด 1: สรุปภาพรวม & ความคืบหน้า
-        if (/(สรุป|ภาพรวม|ความคืบหน้า|กี่เปอร์เซ็นต์|มีงานอะไรบ้าง)/.test(text)) {
-          this.analyzeAndSummarize();
-          return;
-        }
-
-        // หมวด 9: ค้นหาเจาะจง (PEA / ชื่อ / พื้นที่ / สาเหตุ)
-        const cleaned = this.cleanText(text);
-        if (cleaned.length < 2) {
-          this.state.mode = 'AWAITING_INTENT';
-          this.speak(`ขออภัยครับบอส ผมได้ยินว่า "${rawText}" ไม่แน่ใจว่าบอสต้องการให้ <b>สรุปภาพรวม</b>, <b>เช็กรายการซ้ำ</b>, <b>แนะนำจุดเริ่มงาน</b> หรือ <b>ค้นหาใบงาน</b> ครับ?`, true);
-          return;
-        }
-
-        this.saveCommandToMemory(cleaned);
-        this.state.lastKeywords = [cleaned];
-        this.performSearchAndThink(cleaned, false);
       }
 
-      // --- ฟังก์ชันวิเคราะห์เชิงลึกแต่ละหมวด ---
+      // ถ้าบอสพูดคำสั่งใหม่ที่ไม่เกี่ยวกับทางเลือกเดิม ให้รีเซ็ตแล้วไปตีความเป็นคำสั่งใหม่ทันที
+      this.resetConversation();
+    }
 
-      // [หมวด 1] สรุปภาพรวม & ความคืบหน้า
-      analyzeAndSummarize() {
-        this.ensureData(false, (all) => {
-          const total = all.length;
-          const pending = all.filter(i => i.status === 'งานคงเหลือ').length;
-          const waitingClose = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ').length;
-          const completed = all.filter(i => i.status === 'เสร็จสมบูรณ์').length;
-          const donePercent = total > 0 ? Math.round(((waitingClose + completed) / total) * 100) : 0;
+    // 2. วิเคราะห์หมวดคำถามทั้งหมด (ทุกข้อเสนอ 2 ทางเลือกเสมอ)
+    if (/(พิกัด|ตำแหน่ง|แผนที่|gps|โลเคชั่น)/i.test(text)) {
+      this.analyzeGpsReadiness();
+      return;
+    }
 
-          this.speak(
-            `สรุปภาพรวมครับบอส จากทั้งหมด <b>${total} ใบงาน</b> ดำเนินการหน้างานแล้ว <b>${donePercent}%</b> ครับ แบ่งเป็น งานคงเหลือ <b>${pending}</b>, ส่งงานรอปิดใบสั่ง <b>${waitingClose}</b> และปิดเสร็จสมบูรณ์ <b>${completed}</b> ใบงานครับ ต้องการให้เปิดดูรายการรอปิดใบสั่งเลยไหมครับ?`,
-            true
-          );
-          this.state.mode = 'AWAITING_CUSTOM_LIST';
-          this.state.customItems = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ');
-          this.state.pendingAction = 'รายการส่งงานแล้ว (รอตรวจสอบ/ปิดใบสั่ง)';
+    if (/(รูป|ภาพถ่าย|หลักฐาน|อัปโหลด)/.test(text)) {
+      this.analyzePhotoReadiness();
+      return;
+    }
+
+    if (/(เดือนนี้|เดือนที่แล้ว|เทียบเดือน|เทียบยอด)/.test(text)) {
+      this.analyzeCrossMonthComparison();
+      return;
+    }
+
+    if (/(ผู้รับเหมา|ผรม|พนักงาน|พนง|ใครทำ|ผู้ดำเนินการ)/.test(text) && /(กี่|ยอด|สรุป|แยก|บ้าง)/.test(text)) {
+      this.analyzeByOperator();
+      return;
+    }
+
+    if (/(สรุป|ภาพรวม|ความคืบหน้า|สถานะ|ทั้งหมด|ส่งงาน|ค้าง)/.test(text)) {
+      this.analyzeOverallJobProgress();
+      return;
+    }
+
+    // 3. ค้นหาเจาะจง (ชื่อผู้ใช้ไฟ / เลข PEA / หมายเลขเครื่อง)
+    const cleaned = text.replace(/ช่วย|กรอง|หา|ค้นหา|ใบงาน|ข้อมูล|มิเตอร์|หมายเลข|ของ|ให้หน่อย|หน่อย|ครับ|ค่ะ|สิ/g, '').trim();
+    if (cleaned.length >= 2) {
+      this.saveCommandToMemory(cleaned);
+      this.searchSpecificRecord(cleaned);
+    } else {
+      this.speak("บอสต้องการให้เช็ก <b>ความพร้อมพิกัดตำแหน่ง</b>, <b>สรุปสถานะส่งงาน</b>, <b>ความครบถ้วนรูปถ่าย</b> หรือ <b>ค้นหาชื่อ/เลข PEA</b> ครับ?", true);
+    }
+  }
+
+  // =========================================================================
+  // 📊 ดึงข้อมูลจากตารางบนหน้าจอ (รองรับข้อมูลที่โหลดอยู่ในแอปสับเปลี่ยนมิเตอร์)
+  // =========================================================================
+  getTableRowsData() {
+    // อ่านข้อมูลจากตารางหลักในหน้าแอป (ปรับ selector ให้ตรงกับ id ตารางของบอสได้)
+    const rows = Array.from(document.querySelectorAll('table tbody tr'));
+    return rows.map(tr => {
+      const cells = Array.from(tr.querySelectorAll('td'));
+      const rowText = tr.innerText || '';
+      const hasLink = tr.querySelector('a[href*="maps"], a[href*="google.com/maps"], a[href*="goo.gl"]') !== null;
+      const hasCoords = /(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/.test(rowText);
+      const hasGps = hasLink || hasCoords || (rowText.includes('http') && !rowText.includes('ไม่มีพิกัด'));
+      const isCompleted = /ส่งงานแล้ว|เสร็จสมบูรณ์/.test(rowText);
+      const hasPhoto = tr.querySelector('a[href*="drive.google"], img') !== null || /ดูรูป|มีรูป/.test(rowText);
+      return { tr, cells, rowText, hasGps, isCompleted, hasPhoto };
+    }).filter(r => r.cells.length > 1);
+  }
+
+  applyRowFilter(predicateFn, statusLabel) {
+    const rows = this.getTableRowsData();
+    let shown = 0;
+    rows.forEach(r => {
+      const match = predicateFn(r);
+      r.tr.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    this.speak(`แสดงรายการกลุ่ม <b>"${statusLabel}"</b> จำนวน <b>${shown} รายการ</b> บนหน้าจอเรียบร้อยครับบอส`, false);
+  }
+
+  resetRowFilter() {
+    const rows = this.getTableRowsData();
+    rows.forEach(r => { r.tr.style.display = ''; });
+    this.speak(`แสดงรายการทั้งหมดจำนวน <b>${rows.length} รายการ</b> บนหน้าจอเรียบร้อยครับบอส`, false);
+  }
+
+  // =========================================================================
+  // 🎯 ชุดคำถามวิเคราะห์แบบ 2 ทางเลือก (Dual-Branch Analytics)
+  // =========================================================================
+
+  // 1. เช็กความพร้อมพิกัดตำแหน่ง (ตามตัวอย่างที่บอสต้องการเป๊ะ!)
+  analyzeGpsReadiness() {
+    const rows = this.getTableRowsData();
+    if (rows.length === 0) {
+      this.speak("ยังไม่มีข้อมูลรายการในตารางขณะนี้ครับบอส", false);
+      return;
+    }
+    const withGps = rows.filter(r => r.hasGps);
+    const withoutGps = rows.filter(r => !r.hasGps);
+
+    this.promptChoices(
+      `ตรวจสอบความพร้อมพิกัดตำแหน่งจากทั้งหมด <b>${rows.length} รายการ</b> ครับบอส: มีพิกัดพร้อมลงพื้นที่ <b>${withGps.length} ราย</b> และยังไม่มีพิกัด <b>${withoutGps.length} ราย</b> ต้องการให้เปิดดูรายการที่ <b>ไม่มีพิกัด</b> หรือรายการที่ <b>มีพิกัด</b> ครับ?`,
+      [
+        {
+          label: `ยังไม่มีพิกัด (${withoutGps.length})`,
+          icon: '⚠️',
+          priority: 2, // สำคัญกว่าเพื่อให้จับคำว่า "ไม่มีพิกัด" ก่อน "มีพิกัด"
+          keywords: ['ไม่มีพิกัด', 'ขาดพิกัด', 'ยังไม่ลงพิกัด', 'ไม่พร้อม', 'ไม่มี'],
+          handler: () => this.applyRowFilter(r => !r.hasGps, 'ยังไม่มีพิกัดตำแหน่ง')
+        },
+        {
+          label: `มีพิกัดพร้อมลุย (${withGps.length})`,
+          icon: '📍',
+          priority: 1,
+          keywords: ['มีพิกัด', 'พร้อมลงพื้นที่', 'พร้อม', 'มี'],
+          handler: () => this.applyRowFilter(r => r.hasGps, 'มีพิกัดพร้อมลงพื้นที่')
+        }
+      ],
+      () => this.resetRowFilter()
+    );
+  }
+
+  // 2. สรุปสถานะงานสับเปลี่ยนมิเตอร์ (ค้างส่ง vs ส่งงานแล้ว)
+  analyzeOverallJobProgress() {
+    const rows = this.getTableRowsData();
+    if (rows.length === 0) {
+      this.speak("ยังไม่มีรายการงานในตารางขณะนี้ครับบอส", false);
+      return;
+    }
+    const completed = rows.filter(r => r.isCompleted);
+    const pending = rows.filter(r => !r.isCompleted);
+
+    this.promptChoices(
+      `สรุปสถานะงานทั้งหมด <b>${rows.length} รายการ</b> ครับบอส: ส่งงานเสร็จสมบูรณ์แล้ว <b>${completed.length} ราย</b> และยังค้างดำเนินการ <b>${pending.length} ราย</b> ต้องการให้เปิดดูรายการที่ <b>ยังค้างอยู่</b> หรือรายการที่ <b>ส่งงานแล้ว</b> ครับ?`,
+      [
+        {
+          label: `งานค้างดำเนินการ (${pending.length})`,
+          icon: '⏳',
+          priority: 2,
+          keywords: ['ค้าง', 'ยังไม่ส่ง', 'รอดำเนินการ', 'คงเหลือ'],
+          handler: () => this.applyRowFilter(r => !r.isCompleted, 'งานค้างดำเนินการ')
+        },
+        {
+          label: `ส่งงานแล้ว (${completed.length})`,
+          icon: '✅',
+          priority: 1,
+          keywords: ['ส่งงาน', 'เสร็จ', 'เรียบร้อย', 'จบงาน'],
+          handler: () => this.applyRowFilter(r => r.isCompleted, 'ส่งงานเสร็จสมบูรณ์แล้ว')
+        }
+      ],
+      () => this.resetRowFilter()
+    );
+  }
+
+  // 3. เช็กความครบถ้วนรูปถ่ายประกอบงาน (ขาดรูป vs มีรูปครบ)
+  analyzePhotoReadiness() {
+    const rows = this.getTableRowsData();
+    if (rows.length === 0) {
+      this.speak("ยังไม่มีข้อมูลในตารางขณะนี้ครับบอส", false);
+      return;
+    }
+    const withPhoto = rows.filter(r => r.hasPhoto);
+    const noPhoto = rows.filter(r => !r.hasPhoto);
+
+    this.promptChoices(
+      `ตรวจสอบหลักฐานภาพถ่ายจากทั้งหมด <b>${rows.length} รายการ</b> ครับบอส: มีรูปถ่ายแล้ว <b>${withPhoto.length} ราย</b> และยังไม่มีรูปถ่าย <b>${noPhoto.length} ราย</b> ต้องการให้เปิดดูรายการที่ <b>ยังไม่มีรูป</b> หรือรายการที่ <b>มีรูปถ่ายแล้ว</b> ครับ?`,
+      [
+        {
+          label: `ยังไม่มีรูปถ่าย (${noPhoto.length})`,
+          icon: '📷',
+          priority: 2,
+          keywords: ['ไม่มีรูป', 'ขาดรูป', 'ยังไม่ถ่าย', 'ไม่มี'],
+          handler: () => this.applyRowFilter(r => !r.hasPhoto, 'ยังไม่มีรูปถ่ายประกอบ')
+        },
+        {
+          label: `มีรูปถ่ายแล้ว (${withPhoto.length})`,
+          icon: '🖼️',
+          priority: 1,
+          keywords: ['มีรูป', 'ถ่ายแล้ว', 'ครบ', 'มี'],
+          handler: () => this.applyRowFilter(r => r.hasPhoto, 'มีรูปถ่ายประกอบแล้ว')
+        }
+      ],
+      () => this.resetRowFilter()
+    );
+  }
+
+  // 4. แยกตามผู้ดำเนินการ (ผู้รับเหมา vs พนักงาน)
+  analyzeByOperator() {
+    const rows = this.getTableRowsData();
+    const contractor = rows.filter(r => /ผู้รับเหมา|ผรม/.test(r.rowText));
+    const staff = rows.filter(r => !/ผู้รับเหมา|ผรม/.test(r.rowText));
+
+    this.promptChoices(
+      `แยกงานตามผู้ดำเนินการครับบอส: ส่วนของ <b>ผู้รับเหมา ${contractor.length} ราย</b> และส่วนของ <b>พนักงาน ${staff.length} ราย</b> ต้องการเปิดดูรายการของ <b>ผู้รับเหมา</b> หรือ <b>พนักงาน</b> ครับ?`,
+      [
+        {
+          label: `งานผู้รับเหมา (${contractor.length})`,
+          icon: '👷',
+          priority: 1,
+          keywords: ['ผู้รับเหมา', 'ผรม'],
+          handler: () => this.applyRowFilter(r => /ผู้รับเหมา|ผรม/.test(r.rowText), 'ผู้รับเหมา')
+        },
+        {
+          label: `งานพนักงาน (${staff.length})`,
+          icon: '⚡',
+          priority: 1,
+          keywords: ['พนักงาน', 'พนง', 'ช่าง'],
+          handler: () => this.applyRowFilter(r => !/ผู้รับเหมา|ผรม/.test(r.rowText), 'พนักงาน')
+        }
+      ],
+      () => this.resetRowFilter()
+    );
+  }
+
+  // 5. เทียบยอดงานเดือนนี้ vs เดือนที่แล้ว
+  analyzeCrossMonthComparison() {
+    const rows = this.getTableRowsData();
+    const now = new Date();
+    const curM = String(now.getMonth() + 1).padStart(2, '0');
+    const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevM = String(prevDate.getMonth() + 1).padStart(2, '0');
+
+    const matchMonth = (txt, m) => new RegExp(`(\\d{1,2}[/-]${m}[/-]\\d{2,4}|\\d{4}-${m}-\\d{2})`).test(txt);
+    const thisMonthRows = rows.filter(r => matchMonth(r.rowText, curM));
+    const lastMonthRows = rows.filter(r => matchMonth(r.rowText, prevM));
+
+    this.promptChoices(
+      `เปรียบเทียบยอดงานข้ามเดือนครับบอส: <b>เดือนนี้มี ${thisMonthRows.length} รายการ</b> ส่วน <b>เดือนที่แล้วมี ${lastMonthRows.length} รายการ</b> ต้องการกรองดูรายการของ <b>เดือนนี้</b> หรือ <b>เดือนที่แล้ว</b> ครับ?`,
+      [
+        {
+          label: `รายการเดือนนี้ (${thisMonthRows.length})`,
+          icon: '📅',
+          priority: 1,
+          keywords: ['เดือนนี้', 'ปัจจุบัน'],
+          handler: () => this.applyRowFilter(r => matchMonth(r.rowText, curM), 'เดือนปัจจุบัน')
+        },
+        {
+          label: `รายการเดือนที่แล้ว (${lastMonthRows.length})`,
+          icon: '🗓️',
+          priority: 1,
+          keywords: ['เดือนที่แล้ว', 'เดือนก่อน', 'ที่แล้ว'],
+          handler: () => this.applyRowFilter(r => matchMonth(r.rowText, prevM), 'เดือนที่แล้ว')
+        }
+      ],
+      () => this.resetRowFilter()
+    );
+  }
+
+  // 6. ค้นหาเจาะจงรายบุคคล / เลข PEA (พร้อมเสนอ 2 ทางเลือกเมื่อเจอ)
+  searchSpecificRecord(keyword) {
+    const kw = keyword.toLowerCase();
+    const rows = this.getTableRowsData();
+    const matched = rows.filter(r => r.rowText.toLowerCase().includes(kw));
+
+    if (matched.length === 0) {
+      this.speak(`ไม่พบข้อมูล "${keyword}" ในรายการขณะนี้ครับบอส`, false);
+      return;
+    }
+
+    // กรองตารางให้เห็นเฉพาะรายการที่ตรงกันทันที
+    rows.forEach(r => { r.tr.style.display = matched.includes(r) ? '' : 'none'; });
+
+    const first = matched[0];
+    const mapLink = first.tr.querySelector('a[href*="maps"], a[href*="google.com/maps"], a[href*="goo.gl"]');
+    const editBtn = first.tr.querySelector('button, a.btn');
+
+    if (matched.length === 1 && (mapLink || editBtn)) {
+      const choices = [];
+      if (editBtn) {
+        choices.push({
+          label: 'เปิดหน้าต่างรายละเอียด/อัปเดต',
+          icon: '📝',
+          priority: 1,
+          keywords: ['รายละเอียด', 'อัปเดต', 'แก้ไข', 'เปิดดู'],
+          handler: () => editBtn.click()
+        });
+      }
+      if (mapLink) {
+        choices.push({
+          label: 'เปิดแผนที่นำทาง GPS',
+          icon: '🗺️',
+          priority: 2,
+          keywords: ['แผนที่', 'นำทาง', 'พิกัด', 'gps'],
+          handler: () => window.open(mapLink.href, '_blank')
         });
       }
 
-      // [หมวด 2A] เช็กงานคงเหลือ
-      analyzeRemainingWork() {
-        this.ensureData(false, (all) => {
-          const pending = all.filter(i => i.status === 'งานคงเหลือ');
-          const urgent = pending.filter(i => (i.reason || '').includes('ช็อตไหม้')).length;
-          this.state.mode = 'AWAITING_CUSTOM_LIST';
-          this.state.customItems = pending;
-          this.state.pendingAction = 'รายการงานคงเหลือทั้งหมด';
-          this.speak(
-            `ตอนนี้มี <b>งานคงเหลือ</b> ทั้งหมด <b>${pending.length} รายการ</b> ครับบอส (เป็นงานช็อตไหม้ด่วน ${urgent} รายการ) ต้องการให้แสดงเฉพาะงานคงเหลือบนหน้าจอเลยไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 2B] เช็กงานรอปิดใบสั่ง
-      analyzePendingCloseOrders() {
-        this.ensureData(false, (all) => {
-          const waiting = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว' || i.status === 'พนง. ดำเนินการ');
-          this.state.mode = 'AWAITING_CUSTOM_LIST';
-          this.state.customItems = waiting;
-          this.state.pendingAction = 'รายการส่งงานแล้ว (รอปิดใบสั่ง)';
-          this.speak(
-            `มีใบงานที่ส่งแล้วและ <b>รอตรวจสอบเพื่อปิดใบสั่ง</b> จำนวน <b>${waiting.length} รายการ</b> ครับบอส ต้องการให้ดึงขึ้นมาตรวจสอบบนหน้าจอเลยไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 3] วิเคราะห์ผลงาน ผู้รับเหมา vs พนักงาน
-      analyzeOperatorPerformance() {
-        this.ensureData(false, (all) => {
-          const contractor = all.filter(i => i.status === 'ผรม. ส่งงานแล้ว');
-          const emp = all.filter(i => i.status === 'พนง. ดำเนินการ');
-          this.state.mode = 'AWAITING_CUSTOM_LIST';
-          this.state.customItems = contractor;
-          this.state.pendingAction = 'ผลงานผู้รับเหมา (ผรม. ส่งงานแล้ว)';
-          this.speak(
-            `ยอดส่งงานปัจจุบัน ผู้รับเหมาส่งงานแล้ว <b>${contractor.length} รายการ</b> และพนักงานดำเนินการ <b>${emp.length} รายการ</b> ครับบอส ต้องการเปิดดูรายการของผู้รับเหมาบนหน้าจอไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 4] วิเคราะห์รายการสำคัญ / งานด่วน (รองรับเทียบเดือนนี้กับเดือนที่แล้ว)
-      isImportantItem(item) {
-        const sheet = (item.sheetName || '').toLowerCase();
-        const reason = (item.reason || '').toLowerCase();
-        return sheet.includes('ด่วน') || reason.includes('ช็อตไหม้') || /ครั้งที่\s*[2-9]/.test(reason);
-      }
-
-      analyzeImportantWork(isCompareMonths) {
-        this.ensureData(isCompareMonths, (allData) => {
-          if (isCompareMonths) {
-            const monthSheets = [...new Set(allData.map(i => i.sheetName))]
-              .filter(name => /^\d{2}\.\d{4}$/.test(name))
-              .sort((a, b) => {
-                const [mA, yA] = a.split('.').map(Number);
-                const [mB, yB] = b.split('.').map(Number);
-                return (yB * 100 + mB) - (yA * 100 + mA);
-              });
-
-            const now = new Date();
-            const curKey = `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`;
-            const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            const prevKey = `${String(prevDate.getMonth() + 1).padStart(2, '0')}.${prevDate.getFullYear() + 543}`;
-
-            const thisM = monthSheets.includes(curKey) ? curKey : (monthSheets[0] || curKey);
-            const lastM = (monthSheets.includes(prevKey) && thisM === curKey) ? prevKey : (monthSheets.find(m => m !== thisM) || prevKey);
-
-            const impThis = allData.filter(i => i.sheetName === thisM && this.isImportantItem(i));
-            const impLast = allData.filter(i => i.sheetName === lastM && this.isImportantItem(i));
-            const pendingThis = impThis.filter(i => i.status === 'งานคงเหลือ');
-
-            this.state.mode = 'AWAITING_CUSTOM_LIST';
-            this.state.customItems = pendingThis.length > 0 ? pendingThis : impThis;
-            this.state.pendingAction = `รายการสำคัญรอบเดือน ${thisM}`;
-            this.speak(
-              `สรุปรายการสำคัญครับบอส รอบเดือน <b>${thisM}</b> มี <b>${impThis.length} ราย</b> (คงเหลือ ${pendingThis.length} ราย) ส่วนเดือนก่อนหน้า <b>${lastM}</b> มี <b>${impLast.length} ราย</b> ครับ ต้องการให้แสดงรายการสำคัญของเดือนนี้บนหน้าจอไหมครับ?`,
-              true
-            );
-          } else {
-            const impAll = allData.filter(i => this.isImportantItem(i));
-            const impPending = impAll.filter(i => i.status === 'งานคงเหลือ');
-            this.state.mode = 'AWAITING_CUSTOM_LIST';
-            this.state.customItems = impPending.length > 0 ? impPending : impAll;
-            this.state.pendingAction = 'รายการสำคัญ / งานด่วน / งานค้างซ้ำ';
-            this.speak(
-              `พบรายการสำคัญและงานด่วนทั้งหมด <b>${impAll.length} รายการ</b> และยังเป็นงานคงเหลือ <b>${impPending.length} รายการ</b> ครับบอส ต้องการเปิดดูรายการเหล่านี้บนหน้าจอเลยไหมครับ?`,
-              true
-            );
-          }
-        });
-      }
-
-      // [หมวด 5] วิเคราะห์รายการซ้ำข้ามเดือน
-      analyzeCrossMonthDuplicates() {
-        this.speak("กำลังตรวจสอบหมายเลข PEA ที่ซ้ำกันระหว่างเดือนนี้กับเดือนที่แล้ว รอสักครู่ครับบอส", false);
-        this.ensureData(true, (allData) => {
-          const monthSheets = [...new Set(allData.map(i => i.sheetName))]
-            .filter(name => /^\d{2}\.\d{4}$/.test(name))
-            .sort((a, b) => {
-              const [mA, yA] = a.split('.').map(Number);
-              const [mB, yB] = b.split('.').map(Number);
-              return (yB * 100 + mB) - (yA * 100 + mA);
-            });
-
-          if (monthSheets.length < 2) {
-            this.resetConversation();
-            this.speak("ในระบบมีข้อมูลชีตเดือนไม่ถึง 2 เดือน จึงยังไม่สามารถเทียบรายการซ้ำข้ามเดือนได้ครับบอส", false);
-            return;
-          }
-
-          const now = new Date();
-          const curKey = `${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear() + 543}`;
-          const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          const prevKey = `${String(prevDate.getMonth() + 1).padStart(2, '0')}.${prevDate.getFullYear() + 543}`;
-
-          const targetThisMonth = monthSheets.includes(curKey) ? curKey : monthSheets[0];
-          const targetLastMonth = (monthSheets.includes(prevKey) && targetThisMonth === curKey)
-            ? prevKey
-            : monthSheets.find(m => m !== targetThisMonth);
-
-          const thisPeas = new Set(allData.filter(i => i.sheetName === targetThisMonth && i.pea && i.pea !== '-').map(i => i.pea.trim()));
-          const lastPeas = new Set(allData.filter(i => i.sheetName === targetLastMonth && i.pea && i.pea !== '-').map(i => i.pea.trim()));
-          const dupPeas = [...thisPeas].filter(pea => lastPeas.has(pea));
-
-          if (dupPeas.length === 0) {
-            this.resetConversation();
-            this.speak(`ตรวจสอบแล้วครับบอส ระหว่างรอบเดือน <b>${targetThisMonth}</b> กับ <b>${targetLastMonth}</b> ไม่มีหมายเลข PEA ซ้ำกันเลยครับ`, false);
-            return;
-          }
-
-          const dupSet = new Set(dupPeas);
-          const matchedRows = allData
-            .filter(i => (i.sheetName === targetThisMonth || i.sheetName === targetLastMonth) && dupSet.has((i.pea || '').trim()))
-            .sort((a, b) => String(a.pea).localeCompare(String(b.pea)));
-
-          const stillPending = matchedRows.filter(i => i.status === 'งานคงเหลือ').length;
-          this.state.mode = 'AWAITING_CUSTOM_LIST';
-          this.state.customItems = matchedRows;
-          this.state.pendingAction = `รายการ PEA ซ้ำกัน (${targetThisMonth} vs ${targetLastMonth})`;
-
-          const pendingNote = stillPending > 0
-            ? `และในกลุ่มนี้ยังมีสถานะ <b>งานคงเหลือ</b> ค้างอยู่ ${stillPending} รายการครับ`
-            : `ซึ่งทั้งหมดถูกดำเนินการส่งงานเรียบร้อยแล้วครับ`;
-
-          this.speak(
-            `พบหมายเลข PEA ซ้ำกันระหว่างรอบเดือน <b>${targetThisMonth}</b> กับ <b>${targetLastMonth}</b> จำนวน <b>${dupPeas.length} ราย</b> ครับบอส ${pendingNote} ต้องการให้ผมดึงรายการคู่ที่ซ้ำทั้งหมดมาแสดงบนหน้าจอเลยไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 6] วิเคราะห์สาเหตุการชำรุดยอดฮิต
-      analyzeTopReasons() {
-        this.ensureData(false, (all) => {
-          const counts = {};
-          all.forEach(i => {
-            const r = (i.reason || 'ไม่ระบุสาเหตุ').trim();
-            counts[r] = (counts[r] || 0) + 1;
-          });
-          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-          if (sorted.length === 0) {
-            this.speak("ยังไม่มีข้อมูลสาเหตุการชำรุดให้วิเคราะห์ครับบอส", false);
-            return;
-          }
-          const top1 = sorted[0];
-          const top2Text = sorted[1] ? ` รองลงมาคือ <b>${sorted[1][0]}</b> (${sorted[1][1]} ราย)` : '';
-          this.state.mode = 'AWAITING_FILTER';
-          this.state.lastKeywords = [top1[0]];
-          this.speak(
-            `สาเหตุที่พบมากที่สุดอันดับ 1 คือ <b>${top1[0]}</b> จำนวน <b>${top1[1]} ราย</b>${top2Text} ครับบอส ต้องการให้ผมกรองแสดงเฉพาะสาเหตุ ${top1[0]} บนหน้าจอไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 7] แนะนำจุดเริ่มงาน & จัดเส้นทาง GPS
-      recommendBestRoute() {
-        this.ensureData(false, (all) => {
-          const pendingWithGps = all.filter(i => i.status === 'งานคงเหลือ' && i.gps && i.gps.trim() !== '' && !i.gps.toLowerCase().includes('http'));
-          if (pendingWithGps.length === 0) {
-            this.speak("ตอนนี้ไม่มีงานคงเหลือที่มีพิกัดตัวเลขพร้อมนำทางครับบอส", false);
-            return;
-          }
-          const areaCount = {};
-          pendingWithGps.forEach(item => {
-            const loc = (item.location || 'ไม่ระบุ').trim();
-            areaCount[loc] = (areaCount[loc] || 0) + 1;
-          });
-          const bestArea = Object.entries(areaCount).sort((a, b) => b[1] - a[1])[0];
-          this.state.mode = 'AWAITING_CONFIRM';
-          this.state.pendingAction = 'OPEN_MAP';
-          this.state.lastMatchedItems = pendingWithGps.filter(i => (i.location || '').trim() === bestArea[0]);
-          this.speak(
-            `ผมวิเคราะห์แล้ว แนะนำให้เริ่มที่พื้นที่ <b>${bestArea[0]}</b> ก่อนครับ เพราะมีงานคงเหลือพร้อมพิกัดกระจุกตัวมากที่สุด <b>${bestArea[1]} ใบงาน</b> ต้องการเปิด Google Maps นำทางไปจุดนี้เลยไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 8] เช็กความพร้อมพิกัด GPS
-      analyzeGpsReadiness() {
-        this.ensureData(false, (all) => {
-          const pending = all.filter(i => i.status === 'งานคงเหลือ');
-          const validGps = pending.filter(i => i.gps && i.gps.trim() !== '' && !i.gps.toLowerCase().includes('http'));
-          const urlGps = pending.filter(i => i.gps && i.gps.toLowerCase().includes('http'));
-          const missingGps = pending.filter(i => !i.gps || i.gps.trim() === '');
-
-          this.state.mode = 'AWAITING_CUSTOM_LIST';
-          this.state.customItems = missingGps;
-          this.state.pendingAction = 'งานคงเหลือที่ยังไม่มีพิกัด GPS';
-          const urlWarn = urlGps.length > 0 ? ` (และมี ${urlGps.length} งานที่พิกัดเป็นลิงก์ URL)` : '';
-          this.speak(
-            `จากงานคงเหลือ ${pending.length} งาน มีพิกัดพร้อมนำทาง <b>${validGps.length} งาน</b> และยังไม่มีพิกัด <b>${missingGps.length} งาน</b>${urlWarn} ครับบอส ต้องการเปิดดูรายการที่ยังไม่มีพิกัดไหมครับ?`,
-            true
-          );
-        });
-      }
-
-      // [หมวด 9] ค้นหาเจาะจง + วิเคราะห์ผลลัพธ์เชิงรุก
-      performSearchAndThink(keyword, isFollowUp) {
-        const statusTab = document.querySelector('#status-tab');
-        if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
-        
-        const searchBox = document.getElementById('dash-search');
-        if (searchBox) {
-          searchBox.value = keyword;
-          filterDashboard();
-        }
-
-        const terms = keyword.toLowerCase().split(/\s+/);
-        const matched = (globalDashResults || []).filter(item => {
-          const fullText = `${item.pea} ${item.name} ${item.location} ${item.reason} ${item.status} ${item.sheetName}`.toLowerCase();
-          return terms.every(t => fullText.includes(t));
-        });
-
-        this.state.lastMatchedItems = matched;
-
-        if (matched.length === 0) {
-          this.resetConversation();
-          this.speak(`ไม่พบใบงานที่ตรงกับ "${keyword}" เลยครับบอส ลองระบุชื่อพื้นที่หรือสาเหตุอื่นดูไหมครับ?`, false);
-        } else if (matched.length === 1) {
-          // เจอ 1 รายการเป๊ะๆ -> ถามเปิดหน้าฟอร์มส่งงานให้เลย!
-          const item = matched[0];
-          this.state.mode = 'AWAITING_OPEN_FORM';
-          this.state.customItems = [item];
-          this.speak(
-            `พบ 1 ใบงานครับบอส PEA <b>${item.pea}</b> คุณ${item.name} สถานะ <b>${item.status}</b> ต้องการเปิดหน้าแบบฟอร์มใบงานนี้เลยไหมครับ?`,
-            true
-          );
-        } else if (matched.length > 10 && !isFollowUp) {
-          this.state.mode = 'AWAITING_FILTER';
-          this.speak(`พบถึง <b>${matched.length} ใบงาน</b> ครับบอส ค่อนข้างเยอะเลย ต้องการให้กรองเฉพาะ <b>งานคงเหลือ</b> หรือระบุ <b>ชื่อพื้นที่</b> เพิ่มไหมครับ?`, true);
-        } else {
-          const withGps = matched.filter(m => m.gps && m.gps.trim() !== '' && !m.gps.toLowerCase().includes('http') && m.status === 'งานคงเหลือ');
-          if (withGps.length > 0 && withGps.length <= 9) {
-            this.state.mode = 'AWAITING_CONFIRM';
-            this.state.pendingAction = 'OPEN_MAP';
-            this.state.lastMatchedItems = withGps;
-            this.speak(`พบ <b>${matched.length} ใบงาน</b> ครับ และมี <b>${withGps.length} งานคงเหลือ</b> ที่มีพิกัดพร้อมนำทาง ต้องการให้เปิดแผนที่นำทางเลยไหมครับบอส?`, true);
-          } else {
-            this.resetConversation();
-            this.speak(`แสดง <b>${matched.length} ใบงาน</b> ที่เกี่ยวกับ ${keyword} บนหน้าจอเรียบร้อยครับบอส`, false);
-          }
-        }
-      }
-
-      executeMapRouting(items) {
-        let url = "https://www.google.com/maps/dir/Current+Location/";
-        items.slice(0, 9).forEach(item => {
-          const cleanGps = item.gps.trim().replace(/\s/g, '');
-          if (!cleanGps.toLowerCase().includes('http')) url += cleanGps + "/";
-        });
-        window.open(url, '_blank');
-      }
-
-      cleanText(text) {
-        let kw = text
-          .replace(/ช่วย|กรอง|หา|ค้นหา|ใบงาน|ที่อยู่|ในโซน|เอาเฉพาะ|เฉพาะ|เปิดดู|ดูงาน|ให้หน่อย|หน่อย|ครับ|ค่ะ|สิ/g, '')
-          .replace(/กับ|และ|เว้นวรรค/g, ' ');
-        const knownReasons = ["ช็อตไหม้", "น้ำเข้า", "ผ้ามัว", "ไม่หมุน", "ติดขัด", "ชำรุด", "ขั้วต่อ", "แป้นผุ"];
-        knownReasons.forEach(reason => {
-          if (kw.includes(reason)) kw = kw.replace(new RegExp(reason, 'g'), ' ' + reason + ' ');
-        });
-        return kw.replace(/\s+/g, ' ').trim();
+      if (choices.length >= 2) {
+        this.promptChoices(
+          `พบข้อมูล "${keyword}" 1 รายการครับบอส ต้องการให้เปิด <b>รายละเอียดงาน</b> หรือเปิด <b>แผนที่นำทาง GPS</b> เลยครับ?`,
+          choices
+        );
+        return;
       }
     }
 
-    const jarvisBrain = new JarvisVoiceBrain();
-    function toggleJarvis() {
-      if (!isAdminUser) return;
-      jarvisBrain.startListening();
-    }
-  </script>
+    this.speak(`พบข้อมูลที่ตรงกับ "${keyword}" จำนวน <b>${matched.length} รายการ</b> แสดงบนหน้าจอเรียบร้อยครับบอส`, false);
+  }
+}
 </body>
 </html>
