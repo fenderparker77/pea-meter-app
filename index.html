@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>PEA Smart Meter, Route Radar & J.A.R.V.I.S</title>
+  <title>PEA Smart Field & J.A.R.V.I.S All-in-One</title>
 
   <!-- Bootstrap 5 & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -18,8 +18,8 @@
     :root {
       --pea-purple: #6f2c91;
       --pea-gold: #f59e0b;
-      --glass-bg: rgba(255, 255, 255, 0.92);
-      --glass-border: rgba(255, 255, 255, 0.65);
+      --glass-bg: rgba(255, 255, 255, 0.94);
+      --glass-border: rgba(255, 255, 255, 0.7);
     }
 
     body {
@@ -58,6 +58,21 @@
       color: #fff;
     }
 
+    /* Main Mode Navigation Pills */
+    .nav-pills-pea .nav-link {
+      color: #e9d5ff;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      font-weight: 700;
+      padding: 10px 14px;
+      transition: all 0.2s;
+    }
+    .nav-pills-pea .nav-link.active {
+      background: #facc15;
+      color: #1e1b4b;
+      box-shadow: 0 4px 14px rgba(250, 204, 21, 0.4);
+    }
+
     .voice-pulse {
       animation: pulse-ring 1.25s infinite;
       background-color: #dc2626 !important;
@@ -72,7 +87,7 @@
     /* Map & Radar Styles */
     #pea-map {
       width: 100%;
-      height: 280px;
+      height: 270px;
       border-radius: 14px;
       border: 2px solid #c4b5fd;
       z-index: 1;
@@ -187,6 +202,14 @@
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
 
+    .stock-stat-box {
+      border-radius: 14px;
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+    }
+
     /* Camera Modal Reticle */
     .camera-wrapper {
       position: relative;
@@ -230,16 +253,16 @@
 </head>
 <body>
 
-<div class="container py-3" style="max-width: 800px;">
+<div class="container py-3" style="max-width: 820px;">
 
   <!-- Header -->
   <div class="pea-header mb-3 d-flex justify-content-between align-items-center">
     <div>
-      <h5 class="mb-0 fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> PEA Smart Route & J.A.R.V.I.S</h5>
-      <small class="text-white-50">เรดาร์แผนที่ใกล้ตัว + ค้นหาพ้องเสียง + AI สแกนหน่วย v2.5</small>
+      <h5 class="mb-0 fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> PEA Smart Field & J.A.R.V.I.S</h5>
+      <small class="text-white-50">เรดาร์แผนที่ + เสียงพ้องเสียง + AI สแกนหน่วย v2.6 + คลังท้ายรถ</small>
     </div>
     <div class="d-flex gap-1">
-      <button class="btn btn-sm btn-warning fw-bold" type="button" onclick="jarvisVoice.speak('ระบบจาร์วิสและเรดาร์แผนที่พร้อมปฏิบัติงานครับบอส')" title="ทดสอบเสียงจาร์วิส">
+      <button class="btn btn-sm btn-warning fw-bold" type="button" onclick="jarvisVoice.speak('ระบบจาร์วิสตัวเต็มพร้อมปฏิบัติงานครับบอส')" title="ทดสอบเสียงจาร์วิส">
         <i class="bi bi-volume-up-fill"></i>
       </button>
       <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#apiConfigBox">
@@ -260,190 +283,282 @@
     </div>
   </div>
 
-  <!-- 500m Proximity Alert Banner -->
-  <div id="proximity-alert-banner" class="proximity-alert-banner mb-3 shadow">
-    <div class="d-flex justify-content-between align-items-start gap-2">
-      <div>
-        <span class="badge bg-danger mb-1"><i class="bi bi-broadcast"></i> แจ้งเตือนใบงานในรัศมี 500 เมตร!</span>
-        <div class="fw-bold text-dark fs-6" id="alert-customer-name">-</div>
-        <div class="small text-dark" id="alert-customer-detail">-</div>
-      </div>
-      <button type="button" class="btn-close" onclick="document.getElementById('proximity-alert-banner').style.display='none'"></button>
-    </div>
-    <div class="d-flex gap-2 mt-2">
-      <button type="button" class="btn btn-sm btn-pea fw-bold flex-grow-1" id="btn-alert-select">
-        <i class="bi bi-clipboard-check-fill me-1"></i> ดึงใบงานลงฟอร์ม
+  <!-- Navigation Tabs -->
+  <ul class="nav nav-pills nav-pills-pea nav-justified gap-2 mb-3" id="mainAppTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="tab-field-btn" data-bs-toggle="pill" data-bs-target="#tab-field-pane" type="button" role="tab">
+        <i class="bi bi-geo-alt-fill me-1"></i> ปฏิบัติงาน & แผนที่เรดาร์
       </button>
-      <a href="#" target="_blank" class="btn btn-sm btn-success fw-bold flex-grow-1" id="btn-alert-nav">
-        <i class="bi bi-geo-alt-fill me-1"></i> นำทาง Google Maps
-      </a>
-    </div>
-  </div>
-
-  <!-- PEA Smart Route & GPS Radar Card -->
-  <div class="glass-card p-3 mb-3">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-      <div>
-        <span class="fw-bold text-primary"><i class="bi bi-map-fill me-1"></i> แผนที่จุดเปลี่ยนมิเตอร์ & เรดาร์ GPS</span>
-        <span id="gps-status-badge" class="badge bg-secondary ms-1">รอเปิด GPS</span>
-      </div>
-      <div class="d-flex gap-1">
-        <button type="button" class="btn btn-sm btn-success fw-bold" id="btn-toggle-gps" onclick="peaRouteMap.toggleLiveGps()">
-          <i class="bi bi-crosshair"></i> เปิดเรดาร์ GPS
-        </button>
-        <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold" onclick="peaRouteMap.simulateApproachNearest()" title="จำลองขับรถเข้าใกล้จุดงาน 300 เมตรเพื่อเทสเสียงแจ้งเตือน">
-          <i class="bi bi-car-front-fill"></i> จำลองเข้าใกล้ 300 ม.
-        </button>
-      </div>
-    </div>
-
-    <!-- Leaflet Map Container -->
-    <div id="pea-map"></div>
-
-    <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 small text-muted gap-2">
-      <div>
-        <span class="me-2"><i class="bi bi-circle-fill text-primary"></i> รถปฏิบัติการ</span>
-        <span class="me-2"><i class="bi bi-circle-fill text-danger"></i> ค้างเปลี่ยนมิเตอร์</span>
-        <span><i class="bi bi-circle-fill text-success"></i> เสร็จแล้ว</span>
-      </div>
-      <div class="form-check form-switch mb-0">
-        <input class="form-check-input" type="checkbox" id="sort-by-distance-chk" checked onchange="appController.refreshView()">
-        <label class="form-check-label fw-semibold text-dark" for="sort-by-distance-chk">เรียงใบงานใกล้รถสุดขึ้นก่อน</label>
-      </div>
-    </div>
-  </div>
-
-  <!-- J.A.R.V.I.S Voice & Thai Phonetic Search Card -->
-  <div class="glass-card p-3 mb-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="fw-bold text-primary"><i class="bi bi-soundwave me-1"></i> ค้นหาผู้ใช้ไฟ (รองรับคำพ้องเสียง พูด "ศรีกัน" → พบ "สีกัน")</span>
-      <span id="voice-status-badge" class="badge bg-secondary">พร้อมฟังเสียง</span>
-    </div>
-
-    <div class="input-group">
-      <input type="text" id="search-input" class="form-control form-control-lg"
-             placeholder="พิมพ์หรือพูดชื่อ/นามสกุล เช่น สีกัน, ศรีกัน, PEA.No..."
-             oninput="appController.handleSearch(this.value)" />
-      <button class="btn btn-pea px-3" id="btn-voice-search" type="button" onclick="jarvisVoice.toggleVoiceSearch()" title="ค้นหาด้วยเสียง">
-        <i class="bi bi-mic-fill fs-5"></i>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="tab-stock-btn" data-bs-toggle="pill" data-bs-target="#tab-stock-pane" type="button" role="tab">
+        <i class="bi bi-box-seam-fill me-1"></i> คลังมิเตอร์ท้ายรถ <span class="badge bg-dark text-warning ms-1" id="nav-stock-count">0</span>
       </button>
-      <button class="btn btn-outline-secondary" type="button" onclick="appController.clearSearch()" title="ล้างคำค้นหา">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
+    </li>
+  </ul>
 
-    <!-- Phonetic Match Feedback -->
-    <div id="phonetic-hint-box" class="mt-2 small" style="display:none;"></div>
+  <div class="tab-content">
 
-    <!-- Search Results List -->
-    <div id="records-container" class="mt-3 d-flex flex-column gap-2"></div>
-  </div>
+    <!-- =================================================================== -->
+    <!-- TAB 1: ปฏิบัติงานหน้างาน + แผนที่เรดาร์ + ค้นหาเสียง + AI สแกนหน่วย -->
+    <!-- =================================================================== -->
+    <div class="tab-pane fade show active" id="tab-field-pane" role="tabpanel">
 
-  <!-- Meter Work Form Card -->
-  <div class="glass-card p-3 p-md-4" id="meter-form-section">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="fw-bold mb-0"><i class="bi bi-clipboard2-check-fill text-primary me-1"></i> ฟอร์มบันทึกเปลี่ยนมิเตอร์</h6>
-      <select id="work-mode" class="form-select form-select-sm w-auto fw-bold">
-        <option value="ucube" selected>โหมดใบงาน UCUBE</option>
-        <option value="manual">โหมดกรอกอิสระ (Manual)</option>
-      </select>
-    </div>
+      <!-- 500m Proximity Alert Banner -->
+      <div id="proximity-alert-banner" class="proximity-alert-banner mb-3 shadow">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <span class="badge bg-danger mb-1"><i class="bi bi-broadcast"></i> แจ้งเตือนใบงานในรัศมี 500 เมตร!</span>
+            <div class="fw-bold text-dark fs-6" id="alert-customer-name">-</div>
+            <div class="small text-dark" id="alert-customer-detail">-</div>
+          </div>
+          <button type="button" class="btn-close" onclick="document.getElementById('proximity-alert-banner').style.display='none'"></button>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <button type="button" class="btn btn-sm btn-pea fw-bold flex-grow-1" id="btn-alert-select">
+            <i class="bi bi-clipboard-check-fill me-1"></i> ดึงใบงานลงฟอร์ม
+          </button>
+          <a href="#" target="_blank" class="btn btn-sm btn-success fw-bold flex-grow-1" id="btn-alert-nav">
+            <i class="bi bi-geo-alt-fill me-1"></i> นำทาง Google Maps
+          </a>
+        </div>
+      </div>
 
-    <form id="meter-form" onsubmit="appController.submitForm(event)">
-      <div class="row g-2 mb-3">
-        <div class="col-6">
-          <label class="form-label small fw-bold mb-1">Size</label>
-          <input type="text" id="col-0" class="form-control" value="5(15)amp" />
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-bold mb-1">PEA.No เก่า</label>
-          <input type="text" id="col-1" class="form-control" placeholder="เลขมิเตอร์เดิม" />
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-bold mb-1">หน่วยเดิม (kWh)</label>
-          <input type="number" id="col-2" class="form-control" placeholder="0" />
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-bold mb-1">PEA.No ใหม่</label>
-          <input type="text" id="col-4" class="form-control" placeholder="เลขมิเตอร์ใหม่" />
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-bold mb-1">หน่วยใหม่ (kWh)</label>
-          <input type="number" id="col-5" class="form-control" placeholder="0" />
-        </div>
-        <div class="col-6">
-          <label class="form-label small fw-bold mb-1">สาเหตุ/กิจกรรม</label>
-          <input type="text" id="col-6" class="form-control" value="ชำรุด/ไม่หมุน/ติดขัด" />
-        </div>
-        <div class="col-8">
-          <label class="form-label small fw-bold mb-1">ชื่อผู้ใช้ไฟฟ้า</label>
-          <input type="text" id="col-3" class="form-control" placeholder="ชื่อ - นามสกุล ผู้ใช้ไฟ" />
-        </div>
-        <div class="col-4">
-          <label class="form-label small fw-bold mb-1">พิกัด GPS หน้างาน</label>
-          <div class="input-group">
-            <input type="text" id="col-gps" class="form-control form-control-sm" placeholder="Lat, Lng" readonly />
-            <button type="button" class="btn btn-sm btn-outline-primary" onclick="peaRouteMap.stampCurrentGpsToForm()" title="ดึงพิกัดปัจจุบัน">
-              <i class="bi bi-geo-alt"></i>
+      <!-- PEA Smart Route & GPS Radar Card -->
+      <div class="glass-card p-3 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+          <div>
+            <span class="fw-bold text-primary"><i class="bi bi-map-fill me-1"></i> แผนที่จุดเปลี่ยนมิเตอร์ & เรดาร์ GPS</span>
+            <span id="gps-status-badge" class="badge bg-secondary ms-1">รอเปิด GPS</span>
+          </div>
+          <div class="d-flex gap-1">
+            <button type="button" class="btn btn-sm btn-success fw-bold" id="btn-toggle-gps" onclick="peaRouteMap.toggleLiveGps()">
+              <i class="bi bi-crosshair"></i> เปิดเรดาร์ GPS
             </button>
+            <button type="button" class="btn btn-sm btn-outline-warning text-dark fw-bold" onclick="peaRouteMap.simulateApproachNearest()">
+              <i class="bi bi-car-front-fill"></i> จำลองเข้าใกล้ 300 ม.
+            </button>
+          </div>
+        </div>
+
+        <div id="pea-map"></div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 small text-muted gap-2">
+          <div>
+            <span class="me-2"><i class="bi bi-circle-fill text-primary"></i> รถปฏิบัติการ</span>
+            <span class="me-2"><i class="bi bi-circle-fill text-danger"></i> ค้างเปลี่ยนมิเตอร์</span>
+            <span><i class="bi bi-circle-fill text-success"></i> เสร็จแล้ว</span>
+          </div>
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="sort-by-distance-chk" checked onchange="appController.refreshView()">
+            <label class="form-check-label fw-semibold text-dark" for="sort-by-distance-chk">เรียงใบงานใกล้รถสุดขึ้นก่อน</label>
           </div>
         </div>
       </div>
 
-      <!-- PEA.No เก่า Camera & OCR -->
-      <div class="meter-box-old mb-3">
+      <!-- J.A.R.V.I.S Voice & Thai Phonetic Search Card -->
+      <div class="glass-card p-3 mb-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="fw-bold text-dark"><i class="bi bi-cpu me-1 text-warning"></i> PEA.No เก่า <span class="badge bg-warning text-dark">สแกน PEA.No เก่า + หน่วยเดิม</span></span>
+          <span class="fw-bold text-primary"><i class="bi bi-soundwave me-1"></i> ค้นหาผู้ใช้ไฟ (รองรับคำพ้องเสียง พูด "ศรีกัน" → พบ "สีกัน")</span>
+          <span id="voice-status-badge" class="badge bg-secondary">พร้อมฟังเสียง</span>
         </div>
-        <div class="row g-2">
-          <div class="col-6">
-            <button type="button" class="btn btn-pea w-100 btn-sm py-2"
-                    onclick="smartMeterOCR.openRealtimeCamera('img-old-base64', 'preview-old', 'old', 'file-old')">
-              <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพเรียลไทม์
-            </button>
-          </div>
-          <div class="col-6">
-            <label class="btn btn-outline-dark w-100 btn-sm py-2 mb-0">
-              <i class="bi bi-folder2-open me-1"></i> อัปโหลดไฟล์
-              <input type="file" id="file-old" accept="image/*" hidden
-                     onchange="smartMeterOCR.handleLocalFile(event, 'img-old-base64', 'preview-old', 'old')" />
-            </label>
-          </div>
+
+        <div class="input-group">
+          <input type="text" id="search-input" class="form-control form-control-lg"
+                 placeholder="พิมพ์หรือพูดชื่อ/นามสกุล เช่น สีกัน, ศรีกัน, PEA.No..."
+                 oninput="appController.handleSearch(this.value)" />
+          <button class="btn btn-pea px-3" id="btn-voice-search" type="button" onclick="jarvisVoice.toggleVoiceSearch()" title="ค้นหาด้วยเสียง">
+            <i class="bi bi-mic-fill fs-5"></i>
+          </button>
+          <button class="btn btn-outline-secondary" type="button" onclick="appController.clearSearch()" title="ล้างคำค้นหา">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
-        <input type="hidden" id="img-old-base64" />
-        <div id="ocr-result-old" class="ocr-result-panel"></div>
-        <img id="preview-old" class="preview-img" alt="PEA เก่า" />
+
+        <div id="phonetic-hint-box" class="mt-2 small" style="display:none;"></div>
+        <div id="records-container" class="mt-3 d-flex flex-column gap-2"></div>
       </div>
 
-      <!-- PEA.No ใหม่ Camera & OCR -->
-      <div class="meter-box-new mb-3">
+      <!-- Meter Work Form Card -->
+      <div class="glass-card p-3 p-md-4" id="meter-form-section">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clipboard2-check-fill text-primary me-1"></i> ฟอร์มบันทึกเปลี่ยนมิเตอร์</h6>
+          <select id="work-mode" class="form-select form-select-sm w-auto fw-bold">
+            <option value="ucube" selected>โหมดใบงาน UCUBE</option>
+            <option value="manual">โหมดกรอกอิสระ (Manual)</option>
+          </select>
+        </div>
+
+        <form id="meter-form" onsubmit="appController.submitForm(event)">
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold mb-1">Size</label>
+              <input type="text" id="col-0" class="form-control" value="5(15)amp" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold mb-1">PEA.No เก่า</label>
+              <input type="text" id="col-1" class="form-control" placeholder="เลขมิเตอร์เดิม" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold mb-1">หน่วยเดิม (kWh)</label>
+              <input type="number" id="col-2" class="form-control" placeholder="0" oninput="kwhAnomalyGuard.evaluateLive()" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold mb-1">PEA.No ใหม่ <span class="text-success small">(ตัดสต็อกอัตโนมัติ)</span></label>
+              <input type="text" id="col-4" class="form-control" placeholder="เลขมิเตอร์ใหม่" list="truck-stock-datalist" />
+              <datalist id="truck-stock-datalist"></datalist>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold mb-1">หน่วยใหม่ (kWh)</label>
+              <input type="number" id="col-5" class="form-control" placeholder="0" oninput="kwhAnomalyGuard.evaluateLive()" />
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold mb-1">สาเหตุ/กิจกรรม</label>
+              <input type="text" id="col-6" class="form-control" value="ชำรุด/ไม่หมุน/ติดขัด" oninput="kwhAnomalyGuard.evaluateLive()" />
+            </div>
+            <div class="col-8">
+              <label class="form-label small fw-bold mb-1">ชื่อผู้ใช้ไฟฟ้า</label>
+              <input type="text" id="col-3" class="form-control" placeholder="ชื่อ - นามสกุล ผู้ใช้ไฟ" />
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-bold mb-1">พิกัด GPS หน้างาน</label>
+              <div class="input-group">
+                <input type="text" id="col-gps" class="form-control form-control-sm" placeholder="Lat, Lng" readonly />
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="peaRouteMap.stampCurrentGpsToForm()" title="ดึงพิกัดปัจจุบัน">
+                  <i class="bi bi-geo-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart KWH Anomaly Guard Warning Box -->
+          <div id="kwh-guard-box" class="alert alert-warning py-2 px-3 small fw-semibold mb-3" style="display:none;"></div>
+
+          <!-- PEA.No เก่า Camera & OCR -->
+          <div class="meter-box-old mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold text-dark"><i class="bi bi-cpu me-1 text-warning"></i> PEA.No เก่า <span class="badge bg-warning text-dark">สแกน PEA.No เก่า + หน่วยเดิม</span></span>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <button type="button" class="btn btn-pea w-100 btn-sm py-2"
+                        onclick="smartMeterOCR.openRealtimeCamera('img-old-base64', 'preview-old', 'old', 'file-old')">
+                  <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพเรียลไทม์
+                </button>
+              </div>
+              <div class="col-6">
+                <label class="btn btn-outline-dark w-100 btn-sm py-2 mb-0">
+                  <i class="bi bi-folder2-open me-1"></i> อัปโหลดไฟล์
+                  <input type="file" id="file-old" accept="image/*" hidden
+                         onchange="smartMeterOCR.handleLocalFile(event, 'img-old-base64', 'preview-old', 'old')" />
+                </label>
+              </div>
+            </div>
+            <input type="hidden" id="img-old-base64" />
+            <div id="ocr-result-old" class="ocr-result-panel"></div>
+            <img id="preview-old" class="preview-img" alt="PEA เก่า" />
+          </div>
+
+          <!-- PEA.No ใหม่ Camera & OCR -->
+          <div class="meter-box-new mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-bold text-dark"><i class="bi bi-cpu me-1 text-success"></i> PEA.No ใหม่ <span class="badge bg-success">สแกน PEA.No ใหม่ + หน่วยใหม่</span></span>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <button type="button" class="btn btn-pea w-100 btn-sm py-2"
+                        onclick="smartMeterOCR.openRealtimeCamera('img-new-base64', 'preview-new', 'new', 'file-new')">
+                  <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพเรียลไทม์
+                </button>
+              </div>
+              <div class="col-6">
+                <label class="btn btn-outline-dark w-100 btn-sm py-2 mb-0">
+                  <i class="bi bi-folder2-open me-1"></i> อัปโหลดไฟล์
+                  <input type="file" id="file-new" accept="image/*" hidden
+                         onchange="smartMeterOCR.handleLocalFile(event, 'img-new-base64', 'preview-new', 'new')" />
+                </label>
+              </div>
+            </div>
+            <input type="hidden" id="img-new-base64" />
+            <div id="ocr-result-new" class="ocr-result-panel"></div>
+            <img id="preview-new" class="preview-img" alt="PEA ใหม่" />
+          </div>
+
+          <button type="submit" class="btn btn-success w-100 py-2 fw-bold fs-6 shadow-sm">
+            <i class="bi bi-cloud-arrow-up-fill me-1"></i> บันทึกข้อมูล & ตัดสต็อกมิเตอร์อัตโนมัติ
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- TAB 2: คลังมิเตอร์ท้ายรถ & ตัดสต็อกอัตโนมัติ (Truck Stock PWA)        -->
+    <!-- =================================================================== -->
+    <div class="tab-pane fade" id="tab-stock-pane" role="tabpanel">
+      <div class="glass-card p-3 p-md-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h6 class="fw-bold mb-0"><i class="bi bi-truck text-primary me-1"></i> คลังสต็อกมิเตอร์ประจำรถปฏิบัติการ</h6>
+            <small class="text-muted">เมื่อบันทึกเปลี่ยนมิเตอร์ในหน้าแรก ระบบจะตัดยอดเลข PEA.No ใหม่อัตโนมัติ</small>
+          </div>
+          <button type="button" class="btn btn-sm btn-success fw-bold" onclick="truckStockManager.copySummaryReport()">
+            <i class="bi bi-clipboard-check"></i> คัดลอกสรุปส่งคลัง
+          </button>
+        </div>
+
+        <!-- Summary Counters -->
+        <div class="row g-2 mb-3">
+          <div class="col-4">
+            <div class="stock-stat-box">
+              <div class="small text-muted fw-bold">5(15)A คงเหลือ</div>
+              <div class="fs-4 fw-bold text-primary" id="stock-count-515">0</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="stock-stat-box">
+              <div class="small text-muted fw-bold">15(45)A คงเหลือ</div>
+              <div class="fs-4 fw-bold text-warning-emphasis" id="stock-count-1545">0</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="stock-stat-box">
+              <div class="small text-muted fw-bold">ติดตั้งไปแล้ว</div>
+              <div class="fs-4 fw-bold text-success" id="stock-count-used">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add New Meter to Truck Form -->
+        <div class="bg-light p-3 rounded-3 border mb-3">
+          <label class="form-label small fw-bold mb-1">เบิกมิเตอร์ขึ้นรถเพิ่ม (ใส่ทีละตัว หรือวางหลายบรรทัดพร้อมกัน)</label>
+          <div class="row g-2">
+            <div class="col-4">
+              <select id="stock-add-size" class="form-select form-select-sm fw-bold">
+                <option value="5(15)amp" selected>5(15)amp</option>
+                <option value="15(45)amp">15(45)amp</option>
+                <option value="มิเตอร์ E">มิเตอร์ E (LCD)</option>
+              </select>
+            </div>
+            <div class="col-8">
+              <div class="input-group input-group-sm">
+                <input type="text" id="stock-add-pea" class="form-control" placeholder="เลข PEA.No เช่น 5900031214" />
+                <button type="button" class="btn btn-pea fw-bold" onclick="truckStockManager.addFromInput()">
+                  <i class="bi bi-plus-circle-fill"></i> เพิ่มเข้าคันรถ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock List -->
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="fw-bold text-dark"><i class="bi bi-cpu me-1 text-success"></i> PEA.No ใหม่ <span class="badge bg-success">สแกน PEA.No ใหม่ + หน่วยใหม่</span></span>
+          <span class="fw-bold small text-dark">รายการมิเตอร์บนรถ (แตะเพื่อดึงไปใส่ช่อง PEA.No ใหม่)</span>
+          <button type="button" class="btn btn-link btn-sm text-danger p-0 text-decoration-none" onclick="truckStockManager.resetDemoStock()">รีเซ็ตตัวอย่าง</button>
         </div>
-        <div class="row g-2">
-          <div class="col-6">
-            <button type="button" class="btn btn-pea w-100 btn-sm py-2"
-                    onclick="smartMeterOCR.openRealtimeCamera('img-new-base64', 'preview-new', 'new', 'file-new')">
-              <i class="bi bi-camera-fill me-1"></i> ถ่ายภาพเรียลไทม์
-            </button>
-          </div>
-          <div class="col-6">
-            <label class="btn btn-outline-dark w-100 btn-sm py-2 mb-0">
-              <i class="bi bi-folder2-open me-1"></i> อัปโหลดไฟล์
-              <input type="file" id="file-new" accept="image/*" hidden
-                     onchange="smartMeterOCR.handleLocalFile(event, 'img-new-base64', 'preview-new', 'new')" />
-            </label>
-          </div>
-        </div>
-        <input type="hidden" id="img-new-base64" />
-        <div id="ocr-result-new" class="ocr-result-panel"></div>
-        <img id="preview-new" class="preview-img" alt="PEA ใหม่" />
+        <div id="truck-stock-list" class="d-flex flex-column gap-2"></div>
       </div>
+    </div>
 
-      <button type="submit" class="btn btn-success w-100 py-2 fw-bold fs-6 shadow-sm">
-        <i class="bi bi-cloud-arrow-up-fill me-1"></i> บันทึกข้อมูล & ปิดใบงานจุดนี้
-      </button>
-    </form>
   </div>
 </div>
 
@@ -643,6 +758,7 @@
     }
 
     initMap(records) {
+      if (typeof L === 'undefined') return;
       const defaultCenter = [16.0425, 105.2185];
       this.map = L.map('pea-map').setView(defaultCenter, 14);
 
@@ -761,8 +877,7 @@
         (pos) => {
           this.updateVehiclePosition(pos.coords.latitude, pos.coords.longitude, true);
         },
-        (err) => {
-          console.warn('GPS Error:', err);
+        () => {
           if (badge) {
             badge.className = 'badge bg-warning text-dark ms-1';
             badge.innerText = 'สัญญาณ GPS อ่อน (กดปุ่มจำลองเพื่อเทสได้)';
@@ -873,7 +988,7 @@
   }
 
   // =========================================================================
-  // 4. SmartMeterOCR v2.5 (Auto-Trim ขอบดำ + Dark-Drum Auto-Lock + White Padding + PSM 6)
+  // 4. SmartMeterOCR v2.6 (Multi-Band Dark-Drum Auto-Lock รองรับ HOLLEY/IPG/SMART TTC)
   // =========================================================================
   var globalHeaders = ['Size', 'PEA.No เก่า', 'หน่วยเดิม', 'ชื่อผู้ใช้ไฟฟ้า', 'PEA.No ใหม่', 'หน่วยใหม่', 'สาเหตุ/กิจกรรม'];
 
@@ -1062,7 +1177,6 @@
       reader.readAsDataURL(file);
     }
 
-    // ตัดแถบดำซ้าย-ขวาอัตโนมัติ (กรณีอัปโหลดภาพแคปหน้าจอมือถือแบบ Letterbox)
     trimLetterboxBars(sourceCanvas) {
       const W = sourceCanvas.width;
       const H = sourceCanvas.height;
@@ -1075,24 +1189,24 @@
         let sampled = 0;
         for (let y = 0; y < H; y += step) {
           const idx = (y * W + x) * 4;
-          if (imgData[idx] < 20 && imgData[idx + 1] < 20 && imgData[idx + 2] < 20) {
+          if (imgData[idx] < 22 && imgData[idx + 1] < 22 && imgData[idx + 2] < 22) {
             blackPixels++;
           }
           sampled++;
         }
-        return blackPixels / sampled > 0.96;
+        return blackPixels / sampled > 0.95;
       };
 
       let leftX = 0;
-      const maxLeft = Math.floor(W * 0.35);
+      const maxLeft = Math.floor(W * 0.38);
       while (leftX < maxLeft && isBlackCol(leftX)) leftX++;
 
       let rightX = W - 1;
-      const minRight = Math.floor(W * 0.65);
+      const minRight = Math.floor(W * 0.62);
       while (rightX > minRight && isBlackCol(rightX)) rightX--;
 
       const cleanW = rightX - leftX + 1;
-      if (cleanW < W * 0.35 || (leftX === 0 && rightX === W - 1)) {
+      if (cleanW < W * 0.30 || (leftX === 0 && rightX === W - 1)) {
         return sourceCanvas;
       }
 
@@ -1161,79 +1275,12 @@
       return threshold;
     }
 
-    // ค้นหาแถบหน้าปัดล้อตัวเลขสีดำ (Dark-Drum Window Auto-Lock) ด้วยสัดส่วนความกว้าง boxW ของเลข PEA.No
-    buildDrumRegisterCrops(saveCanvas, peaBbox) {
-      const W = saveCanvas.width;
-      const H = saveCanvas.height;
-      const fullCtx = saveCanvas.getContext('2d');
-
-      let cropX, cropY, cropW, cropH;
-      let zoneX, zoneY, zoneW, zoneH;
-
-      if (peaBbox && peaBbox.x1 > peaBbox.x0 && peaBbox.y1 > peaBbox.y0) {
-        const boxW = peaBbox.x1 - peaBbox.x0;
-        const boxH = peaBbox.y1 - peaBbox.y0;
-        const centerX = (peaBbox.x0 + peaBbox.x1) / 2;
-
-        // กรอบหน้าปัด 5 หลักจะกว้างประมาณ 1.32 เท่าของความกว้างเลข PEA 10 หลัก และอยู่กึ่งกลางเดียวกัน
-        zoneW = Math.min(W, Math.round(boxW * 1.32));
-        zoneX = Math.max(0, Math.min(W - zoneW, Math.round(centerX - zoneW / 2)));
-
-        // ช่วงค้นหาแนวตั้งใต้เลข PEA.No ครอบคลุมทั้ง IPG, SMART TTC, HOLLEY, MITSUBISHI
-        const searchTop = Math.min(H - 20, Math.round(peaBbox.y1 + Math.max(boxH * 1.15, boxW * 0.13)));
-        const searchBottom = Math.min(H, Math.round(peaBbox.y1 + Math.max(boxH * 5.0, boxW * 0.48)));
-        zoneY = searchTop;
-        zoneH = Math.max(30, searchBottom - searchTop);
-
-        // คำนวณโปรไฟล์ความมืด (Darkness Profile) เพื่อล็อกเป้าแถบกรอบดำของล้อตัวเลข 0 0 0 0 2
-        const searchImg = fullCtx.getImageData(zoneX, zoneY, zoneW, zoneH).data;
-        const rowDarkness = new Float32Array(zoneH);
-        const innerStart = Math.floor(zoneW * 0.15);
-        const innerEnd = Math.floor(zoneW * 0.85);
-        const innerSpan = Math.max(1, innerEnd - innerStart);
-
-        for (let y = 0; y < zoneH; y++) {
-          let darkSum = 0;
-          for (let x = innerStart; x < innerEnd; x++) {
-            const idx = (y * zoneW + x) * 4;
-            const lum = 0.299 * searchImg[idx] + 0.587 * searchImg[idx + 1] + 0.114 * searchImg[idx + 2];
-            if (lum < 115) darkSum += (115 - lum);
-          }
-          rowDarkness[y] = darkSum / innerSpan;
-        }
-
-        // หน้าต่างความสูงเท่ากับขนาดช่องตัวเลขล้อหมุน (~0.21 * boxW)
-        const winH = Math.min(zoneH, Math.max(22, Math.round(Math.max(boxH * 1.9, boxW * 0.21))));
-        let bestOffset = 0;
-        let maxScore = -1;
-
-        for (let offset = 0; offset <= zoneH - winH; offset++) {
-          let sumScore = 0;
-          for (let k = 0; k < winH; k++) sumScore += rowDarkness[offset + k];
-          if (sumScore > maxScore) {
-            maxScore = sumScore;
-            bestOffset = offset;
-          }
-        }
-
-        const padY = Math.round(winH * 0.14);
-        cropX = zoneX;
-        cropW = zoneW;
-        cropY = Math.max(0, zoneY + bestOffset - padY);
-        cropH = Math.min(H - cropY, winH + padY * 2);
-      } else {
-        cropX = Math.round(W * 0.20);
-        cropW = Math.round(W * 0.60);
-        cropY = Math.round(H * 0.34);
-        cropH = Math.round(H * 0.16);
-        zoneX = cropX; zoneY = cropY; zoneW = cropW; zoneH = cropH;
-      }
-
-      // ขยาย 3 เท่า + ใส่ขอบขาว (Quiet Zone) เพื่อให้ Tesseract อ่านเลข 5 หลักได้แม่นยำที่สุด
+    // สร้างภาพกลับสี (ขาวบนดำ -> ดำบนขาว + ลบเส้นแบ่งช่องล้อ + เพิ่มขอบขาว) จากกรอบพิกัดที่กำหนด
+    renderInvertedDrumBand(saveCanvas, cropX, cropY, cropW, cropH) {
       const scale = 3;
       const pad = 18;
-      const innerW = cropW * scale;
-      const innerH = cropH * scale;
+      const innerW = Math.max(20, cropW * scale);
+      const innerH = Math.max(16, cropH * scale);
       const outW = innerW + pad * 2;
       const outH = innerH + pad * 2;
 
@@ -1243,13 +1290,12 @@
       const baseCtx = baseCanvas.getContext('2d');
       baseCtx.drawImage(saveCanvas, cropX, cropY, cropW, cropH, 0, 0, innerW, innerH);
 
-      const imgData = baseCtx.getImageData(0, 0, innerW, innerH);
-      const data = imgData.data;
+      const imgData = baseCtx.getImageData(0, 0, innerW, innerH).data;
       const gray = new Uint8Array(innerW * innerH);
       const invGray = new Uint8Array(innerW * innerH);
 
-      for (let i = 0, p = 0; i < data.length; i += 4, p++) {
-        const g = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+      for (let i = 0, p = 0; i < imgData.length; i += 4, p++) {
+        const g = Math.round(0.299 * imgData[i] + 0.587 * imgData[i + 1] + 0.114 * imgData[i + 2]);
         gray[p] = g;
         invGray[p] = 255 - g;
       }
@@ -1260,7 +1306,7 @@
         binGrid[p] = invGray[p] < threshInv ? 0 : 255;
       }
 
-      // ลบเส้นแบ่งช่องล้อแนวตั้งที่ยาวเกิน 72% ของความสูงช่องตัวเลข
+      // ลบเส้นแบ่งช่องล้อแนวตั้ง
       for (let x = 0; x < innerW; x++) {
         let blackCount = 0;
         for (let y = 0; y < innerH; y++) {
@@ -1271,7 +1317,6 @@
         }
       }
 
-      // วางภาพกลับสีลงตรงกลางพื้นขาวขนาด (outW x outH)
       const invCanvas = document.createElement('canvas');
       invCanvas.width = outW;
       invCanvas.height = outH;
@@ -1289,7 +1334,7 @@
       }
       invCtx.putImageData(invImg, pad, pad);
 
-      // ภาพสำรองแบบปกติ (สำหรับมิเตอร์ E จอ LCD ตัวเลขเข้มบนพื้นสว่าง)
+      // ภาพโหมดปกติ (สำหรับมิเตอร์ E จอ LCD)
       const threshNormal = this.computeOtsuThreshold(gray);
       const normCanvas = document.createElement('canvas');
       normCanvas.width = outW;
@@ -1311,8 +1356,91 @@
       return {
         invCanvas,
         normCanvas,
-        cropPreviewUrl: invCanvas.toDataURL('image/png')
+        previewUrl: invCanvas.toDataURL('image/png')
       };
+    }
+
+    // ค้นหาแถบหน้าปัดล้อตัวเลขแบบ 2 ชั้น (Band A สำหรับ IPG/SMART TTC และ Band B สำหรับ HOLLEY)
+    buildMultiBandDrumCrops(saveCanvas, peaBbox) {
+      const W = saveCanvas.width;
+      const H = saveCanvas.height;
+      const fullCtx = saveCanvas.getContext('2d');
+
+      const lockDarkestInRange = (zoneX, zoneW, topY, bottomY, winH) => {
+        const safeTop = Math.max(0, Math.min(H - 20, Math.round(topY)));
+        const safeBot = Math.max(safeTop + 20, Math.min(H, Math.round(bottomY)));
+        const zoneH = safeBot - safeTop;
+        const clampedWinH = Math.min(zoneH, Math.max(18, Math.round(winH)));
+
+        const searchImg = fullCtx.getImageData(zoneX, safeTop, zoneW, zoneH).data;
+        const rowDarkness = new Float32Array(zoneH);
+        const innerStart = Math.floor(zoneW * 0.14);
+        const innerEnd = Math.floor(zoneW * 0.86);
+        const innerSpan = Math.max(1, innerEnd - innerStart);
+
+        for (let y = 0; y < zoneH; y++) {
+          let darkSum = 0;
+          for (let x = innerStart; x < innerEnd; x++) {
+            const idx = (y * zoneW + x) * 4;
+            const lum = 0.299 * searchImg[idx] + 0.587 * searchImg[idx + 1] + 0.114 * searchImg[idx + 2];
+            if (lum < 115) darkSum += (115 - lum);
+          }
+          rowDarkness[y] = darkSum / innerSpan;
+        }
+
+        let bestOffset = 0;
+        let maxScore = -1;
+        for (let offset = 0; offset <= zoneH - clampedWinH; offset++) {
+          let sumScore = 0;
+          for (let k = 0; k < clampedWinH; k++) sumScore += rowDarkness[offset + k];
+          if (sumScore > maxScore) {
+            maxScore = sumScore;
+            bestOffset = offset;
+          }
+        }
+
+        const padY = Math.round(clampedWinH * 0.12);
+        const cropY = Math.max(0, safeTop + bestOffset - padY);
+        const cropH = Math.min(H - cropY, clampedWinH + padY * 2);
+        return this.renderInvertedDrumBand(saveCanvas, zoneX, cropY, zoneW, cropH);
+      };
+
+      if (peaBbox && peaBbox.x1 > peaBbox.x0 && peaBbox.y1 > peaBbox.y0) {
+        const boxW = peaBbox.x1 - peaBbox.x0;
+        const boxH = peaBbox.y1 - peaBbox.y0;
+        const centerX = (peaBbox.x0 + peaBbox.x1) / 2;
+
+        const zoneW = Math.min(W, Math.round(boxW * 1.32));
+        const zoneX = Math.max(0, Math.min(W - zoneW, Math.round(centerX - zoneW / 2)));
+        const winH = Math.max(boxH * 1.85, boxW * 0.20);
+
+        // Band A: แถบบน (สำหรับ IPG, SMART TTC ที่หน้าปัดอยู่ชิดป้าย PEA)
+        const bandA = lockDarkestInRange(
+          zoneX, zoneW,
+          peaBbox.y1 + boxW * 0.12,
+          peaBbox.y1 + boxW * 0.35,
+          winH
+        );
+
+        // Band B: แถบล่าง (สำหรับ HOLLEY ที่มีชื่อบริษัท 2 บรรทัดคั่นอยู่เหนือหน้าปัด)
+        const bandB = lockDarkestInRange(
+          zoneX, zoneW,
+          peaBbox.y1 + boxW * 0.27,
+          peaBbox.y1 + boxW * 0.52,
+          winH
+        );
+
+        return { bandA, bandB };
+      }
+
+      const fallback = this.renderInvertedDrumBand(
+        saveCanvas,
+        Math.round(W * 0.20),
+        Math.round(H * 0.34),
+        Math.round(W * 0.60),
+        Math.round(H * 0.16)
+      );
+      return { bandA: fallback, bandB: fallback };
     }
 
     async runOcrScan(saveCanvas, role) {
@@ -1323,7 +1451,7 @@
       resultBox.innerHTML = `
         <div class="d-flex align-items-center text-primary fw-bold">
           <span class="spinner-border spinner-border-sm me-2"></span>
-          AI กำลังสแกนเลข ${role === 'old' ? 'PEA.No เก่า' : 'PEA.No ใหม่'} และล็อกเป้าหน้าปัดหน่วย kWh...
+          AI กำลังสแกนเลข ${role === 'old' ? 'PEA.No เก่า' : 'PEA.No ใหม่'} และล็อกเป้าหน้าปัด 2 ระดับ...
         </div>
       `;
 
@@ -1341,28 +1469,25 @@
         const fullText = fullRes.data.text || '';
 
         const peaInfo = this.findPeaAndBoundingBox(fullRes.data, fullText);
-        const crops = this.buildDrumRegisterCrops(saveCanvas, peaInfo.bbox);
+        const { bandA, bandB } = this.buildMultiBandDrumCrops(saveCanvas, peaInfo.bbox);
 
-        // ใช้ PSM 6 (Uniform block of text) สำหรับแถบตัวเลข 5 หลักโดยเฉพาะ
-        const [invRes, normRes] = await Promise.all([
-          Tesseract.recognize(crops.invCanvas, 'eng', {
-            tessedit_char_whitelist: '0123456789.',
-            tessedit_pageseg_mode: '6'
-          }),
-          Tesseract.recognize(crops.normCanvas, 'eng', {
-            tessedit_char_whitelist: '0123456789.',
-            tessedit_pageseg_mode: '6'
-          })
+        const ocrCfg = { tessedit_char_whitelist: '0123456789.', tessedit_pageseg_mode: '6' };
+        const [invARes, invBRes, normBRes] = await Promise.all([
+          Tesseract.recognize(bandA.invCanvas, 'eng', ocrCfg),
+          Tesseract.recognize(bandB.invCanvas, 'eng', ocrCfg),
+          Tesseract.recognize(bandB.normCanvas, 'eng', ocrCfg)
         ]);
 
         const parsed = this.extractMeterData(
           fullText,
           peaInfo.detectedPea,
-          invRes.data.text || '',
-          normRes.data.text || '',
+          [
+            { text: invARes.data.text || '', weight: 100, preview: bandA.previewUrl },
+            { text: invBRes.data.text || '', weight: 102, preview: bandB.previewUrl },
+            { text: normBRes.data.text || '', weight: 85, preview: bandB.previewUrl }
+          ],
           role
         );
-        parsed.cropPreviewUrl = crops.cropPreviewUrl;
 
         this.lastScanState[role] = {
           parsed: parsed,
@@ -1406,7 +1531,7 @@
       return { detectedPea, bbox };
     }
 
-    extractMeterData(fullText, detectedPea, invDrumText, normDrumText, role) {
+    extractMeterData(fullText, detectedPea, drumSources, role) {
       const normalizeOcr = (txt) => (txt || '')
         .replace(/[|lI]/g, '1')
         .replace(/[OoQD]/g, '0')
@@ -1431,9 +1556,9 @@
       }
 
       const peaCleanDigits = (detectedPea || '').replace(/\D/g, '');
-      const candidateScores = new Map();
+      const candidateMap = new Map(); // cleanStr -> { score, preview }
 
-      const addCandidate = (rawStr, baseScore) => {
+      const addCandidate = (rawStr, baseScore, previewUrl) => {
         const hasDecimal = /\d+\.\d+/.test(rawStr);
         const clean = hasDecimal
           ? rawStr.replace(/\s+/g, '').replace(/[^0-9.]/g, '')
@@ -1455,24 +1580,23 @@
         const numericVal = Number(digitOnly.slice(0, 5));
         if (role === 'new' && numericVal <= 50) score += 30;
 
-        const prev = candidateScores.get(clean) || 0;
-        if (score > prev) candidateScores.set(clean, score);
+        const prev = candidateMap.get(clean);
+        if (!prev || score > prev.score) {
+          candidateMap.set(clean, { score, preview: previewUrl });
+        }
       };
 
-      const parseDrumBlock = (txt, weight) => {
-        const lines = (txt || '').split(/\r?\n/).map(l => normalizeOcr(l).trim()).filter(Boolean);
+      (drumSources || []).forEach(src => {
+        const lines = (src.text || '').split(/\r?\n/).map(l => normalizeOcr(l).trim()).filter(Boolean);
         lines.forEach(line => {
           const matches = line.match(/(?:\d[\s.]*){4,6}/g) || [];
-          matches.forEach(m => addCandidate(m, weight));
+          matches.forEach(m => addCandidate(m, src.weight, src.preview));
         });
-      };
+      });
 
-      parseDrumBlock(invDrumText, 100);
-      parseDrumBlock(normDrumText, 85);
-
-      const sortedCandidates = [...candidateScores.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map(entry => entry[0]);
+      const sortedEntries = [...candidateMap.entries()].sort((a, b) => b[1].score - a[1].score);
+      const sortedCandidates = sortedEntries.map(e => e[0]);
+      const winningPreview = sortedEntries[0]?.[1]?.preview || drumSources?.[1]?.preview || '';
 
       const allTokens = [];
       if (detectedPea) allTokens.push(detectedPea);
@@ -1485,7 +1609,7 @@
         detectedRawKwh: sortedCandidates[0] || '',
         detectedMeterType: detectedMeterType,
         allTokens: allTokens,
-        cropPreviewUrl: ''
+        cropPreviewUrl: winningPreview
       };
     }
 
@@ -1574,6 +1698,7 @@
       }
 
       resultBox.innerHTML = statusHtml + cropPreviewHtml + meterTypeSelectorHtml + pillsHtml;
+      kwhAnomalyGuard.evaluateLive();
     }
 
     applyTokenChoice(role, tokenVal) {
@@ -1600,6 +1725,7 @@
           }
         }
       }
+      kwhAnomalyGuard.evaluateLive();
     }
 
     flashInput(el) {
@@ -1611,11 +1737,209 @@
   }
 
   // =========================================================================
-  // 5. AppController (จัดการข้อมูลใบงาน + แผนที่ + ค้นหาพ้องเสียง + Google Sheets)
+  // 5. SmartKwhAnomalyGuard (ข้อ 3: ตรวจสอบความผิดปกติของหน่วยก่อนปิดใบงาน)
+  // =========================================================================
+  class SmartKwhAnomalyGuard {
+    evaluateLive() {
+      const box = document.getElementById('kwh-guard-box');
+      if (!box) return [];
+
+      const oldKwh = Number(document.getElementById('col-2')?.value || 0);
+      const newKwh = Number(document.getElementById('col-5')?.value || 0);
+      const reason = String(document.getElementById('col-6')?.value || '');
+      const oldPea = String(document.getElementById('col-1')?.value || '');
+
+      const warnings = [];
+
+      if (newKwh > 50) {
+        warnings.push(`หน่วยมิเตอร์ใหม่ (${newKwh} kWh) สูงผิดปกติสำหรับมิเตอร์ใหม่ กรุณาเช็กว่าไม่ได้อ่านติดทศนิยมหลัก 0.1`);
+      }
+
+      const sheetRec = (appController?.records || []).find(r => String(r.oldPea) === oldPea);
+      if (sheetRec && Number(sheetRec.oldKwh) > 0 && oldKwh > 0 && oldKwh < Number(sheetRec.oldKwh)) {
+        warnings.push(`หน่วยเดิมที่อ่านได้ (${oldKwh}) น้อยกว่าหน่วยในฐานข้อมูล (${sheetRec.oldKwh}) กรุณาตรวจสอบตัวเลขหน้าปัด`);
+      }
+
+      if (oldPea && oldKwh === 0 && !reason.includes('ไม่หมุน') && !reason.includes('ชำรุด')) {
+        warnings.push(`หน่วยเดิมเป็น 0 แต่สาเหตุไม่ได้ระบุว่ามิเตอร์ไม่หมุน/ชำรุด`);
+      }
+
+      if (warnings.length > 0) {
+        box.style.display = 'block';
+        box.innerHTML = `<i class="bi bi-shield-exclamation me-1 text-danger"></i> <b>Smart KWH Guard แจ้งเตือน:</b><ul class="mb-0 mt-1 ps-3">${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
+      } else {
+        box.style.display = 'none';
+      }
+      return warnings;
+    }
+  }
+
+  // =========================================================================
+  // 6. TruckMeterStockManager (ข้อ 1: คลังสต็อกมิเตอร์ท้ายรถ & ตัดยอดอัตโนมัติ)
+  // =========================================================================
+  class TruckMeterStockManager {
+    constructor() {
+      this.storageKey = 'pea_truck_meter_stock_v1';
+      this.items = this.loadStock();
+    }
+
+    getDefaultItems() {
+      return [
+        { peaNo: '5900031214', size: '5(15)amp', status: 'available', usedFor: '' },
+        { peaNo: '5900031200', size: '5(15)amp', status: 'available', usedFor: '' },
+        { peaNo: '5901369538', size: '5(15)amp', status: 'available', usedFor: '' },
+        { peaNo: '6300861405', size: '15(45)amp', status: 'available', usedFor: '' }
+      ];
+    }
+
+    loadStock() {
+      try {
+        const raw = localStorage.getItem(this.storageKey);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch (e) {}
+      return this.getDefaultItems();
+    }
+
+    saveStock() {
+      try {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.items));
+      } catch (e) {}
+      this.render();
+    }
+
+    resetDemoStock() {
+      this.items = this.getDefaultItems();
+      this.saveStock();
+    }
+
+    addFromInput() {
+      const size = document.getElementById('stock-add-size')?.value || '5(15)amp';
+      const raw = document.getElementById('stock-add-pea')?.value || '';
+      const tokens = raw.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
+      if (!tokens.length) return;
+
+      tokens.forEach(peaNo => {
+        if (!this.items.some(i => i.peaNo === peaNo)) {
+          this.items.unshift({ peaNo, size, status: 'available', usedFor: '' });
+        }
+      });
+
+      document.getElementById('stock-add-pea').value = '';
+      this.saveStock();
+    }
+
+    deductMeter(peaNo, customerName) {
+      const clean = String(peaNo || '').trim();
+      if (!clean) return false;
+      const target = this.items.find(i => i.peaNo === clean && i.status === 'available');
+      if (target) {
+        target.status = 'used';
+        target.usedFor = customerName || 'ติดตั้งหน้างาน';
+        this.saveStock();
+        return true;
+      }
+      return false;
+    }
+
+    pickMeterToForm(peaNo, size) {
+      const newPeaEl = document.getElementById('col-4');
+      const sizeEl = document.getElementById('col-0');
+      if (newPeaEl) {
+        newPeaEl.value = peaNo;
+        smartMeterOCR.flashInput(newPeaEl);
+      }
+      if (sizeEl && size) sizeEl.value = size;
+
+      const tabBtn = document.getElementById('tab-field-btn');
+      if (tabBtn && typeof bootstrap !== 'undefined') {
+        bootstrap.Tab.getOrCreateInstance(tabBtn).show();
+      }
+    }
+
+    removeItem(peaNo) {
+      this.items = this.items.filter(i => i.peaNo !== peaNo);
+      this.saveStock();
+    }
+
+    render() {
+      const avail515 = this.items.filter(i => i.status === 'available' && i.size.includes('5(15)')).length;
+      const avail1545 = this.items.filter(i => i.status === 'available' && i.size.includes('15(45)')).length;
+      const totalAvail = this.items.filter(i => i.status === 'available').length;
+      const totalUsed = this.items.filter(i => i.status === 'used').length;
+
+      const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+      setTxt('stock-count-515', avail515);
+      setTxt('stock-count-1545', avail1545);
+      setTxt('stock-count-used', totalUsed);
+      setTxt('nav-stock-count', totalAvail);
+
+      const datalist = document.getElementById('truck-stock-datalist');
+      if (datalist) {
+        datalist.innerHTML = this.items
+          .filter(i => i.status === 'available')
+          .map(i => `<option value="${i.peaNo}">${i.size} (พร้อมติดตั้งในรถ)</option>`)
+          .join('');
+      }
+
+      const listEl = document.getElementById('truck-stock-list');
+      if (!listEl) return;
+
+      if (!this.items.length) {
+        listEl.innerHTML = `<div class="text-center text-muted small py-3">ยังไม่มีรายการมิเตอร์บนรถ</div>`;
+        return;
+      }
+
+      listEl.innerHTML = this.items.map(item => {
+        const isUsed = item.status === 'used';
+        return `
+          <div class="p-2 px-3 rounded-3 border bg-white d-flex justify-content-between align-items-center ${isUsed ? 'opacity-75' : ''}">
+            <div>
+              <div class="fw-bold ${isUsed ? 'text-decoration-line-through text-muted' : 'text-dark'}">
+                ${item.peaNo} <span class="badge bg-light text-dark border ms-1">${item.size}</span>
+                ${isUsed ? `<span class="badge bg-success ms-1">ติดตั้งแล้ว (${item.usedFor})</span>` : `<span class="badge bg-primary ms-1">อยู่บนรถ</span>`}
+              </div>
+            </div>
+            <div class="d-flex gap-1">
+              ${!isUsed ? `<button type="button" class="btn btn-sm btn-outline-primary fw-bold" onclick="truckStockManager.pickMeterToForm('${item.peaNo}', '${item.size}')">เลือกใช้</button>` : ''}
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="truckStockManager.removeItem('${item.peaNo}')" title="ลบรายการ"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    copySummaryReport() {
+      const avail = this.items.filter(i => i.status === 'available');
+      const used = this.items.filter(i => i.status === 'used');
+      const lines = [
+        `📋 สรุปยอดมิเตอร์ประจำรถปฏิบัติการ กฟภ.`,
+        `✅ ติดตั้งไปแล้ว (${used.length} เครื่อง):`,
+        ...(used.length ? used.map(u => `  - ${u.peaNo} (${u.size}) -> ${u.usedFor}`) : ['  - ยังไม่มี']),
+        `📦 คงเหลือบนรถ (${avail.length} เครื่อง):`,
+        ...(avail.length ? avail.map(a => `  - ${a.peaNo} (${a.size})`) : ['  - หมดสต็อก'])
+      ];
+      const reportText = lines.join('\n');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(reportText);
+        alert('คัดลอกรายงานสรุปยอดส่งคลังเรียบร้อย พร้อมวางส่งใน LINE ได้เลยครับบอส!\n\n' + reportText);
+      } else {
+        alert(reportText);
+      }
+    }
+  }
+
+  // =========================================================================
+  // 7. AppController (ศูนย์บัญชาการหลัก เชื่อมต่อทุกระบบเข้าด้วยกัน)
   // =========================================================================
   class AppController {
     constructor() {
-      this.gasUrl = localStorage.getItem('pea_gas_url') || '';
+      this.gasUrl = '';
+      try {
+        this.gasUrl = localStorage.getItem('pea_gas_url') || '';
+      } catch (e) {}
       const urlInput = document.getElementById('gas-url-input');
       if (urlInput && this.gasUrl) urlInput.value = this.gasUrl;
 
@@ -1662,6 +1986,7 @@
       ];
 
       peaRouteMap.initMap(this.records);
+      truckStockManager.render();
 
       if (this.gasUrl) {
         this.fetchSheetData();
@@ -1673,7 +1998,7 @@
     saveGasUrl() {
       const val = document.getElementById('gas-url-input')?.value.trim() || '';
       this.gasUrl = val;
-      localStorage.setItem('pea_gas_url', val);
+      try { localStorage.setItem('pea_gas_url', val); } catch (e) {}
       if (val) this.fetchSheetData();
     }
 
@@ -1716,7 +2041,6 @@
         }
         this.recalculateDistancesAndAlert();
       } catch (e) {
-        console.warn('โหลดข้อมูลชีตไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน:', e);
         this.refreshView();
       }
     }
@@ -1861,18 +2185,27 @@
       }
 
       smartMeterOCR.flashInput(document.getElementById('col-3'));
+      kwhAnomalyGuard.evaluateLive();
     }
 
     async submitForm(e) {
       e.preventDefault();
+
+      const warnings = kwhAnomalyGuard.evaluateLive();
+      if (warnings.length > 0) {
+        const proceed = confirm(`⚠️ Smart KWH Guard พบข้อสังเกต:\n- ${warnings.join('\n- ')}\n\nบอสยืนยันต้องการบันทึกข้อมูลนี้ต่อหรือไม่ครับ?`);
+        if (!proceed) return;
+      }
+
       const oldPea = document.getElementById('col-1').value;
       const newPea = document.getElementById('col-4').value;
+      const customerName = document.getElementById('col-3').value;
 
       const payload = {
         size: document.getElementById('col-0').value,
         oldPea: oldPea,
         oldKwh: document.getElementById('col-2').value,
-        name: document.getElementById('col-3').value,
+        name: customerName,
         newPea: newPea,
         newKwh: document.getElementById('col-5').value,
         reason: document.getElementById('col-6').value,
@@ -1881,6 +2214,10 @@
         imgNew: document.getElementById('img-new-base64').value
       };
 
+      // ตัดสต็อกมิเตอร์ท้ายรถอัตโนมัติ
+      const deducted = truckStockManager.deductMeter(newPea, customerName);
+
+      // อัปเดตหมุดบนแผนที่เป็นสีเขียว (เสร็จแล้ว)
       const targetRec = this.records.find(r => String(r.oldPea) === String(oldPea));
       if (targetRec) {
         targetRec.newPea = newPea;
@@ -1890,9 +2227,11 @@
         this.refreshView();
       }
 
+      const stockNote = deducted ? `\n📦 ตัดสต็อกมิเตอร์ ${newPea} ออกจากรถอัตโนมัติแล้ว!` : '';
+
       if (!this.gasUrl) {
-        jarvisVoice.speak(`บันทึกข้อมูลเปลี่ยนมิเตอร์ของ ${payload.name} เรียบร้อยครับบอส`);
-        alert(`ทดสอบบันทึกสำเร็จ!\nผู้ใช้ไฟ: ${payload.name}\nPEA เก่า: ${payload.oldPea} (หน่วย ${payload.oldKwh})\nPEA ใหม่: ${payload.newPea} (หน่วย ${payload.newKwh})\nพิกัด GPS: ${payload.gps || 'ไม่ได้ระบุ'}`);
+        jarvisVoice.speak(`บันทึกข้อมูลเปลี่ยนมิเตอร์ของ ${payload.name} ${deducted ? 'และตัดสต็อกในรถ' : ''} เรียบร้อยครับบอส`);
+        alert(`ทดสอบบันทึกสำเร็จ!\nผู้ใช้ไฟ: ${payload.name}\nPEA เก่า: ${payload.oldPea} (หน่วย ${payload.oldKwh})\nPEA ใหม่: ${payload.newPea} (หน่วย ${payload.newKwh})${stockNote}`);
         return;
       }
 
@@ -1904,7 +2243,7 @@
           body: JSON.stringify(payload)
         });
         jarvisVoice.speak(`ส่งข้อมูลเปลี่ยนมิเตอร์ของ ${payload.name} ขึ้นระบบเรียบร้อยครับบอส`);
-        alert('ส่งข้อมูล รูปภาพ และพิกัด GPS ขึ้น Google Sheets เรียบร้อยครับบอส!');
+        alert(`ส่งข้อมูล รูปภาพ และพิกัด GPS ขึ้น Google Sheets เรียบร้อยครับบอส!${stockNote}`);
       } catch (err) {
         alert('เกิดข้อผิดพลาดในการส่งข้อมูล: ' + err.message);
       }
@@ -1915,6 +2254,8 @@
   const jarvisVoice = new JarvisVoiceAssistant();
   const peaRouteMap = new PeaSmartRouteMap();
   const smartMeterOCR = new SmartMeterOCR();
+  const kwhAnomalyGuard = new SmartKwhAnomalyGuard();
+  const truckStockManager = new TruckMeterStockManager();
   const appController = new AppController();
 </script>
 
