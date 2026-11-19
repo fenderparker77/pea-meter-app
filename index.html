@@ -1,8 +1,6 @@
+PEAKML
 
 
-
-ไอคอน HTML
-index
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -257,6 +255,50 @@ index
       transform: translateY(-1px);
     }
 
+    /* ฟีเจอร์ใหม่ v2.7: SLA Urgent Aging Badge & Voice Memo Pulse */
+    .sla-urgent-badge {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #fff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+      animation: sla-pulse 2s infinite;
+    }
+    .sla-warning-badge {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #f59e0b;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    @keyframes sla-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.78; }
+    }
+    .voice-memo-btn.recording {
+      background: #dc2626 !important;
+      color: #fff !important;
+      border-color: #dc2626 !important;
+      animation: pulse-ring 1.3s infinite;
+    }
+    .safety-check-item {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .safety-check-item:has(input:checked) {
+      background: #ecfdf5;
+      border-color: #10b981;
+    }
+
     /* J.A.R.V.I.S Smart Voice UI */
     .jarvis-fab {
       position: fixed;
@@ -309,20 +351,7 @@ index
       display: none;
       backdrop-filter: blur(10px);
     }
-/* แถบนับถอยหลังเปิดไมค์รับคำสั่ง 5 วินาที */
-    .jarvis-countdown-wrap {
-      margin-top: 8px;
-      background: rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
-      height: 6px;
-      overflow: hidden;
-    }
-    .jarvis-countdown-bar {
-      height: 100%;
-      width: 100%;
-      background: linear-gradient(90deg, #00d2ff, #2ecc71);
-      transition: width 0.1s linear;
-    }
+
     .jarvis-choice-pill {
       font-size: 0.78rem;
       border-radius: 20px;
@@ -393,7 +422,7 @@ index
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v2.6 • J.A.R.V.I.S v6.1</p>
+      <p class="text-muted small">PEA Smart Operation System v2.7 • J.A.R.V.I.S v6.2</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -440,8 +469,8 @@ index
           <form id="data-form" class="glass-card">
             <input type="hidden" id="row-index">
             <div id="dynamic-fields"></div>
-            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow" onclick="saveData()">
-              <i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน
+            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow" onclick="openSafetyPrecheck()">
+              <i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & บันทึกส่งงาน
             </button>
           </form>
         </div>
@@ -468,7 +497,7 @@ index
               <select id="filter-month" class="form-select" onchange="loadDashboard()"></select>
             </div>
           </div>
-          <div class="mt-4">
+          <div class="mt-3">
             <div class="input-group">
               <input type="text" id="dash-search" class="form-control rounded-start-pill px-4" placeholder="🔍 ค้นหาชื่อ-สกุล/PEA/สถานที่ (ค้นหาจากสถานะ/ชื่อใบงานตามที่ระบุไว้)" onkeyup="filterDashboard()">
               <button class="btn btn-outline-primary rounded-end-pill px-3" type="button" onclick="startVoiceSearchForInput('dash-search', false)" title="พูดค้นหาใบงาน">
@@ -476,6 +505,14 @@ index
               </button>
             </div>
             <div id="dash-phonetic-hint" class="phonetic-hint-bar"></div>
+          </div>
+
+          <!-- 🚨 แถบตัวกรองด่วนงานค้างเร่งด่วน SLA (ฟีเจอร์ใหม่ v2.7) -->
+          <div class="mt-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <button type="button" id="btn-filter-sla-urgent" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3" onclick="slaAgingManager.toggleUrgentFilter()">
+              <i class="bi bi-alarm-fill me-1"></i> ดูงานค้างเร่งด่วนเกิน 7 วัน (<span id="sla-urgent-count">0</span>)
+            </button>
+            <small class="text-muted" id="sla-summary-caption">ตรวจสอบอายุใบงานคงเหลืออัตโนมัติ</small>
           </div>
 
           <!-- 🧠 แผงคำสั่งอัจฉริยะที่ใช้บ่อย (แสดงเฉพาะโหมด Admin) -->
@@ -672,6 +709,48 @@ index
     </div>
   </div>
 
+  <!-- 🛡️ Modal เช็กลิสต์ตรวจสอบความปลอดภัยก่อนบันทึกส่งงาน (ฟีเจอร์ใหม่ v2.7) -->
+  <div class="modal fade" id="safetyPrecheckModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+        <div class="modal-header bg-success text-white" style="border-radius: 20px 20px 0 0;">
+          <h6 class="modal-title fw-bold"><i class="bi bi-shield-fill-check me-2"></i>เช็กลิสต์ความปลอดภัยก่อนส่งงาน กฟภ.</h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <p class="small text-muted mb-2">กรุณาตรวจสอบรายการความปลอดภัยและคุณภาพงานสับเปลี่ยนมิเตอร์ให้ครบถ้วนก่อนบันทึก:</p>
+          <label class="safety-check-item d-flex align-items-start gap-2">
+            <input type="checkbox" class="form-check-input mt-1 safety-cb" onchange="safetyPrecheck.updateState()">
+            <span class="small fw-semibold">1. สวมถุงมือฉนวนไฟฟ้าและอุปกรณ์ป้องกันส่วนบุคคล (PPE) เรียบร้อยแล้ว</span>
+          </label>
+          <label class="safety-check-item d-flex align-items-start gap-2">
+            <input type="checkbox" class="form-check-input mt-1 safety-cb" onchange="safetyPrecheck.updateState()">
+            <span class="small fw-semibold">2. ตรวจสอบสาย Line / Neutral ถูกต้องและขันน็อตขั้วต่อมิเตอร์แน่นสนิท</span>
+          </label>
+          <label class="safety-check-item d-flex align-items-start gap-2">
+            <input type="checkbox" class="form-check-input mt-1 safety-cb" onchange="safetyPrecheck.updateState()">
+            <span class="small fw-semibold">3. ถ่ายภาพป้าย PEA.No เก่า + หน่วยเดิม และ PEA.No ใหม่ + หน่วยใหม่ ชัดเจน</span>
+          </label>
+          <label class="safety-check-item d-flex align-items-start gap-2 mb-0">
+            <input type="checkbox" class="form-check-input mt-1 safety-cb" onchange="safetyPrecheck.updateState()">
+            <span class="small fw-semibold">4. ตรวจสอบค่าหน่วย (kWh) ที่กรอก/สแกน ตรงกับหน้าปัดมิเตอร์จริงทุกหลัก</span>
+          </label>
+        </div>
+        <div class="modal-footer border-0 pt-0 px-3 pb-3 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="safetyPrecheck.checkAll()">
+            <i class="bi bi-check2-all me-1"></i>ติ๊กครบทุกข้อ
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+            <button type="button" id="btn-confirm-safety-save" class="btn btn-success rounded-pill px-4 fw-bold shadow" disabled onclick="safetyPrecheck.confirmAndSave()">
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i>ยืนยันและบันทึกส่งงาน
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 📸 Modal กล้องถ่ายภาพเรียลไทม์สำหรับสแกนมิเตอร์และภาพสำรอง -->
   <div class="modal fade" id="realtimeCameraModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
@@ -791,54 +870,229 @@ index
     let isAdminUser = false;
 
     // =========================================================================
+    // 🎙️ ฟีเจอร์ที่ 1 (v2.7): บันทึกเสียงหมายเหตุหน้างาน & ฟังทวนอัตโนมัติ (FieldVoiceMemo)
+    // =========================================================================
+    const fieldVoiceMemo = (() => {
+      let recognition = null;
+      let isRecording = false;
+
+      function toggleRecord(textareaId, btnId) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          alert('เบราว์เซอร์นี้ไม่รองรับการแปลงเสียงเป็นข้อความครับ');
+          return;
+        }
+        const btn = document.getElementById(btnId);
+        const target = document.getElementById(textareaId);
+        if (!target) return;
+
+        if (isRecording && recognition) {
+          try { recognition.stop(); } catch (e) {}
+          return;
+        }
+
+        recognition = new SpeechRec();
+        recognition.lang = 'th-TH';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          isRecording = true;
+          if (btn) {
+            btn.classList.add('recording');
+            btn.innerHTML = '<i class="bi bi-stop-circle-fill me-1"></i> กำลังฟัง...';
+          }
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript.trim();
+          if (transcript) {
+            const existing = target.value.trim();
+            target.value = existing ? `${existing} ${transcript}` : transcript;
+            target.style.backgroundColor = '#e0f2fe';
+            setTimeout(() => { target.style.backgroundColor = ''; }, 1400);
+          }
+        };
+
+        recognition.onerror = () => {
+          isRecording = false;
+          if (btn) {
+            btn.classList.remove('recording');
+            btn.innerHTML = '<i class="bi bi-mic-fill me-1"></i> พูดบันทึกหมายเหตุ';
+          }
+        };
+
+        recognition.onend = () => {
+          isRecording = false;
+          if (btn) {
+            btn.classList.remove('recording');
+            btn.innerHTML = '<i class="bi bi-mic-fill me-1"></i> พูดบันทึกหมายเหตุ';
+          }
+        };
+
+        recognition.start();
+      }
+
+      function readBack(textareaId) {
+        const target = document.getElementById(textareaId);
+        const text = target ? target.value.trim() : '';
+        if (!text) {
+          alert('ยังไม่มีข้อความในช่องหมายเหตุครับบอส');
+          return;
+        }
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(`บันทึกหมายเหตุหน้างาน: ${text}`);
+          utter.lang = 'th-TH';
+          utter.rate = 1.05;
+          window.speechSynthesis.speak(utter);
+        }
+      }
+
+      return { toggleRecord, readBack };
+    })();
+
+    // =========================================================================
+    // 🚨 ฟีเจอร์ที่ 2 (v2.7): ระบบแจ้งเตือนงานค้างเร่งด่วน SLA (slaAgingManager)
+    // =========================================================================
+    const slaAgingManager = (() => {
+      let urgentFilterActive = false;
+      const SLA_LIMIT_DAYS = 7;
+
+      function computeAgingDays(item) {
+        if (!item || item.status === 'เสร็จสมบูรณ์') return 0;
+        const now = new Date();
+
+        // 1. ลองคำนวณจาก timestamp รูปแบบ dd/MM/yyyy HH:mm:ss
+        if (item.timestamp && /\d{1,2}\/\d{1,2}\/\d{4}/.test(item.timestamp)) {
+          const m = item.timestamp.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          if (m) {
+            let yr = parseInt(m[3], 10);
+            if (yr > 2400) yr -= 543;
+            const dt = new Date(yr, parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+            const diffDays = Math.floor((now - dt) / (1000 * 60 * 60 * 24));
+            if (!isNaN(diffDays) && diffDays >= 0) return diffDays;
+          }
+        }
+
+        // 2. ถ้าเป็นงานคงเหลือที่ยังไม่มี timestamp ให้ประเมินจากรอบเดือนของชีต MM.YYYY (พ.ศ.)
+        if (item.sheetName && /^\d{1,2}\.\d{4}$/.test(item.sheetName.trim())) {
+          const [mmStr, yyStr] = item.sheetName.trim().split('.');
+          const mm = parseInt(mmStr, 10);
+          let yy = parseInt(yyStr, 10);
+          if (yy > 2400) yy -= 543;
+          const sheetStart = new Date(yy, mm - 1, 1);
+          const diffDays = Math.floor((now - sheetStart) / (1000 * 60 * 60 * 24));
+          if (!isNaN(diffDays) && diffDays > 0) return diffDays;
+        }
+        return 0;
+      }
+
+      function refreshUrgentSummary(items) {
+        const urgentItems = (items || []).filter(it => it.status !== 'เสร็จสมบูรณ์' && computeAgingDays(it) > SLA_LIMIT_DAYS);
+        const countEl = document.getElementById('sla-urgent-count');
+        const capEl = document.getElementById('sla-summary-caption');
+        if (countEl) countEl.innerText = urgentItems.length;
+        if (capEl) {
+          capEl.innerHTML = urgentItems.length > 0
+            ? `<span class="text-danger fw-bold">พบงานค้างเกิน ${SLA_LIMIT_DAYS} วัน จำนวน ${urgentItems.length} รายการ</span>`
+            : `ไม่มีงานค้างเกินเกณฑ์ ${SLA_LIMIT_DAYS} วัน`;
+        }
+        return urgentItems;
+      }
+
+      function toggleUrgentFilter(forceState = null) {
+        urgentFilterActive = (forceState !== null) ? forceState : !urgentFilterActive;
+        const btn = document.getElementById('btn-filter-sla-urgent');
+        if (btn) {
+          btn.className = urgentFilterActive
+            ? 'btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm'
+            : 'btn btn-sm btn-outline-danger rounded-pill fw-bold px-3';
+        }
+
+        if (urgentFilterActive) {
+          const urgentItems = refreshUrgentSummary(globalDashResults);
+          const banner = `<div class="alert alert-danger rounded-4 shadow-sm mb-3 fw-bold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-alarm-fill me-2"></i>ตัวกรองเร่งด่วน SLA: งานค้างเกิน ${SLA_LIMIT_DAYS} วัน (${urgentItems.length} รายการ)</span>
+            <button type="button" class="btn-close" onclick="slaAgingManager.toggleUrgentFilter(false)"></button>
+          </div>`;
+          renderCardsList(urgentItems, banner);
+        } else {
+          renderCardsList(globalDashResults);
+        }
+      }
+
+      function resetFilterFlag() {
+        urgentFilterActive = false;
+        const btn = document.getElementById('btn-filter-sla-urgent');
+        if (btn) btn.className = 'btn btn-sm btn-outline-danger rounded-pill fw-bold px-3';
+      }
+
+      return { computeAgingDays, refreshUrgentSummary, toggleUrgentFilter, resetFilterFlag, SLA_LIMIT_DAYS };
+    })();
+
+    // =========================================================================
+    // 🛡️ ฟีเจอร์ที่ 3 (v2.7): เช็กลิสต์ตรวจสอบความปลอดภัยก่อนบันทึกส่งงาน (safetyPrecheck)
+    // =========================================================================
+    const safetyPrecheck = (() => {
+      function open() {
+        const cbs = document.querySelectorAll('#safetyPrecheckModal .safety-cb');
+        cbs.forEach(cb => { cb.checked = false; });
+        updateState();
+        new bootstrap.Modal(document.getElementById('safetyPrecheckModal')).show();
+      }
+
+      function checkAll() {
+        const cbs = document.querySelectorAll('#safetyPrecheckModal .safety-cb');
+        cbs.forEach(cb => { cb.checked = true; });
+        updateState();
+      }
+
+      function updateState() {
+        const cbs = Array.from(document.querySelectorAll('#safetyPrecheckModal .safety-cb'));
+        const allChecked = cbs.length > 0 && cbs.every(cb => cb.checked);
+        const confirmBtn = document.getElementById('btn-confirm-safety-save');
+        if (confirmBtn) confirmBtn.disabled = !allChecked;
+      }
+
+      function confirmAndSave() {
+        const modalEl = document.getElementById('safetyPrecheckModal');
+        const inst = bootstrap.Modal.getInstance(modalEl);
+        if (inst) inst.hide();
+        executeSaveData();
+      }
+
+      return { open, checkAll, updateState, confirmAndSave };
+    })();
+
+    function openSafetyPrecheck() {
+      safetyPrecheck.open();
+    }
+
+    // =========================================================================
     // 🗣️ ระบบค้นหาเสียงพ้องเสียงภาษาไทย (ThaiPhoneticSearch)
-    //    รองรับ: ศรีกัน <-> สีกัน, ไชย <-> ชัย, พรหม <-> พรม, จันทร์ <-> จัน, ณัฐ <-> นัท ฯลฯ
     // =========================================================================
     class ThaiPhoneticSearch {
       static normalize(text) {
         if (!text) return '';
         let s = String(text).toLowerCase().trim();
-
-        // ลบคำนำหน้าชื่อ
         s = s.replace(/^(นาย|นางสาว|นาง|น\.ส\.|ด\.ช\.|ด\.ญ\.|คุณ)\s*/g, '');
-
-        // ลบตัวการันต์และพยัญชนะที่ติดการันต์ เช่น จันทร์ -> จัน, สิทธิ์ -> สิท, พัฒน์ -> พัฒ
         s = s.replace(/[ก-ฮ]์/g, '');
         s = s.replace(/์/g, '');
 
-        // กฎแปลงคำพ้องเสียงชื่อ-นามสกุลไทยที่พบบ่อย
         const customRules = [
-          [/ศรี/g, 'สี'],
-          [/ศร/g, 'ส'],
-          [/สร/g, 'ส'],
-          [/ไชย/g, 'ชัย'],
-          [/พรหม/g, 'พรม'],
-          [/ณัฐ/g, 'นัท'],
-          [/นัฐ/g, 'นัท'],
-          [/พัฒน์/g, 'พัด'],
-          [/วรรณ/g, 'วัน'],
-          [/กรรณ/g, 'กัน'],
-          [/ญาณ/g, 'ยาน'],
-          [/ฤทธิ์/g, 'ริด'],
-          [/ฤทัย/g, 'รึทัย'],
-          [/เกียรติ/g, 'เกียด'],
-          [/ศักดิ์/g, 'สัก'],
-          [/สิทธิ์/g, 'สิด'],
-          [/ทิพย์/g, 'ทิบ'],
-          [/ลักษณ์/g, 'ลัก'],
-          [/พงษ์/g, 'พง'],
-          [/วงศ์/g, 'วง'],
-          [/รักษ์/g, 'รัก'],
-          [/ธรรม/g, 'ทำ']
+          [/ศรี/g, 'สี'], [/ศร/g, 'ส'], [/สร/g, 'ส'], [/ไชย/g, 'ชัย'],
+          [/พรหม/g, 'พรม'], [/ณัฐ/g, 'นัท'], [/นัฐ/g, 'นัท'], [/พัฒน์/g, 'พัด'],
+          [/วรรณ/g, 'วัน'], [/กรรณ/g, 'กัน'], [/ญาณ/g, 'ยาน'], [/ฤทธิ์/g, 'ริด'],
+          [/ฤทัย/g, 'รึทัย'], [/เกียรติ/g, 'เกียด'], [/ศักดิ์/g, 'สัก'], [/สิทธิ์/g, 'สิด'],
+          [/ทิพย์/g, 'ทิบ'], [/ลักษณ์/g, 'ลัก'], [/พงษ์/g, 'พง'], [/วงศ์/g, 'วง'],
+          [/รักษ์/g, 'รัก'], [/ธรรม/g, 'ทำ']
         ];
         for (const [pattern, replacement] of customRules) {
           s = s.replace(pattern, replacement);
         }
 
-        // ลดรูปวรรณยุกต์และไม้ไต่คู้ทั้งหมด
         s = s.replace(/[่้๊๋็]/g, '');
-
-        // ยุบกลุ่มพยัญชนะและสระที่ออกเสียงพ้องกัน (Thai Soundex Equivalence)
         s = s
           .replace(/[ศษสซ]/g, 'ส')
           .replace(/[ณน]/g, 'น')
@@ -858,7 +1112,6 @@ index
           .replace(/[ืึ]/g, 'ึ')
           .replace(/[แเ]/g, 'เ');
 
-        // ยุบตัวอักษรซ้ำติดกัน เช่น พรมม -> พรม
         s = s.replace(/(.)\1+/g, '$1');
         s = s.replace(/\s+/g, '');
         return s;
@@ -882,17 +1135,14 @@ index
         return terms.every(term => this.isMatch(targetText, term));
       }
 
-      // ค้นหาชื่อจริงในฐานข้อมูล globalDashResults จากคำพ้องเสียง (เช่น พิมพ์/พูด "ศรีกัน" -> เจอ "นายสีกัน ...")
       static resolveBestSheetQuery(rawQuery) {
         const q = String(rawQuery || '').trim();
         if (!q || !globalDashResults || globalDashResults.length === 0) return null;
-        // ถ้าตรงตัวอยู่แล้วไม่ต้องแปลง
         const exactHit = globalDashResults.find(it =>
           `${it.pea} ${it.name}`.toLowerCase().includes(q.toLowerCase())
         );
         if (exactHit) return null;
 
-        // หาจากรหัสพ้องเสียง
         const phoneticHit = globalDashResults.find(it =>
           this.isMultiTermMatch(`${it.pea} ${it.name}`, q)
         );
@@ -980,7 +1230,7 @@ index
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S v6.1 พร้อม Cross-Tab Router, พยากรณ์อากาศหน้างาน, AI สแกนมิเตอร์ v2.6 และเรดาร์ GPS 500 เมตรเรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S v6.2 พร้อมฟีเจอร์ใหม่ v2.7 บันทึกเสียงหน้างาน, แจ้งเตือนงานค้างเร่งด่วน SLA และเช็กลิสต์ความปลอดภัยเรียบร้อยครับ", false);
       }
     }
 
@@ -1077,6 +1327,7 @@ index
         });
       });
     }
+
     // =========================================================================
     // 📷 AI สแกนหน่วยมิเตอร์ v2.6 (Multi-Band Dual-Lock + Auto Black-Border Trim)
     // =========================================================================
@@ -1094,10 +1345,10 @@ index
       }
 
       resolveFieldIds() {
-        let oldPeaIdx = 1; // คอลัมน์ C (#col-1)
-        let oldKwhIdx = 2; // คอลัมน์ D (#col-2)
-        let newPeaIdx = 4; // คอลัมน์ F (#col-4)
-        let newKwhIdx = 5; // คอลัมน์ G (#col-5)
+        let oldPeaIdx = 1;
+        let oldKwhIdx = 2;
+        let newPeaIdx = 4;
+        let newKwhIdx = 5;
 
         (globalHeaders || []).forEach((h, idx) => {
           const title = String(h || '').toLowerCase();
@@ -1942,102 +2193,6 @@ index
             const infoEl = document.getElementById('radar-nearest-info');
             if (infoEl) infoEl.innerHTML = 'เป้าหมายจำลอง: <b>นายสีกัน พรมดี</b> (PEA 6500076729) • กฟส.เขมราฐ';
             this.speakRadarAlert('แจ้งเตือนเรดาร์ 500 เมตรครับบอส! เข้าใกล้จุดเปลี่ยนมิเตอร์ของ นายสีกัน พรมดี ระยะห่าง 300 เมตร พร้อมปฏิบัติงานครับ');
-
-            // 📡 ฟีเจอร์ที่ 2: เปิดโหมดพิกัดเรดาร์ 500 เมตรผ่านคำสั่งเสียง + รายงานใบงานในรัศมี / ใกล้ที่สุด
-      activateVoiceRadar500m() {
-        const mapTabBtn = document.getElementById('map-tab');
-        if (mapTabBtn) bootstrap.Tab.getOrCreateInstance(mapTabBtn).show();
-
-        setTimeout(() => {
-          this.ensureMap();
-
-          // อันดับแรก: รายงานยืนยันการเปิดโหมดเรดาร์ 500 เมตรทันที
-          jarvisBrain.speak("เปิดโหมดพิกัดเรดาร์ 500 เมตรเรียบร้อยครับ", false);
-
-          // เปิดเรดาร์ติดตามพิกัดสดบนแผนที่ควบคู่ไปด้วย
-          if (this.watchId === null && 'geolocation' in navigator) {
-            const btn = document.getElementById('btn-toggle-gps-radar');
-            const statusLabel = document.getElementById('radar-status-label');
-            if (btn) {
-              btn.className = 'btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm';
-              btn.innerHTML = '<i class="bi bi-stop-circle-fill me-1"></i> หยุดเรดาร์ GPS';
-            }
-            if (statusLabel) statusLabel.innerText = 'กำลังติดตามพิกัดสด (แจ้งเตือนอัตโนมัติในรัศมี 500 ม.)';
-
-            this.watchId = navigator.geolocation.watchPosition(
-              pos => this.updateVehiclePosition(pos.coords.latitude, pos.coords.longitude, false),
-              () => {},
-              { enableHighAccuracy: true, maximumAge: 3000 }
-            );
-          }
-
-          // ดึงข้อมูลใบงานทั้งหมดให้พร้อมก่อนคำนวณระยะทาง
-          jarvisBrain.ensureData(true, () => {
-            this.renderWorkOrderPins();
-
-            if (!('geolocation' in navigator)) {
-              setTimeout(() => {
-                jarvisBrain.speak("อุปกรณ์นี้ไม่รองรับการดึงตำแหน่งพิกัด GPS ครับบอส", false);
-              }, 2600);
-              return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                this.updateVehiclePosition(lat, lng, false);
-
-                // คำนวณระยะห่างใบงานที่มีพิกัด (เน้นงานคงเหลือก่อน หากไม่มีให้ดูทุกสถานะที่มีพิกัด)
-                const allPins = this.getItemsWithCoords();
-                const pendingPins = allPins.filter(e => e.item.status === 'งานคงเหลือ');
-                const targetPool = pendingPins.length > 0 ? pendingPins : allPins;
-
-                const ranked = targetPool
-                  .map(entry => ({
-                    ...entry,
-                    dist: this.getDistanceMeters(lat, lng, entry.coords.lat, entry.coords.lng)
-                  }))
-                  .sort((a, b) => a.dist - b.dist);
-
-                const within500m = ranked.filter(e => e.dist <= this.RADIUS_METERS);
-
-                const formatDist = (m) => m >= 1000
-                  ? `${(m / 1000).toFixed(2)} กิโลเมตร`
-                  : `${Math.round(m)} เมตร`;
-
-                setTimeout(() => {
-                  if (ranked.length === 0) {
-                    jarvisBrain.speak("ขณะนี้ยังไม่มีใบงานที่บันทึกพิกัด GPS ไว้ในฐานข้อมูลครับบอส", false);
-                    return;
-                  }
-
-                  const nearest = ranked[0];
-                  this.focusPin(nearest.coords.lat, nearest.coords.lng);
-
-                  if (within500m.length > 0) {
-                    jarvisBrain.speak(
-                      `พบใบงานในเขตรัศมี 500 เมตร จำนวน <b>${within500m.length} ใบงาน</b>ครับ โดยตำแหน่งใบงานที่อยู่ใกล้ที่สุดคือ คุณ<b>${nearest.item.name || '-'}</b> หมายเลข PEA ${nearest.item.pea || '-'} สถานที่ <b>${nearest.item.location || 'ตามหมุดพิกัด'}</b> ระยะห่าง <b>${formatDist(nearest.dist)}</b> ครับ`,
-                      false
-                    );
-                  } else {
-                    jarvisBrain.speak(
-                      `ไม่พบใบงานในเขตรัศมี 500 เมตรครับ โดยตำแหน่งใบงานที่ใกล้ที่สุด 1 ใบงานคือ คุณ<b>${nearest.item.name || '-'}</b> หมายเลข PEA ${nearest.item.pea || '-'} สถานที่ <b>${nearest.item.location || 'ตามหมุดพิกัด'}</b> ระยะห่าง <b>${formatDist(nearest.dist)}</b> ครับ`,
-                      false
-                    );
-                  }
-                }, 2700);
-              },
-              () => {
-                setTimeout(() => {
-                  jarvisBrain.speak("เครื่องใช้งานยังไม่ได้เปิดตำแหน่งพิกัด GPS ครับบอส กรุณาเปิด Location เพื่อตรวจสอบระยะ 500 เมตรครับ", false);
-                }, 2600);
-              },
-              { enableHighAccuracy: true, timeout: 7000 }
-            );
-          });
-        }, 200);
-      }
           }
         }, 220);
       }
@@ -2378,8 +2533,9 @@ index
     }
 
     const ucubeImporter = new UcubeSmartImporter();
+
     // =========================================================================
-    // 🤖 J.A.R.V.I.S Smart Voice Brain v6.1 (พร้อม Cross-Tab Router & Omni-Assistant)
+    // 🤖 J.A.R.V.I.S Smart Voice Brain v6.2 (พร้อม Cross-Tab Router & SLA Urgent)
     // =========================================================================
     class JarvisVoiceBrain {
       constructor() {
@@ -2441,8 +2597,9 @@ index
         if (!container) return;
 
         const top = this.getTopFrequentCommands(3);
-        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S v6.1 ด่วน:</span>`;
+        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S v6.2 ด่วน:</span>`;
         html += `<button type="button" class="voice-chip" onclick="JarvisOmniAssistant.handleStatusAndCapabilityQuery('รายงานสถานะภาพรวมทั้งหมดของแอป')">📊 สถานะภาพรวมแอป</button>`;
+        html += `<button type="button" class="voice-chip" onclick="slaAgingManager.toggleUrgentFilter(true)">🚨 งานค้างเกิน 7 วัน</button>`;
         html += `<button type="button" class="voice-chip" onclick="JarvisOmniAssistant.handleWeatherQuery('รายงานสภาพอากาศพื้นที่ปัจจุบัน')">🌦️ อากาศหน้างาน</button>`;
         html += `<button type="button" class="voice-chip" onclick="bootstrap.Tab.getOrCreateInstance(document.querySelector('#map-tab')).show()">🗺️ แผนที่ & เรดาร์ 500ม.</button>`;
         html += `<button type="button" class="voice-chip" onclick="fieldGpsRadar.simulateApproach300m()">📡 จำลองเข้าใกล้ 300ม.</button>`;
@@ -2524,8 +2681,8 @@ index
           if ('speechSynthesis' in window) window.speechSynthesis.cancel();
           const hint = this.state.mode === 'AWAITING_CHOICE'
             ? 'พูดเลือกทางเลือก หรือแตะปุ่มด้านล่างได้เลยครับ'
-            : 'เชิญสั่งการได้เลยครับบอส (รองรับคำเชื่อมข้ามแท็บ, สภาพอากาศรายตำบล และพ้องเสียงไทย)';
-          this.showSubtitle('🎙️ J.A.R.V.I.S v6.1 กำลังฟัง...', hint, 0, this.state.choices);
+            : 'เชิญสั่งการได้เลยครับบอส (รองรับคำเชื่อมข้ามแท็บ, งานค้างเร่งด่วน SLA, สภาพอากาศรายตำบล)';
+          this.showSubtitle('🎙️ J.A.R.V.I.S v6.2 กำลังฟัง...', hint, 0, this.state.choices);
         };
 
         this.recognition.onresult = async (event) => {
@@ -2538,7 +2695,6 @@ index
 
           this.showSubtitle('🗣️ บอสสั่งว่า:', `"${transcript}"`, 5000);
 
-          // ✅ ด่านแรกสุด (ในโหมด IDLE): Omni-Assistant v6.1 & Cross-Tab Semantic Router v6.0
           if (this.state.mode === 'IDLE') {
             if (typeof JarvisOmniAssistant !== 'undefined') {
               const handledByOmni = await JarvisOmniAssistant.handleCommand(transcript);
@@ -2596,90 +2752,7 @@ index
           this.recognition.start();
         } catch (e) {}
       }
-// ⏱️ พูดตอบกลับแล้วเปิดไมค์รอรับคำสั่ง 5 วินาทีพร้อมแถบนับถอยหลัง
-      speakAndListen5Seconds(htmlText) {
-        if (!isAdminUser) return;
-        this.clear5sTimers();
 
-        const modeChoices = [
-          { label: 'ส่งงาน ส.ป.มิเตอร์', icon: '📝', keywords: ['ส่งงาน'], handler: () => bootstrap.Tab.getOrCreateInstance(document.querySelector('#search-tab')).show() },
-          { label: 'สถานะใบงาน', icon: '📊', keywords: ['สถานะ'], handler: () => bootstrap.Tab.getOrCreateInstance(document.querySelector('#status-tab')).show() },
-          { label: 'เรดาร์ 500 ม.', icon: '📡', keywords: ['เรดาร์'], handler: () => fieldGpsRadar.activateVoiceRadar500m() },
-          { label: 'นำเข้า UCUBE', icon: '📥', keywords: ['นำเข้า'], handler: () => bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show() }
-        ];
-
-        this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, 0, modeChoices);
-
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlText;
-        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
-
-        const triggerMicCountdown = () => {
-          if (isAdminUser) this.startListeningWith5sCountdown(modeChoices);
-        };
-
-        if (!('speechSynthesis' in window)) {
-          triggerMicCountdown();
-          return;
-        }
-
-        window.speechSynthesis.cancel();
-        const msg = new SpeechSynthesisUtterance(cleanSpeech);
-        msg.lang = 'th-TH';
-        msg.rate = 1.1;
-
-        let launched = false;
-        const launchOnce = () => {
-          if (launched) return;
-          launched = true;
-          setTimeout(triggerMicCountdown, 250);
-        };
-
-        msg.onend = launchOnce;
-        msg.onerror = launchOnce;
-        setTimeout(launchOnce, 4500); // กันค้างกรณีเบราว์เซอร์บล็อกเสียง
-        window.speechSynthesis.speak(msg);
-      }
-
-      startListeningWith5sCountdown(choiceButtons = []) {
-        if (!isAdminUser || !this.recognition) return;
-        this.clear5sTimers();
-
-        const TOTAL_MS = 5000;
-        const startTime = Date.now();
-
-        this.startListening();
-
-        const renderCountdownUI = () => {
-          const elapsed = Date.now() - startTime;
-          const remainSec = Math.max(0, (TOTAL_MS - elapsed) / 1000);
-          const pct = Math.max(0, Math.min(100, ((TOTAL_MS - elapsed) / TOTAL_MS) * 100));
-
-          this.showSubtitle(
-            `🎙️ เปิดไมค์รอรับคำสั่ง (${remainSec.toFixed(1)} วินาที)...`,
-            `เชิญสั่งเข้าโหมดต่างๆ ได้เลยครับ เช่น <b>"เปิดโหมดพิกัดเรดาร์ 500 เมตร"</b>, <b>"ค้นหาชื่อนายวิทยา"</b> หรือ <b>"ดูงานคงเหลือ"</b>
-             <div class="jarvis-countdown-wrap"><div class="jarvis-countdown-bar" style="width:${pct}%"></div></div>`,
-            0,
-            choiceButtons
-          );
-        };
-
-        renderCountdownUI();
-        this._micInterval = setInterval(renderCountdownUI, 100);
-
-        this._micTimeout = setTimeout(() => {
-          this.clear5sTimers();
-          if (this.isListening && this.recognition) {
-            try { this.recognition.stop(); } catch (e) {}
-          }
-          this.showSubtitle('🤖 J.A.R.V.I.S:', 'หมดเวลาเปิดไมค์ 5 วินาทีครับบอส กดปุ่มไมค์สั่งการได้ตลอดเวลาครับ', 4500);
-        }, TOTAL_MS);
-      }
-
-      clear5sTimers() {
-        if (this._micInterval) { clearInterval(this._micInterval); this._micInterval = null; }
-        if (this._micTimeout) { clearTimeout(this._micTimeout); this._micTimeout = null; }
-      }
       speak(htmlText, expectReply = false, choiceButtons = []) {
         if (!isAdminUser) return;
         this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 11000, choiceButtons);
@@ -2744,6 +2817,7 @@ index
             document.getElementById('stat-contractor').innerText = res.stats.contractor;
             document.getElementById('stat-emp').innerText = res.stats.employee;
             document.getElementById('stat-completed').innerText = res.stats.completed;
+            slaAgingManager.refreshUrgentSummary(globalDashResults);
             callback(globalDashResults);
           });
         } else {
@@ -2803,13 +2877,20 @@ index
           return;
         }
 
-        // รองรับการเรียก handleInput โดยตรงในโหมด IDLE
         if (this.state.mode === 'IDLE') {
           if (typeof JarvisOmniAssistant !== 'undefined' && await JarvisOmniAssistant.handleCommand(rawText)) return;
           if (typeof JarvisSmartVoiceRouter !== 'undefined' && await JarvisSmartVoiceRouter.handleVoiceCommand(rawText)) return;
         }
 
-        // คำสั่งเปิดแผนที่ / เรดาร์ 500 เมตร / จำลองเข้าใกล้ 300 เมตร
+        if (/(ค้างเกิน|งานค้างเร่งด่วน|เกิน\s*7\s*วัน|ค้างนาน|sla)/i.test(text)) {
+          const statusTab = document.querySelector('#status-tab');
+          if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
+          slaAgingManager.toggleUrgentFilter(true);
+          const urgentItems = slaAgingManager.refreshUrgentSummary(globalDashResults);
+          this.speak(`แสดงรายการงานค้างเร่งด่วนเกิน 7 วัน จำนวน <b>${urgentItems.length} รายการ</b> บนหน้าจอเรียบร้อยครับบอส`, false);
+          return;
+        }
+
         if (/(จำลองเข้าใกล้|จำลองเรดาร์|เทสเรดาร์|ทดสอบเรดาร์|300\s*เมตร)/.test(text)) {
           fieldGpsRadar.simulateApproach300m();
           return;
@@ -3707,115 +3788,6 @@ index
         'ธันวาคม': '12', 'ธันวา': '12', 'ธ.ค.': '12', 'ธค': '12'
       };
 
-      // 0) ฟีเจอร์ที่ 1: คำสั่งเรียก "จาร์วิสอยู่มั้ย" -> ตอบกลับและเปิดไมค์รอ 5 วินาที
-      function handleWakeCheck(transcript) {
-        const lower = transcript.toLowerCase().trim();
-        const isPureWakeCall = /^(?:จาร์วิส|จาวิส|jarvis)?\s*(?:อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|พร้อมมั้ย|พร้อมไหม|ออนไลน์ไหม|อยู่บ่)\s*(?:ครับ|ค่ะ|จ๊ะ|ไหม|มั้ย)?$/i.test(lower)
-          || /^(?:เฮ้\s*)?(?:จาร์วิส|จาวิส|jarvis)$/i.test(lower);
-
-        if (!isPureWakeCall) return false;
-
-        if (typeof jarvisBrain !== 'undefined') {
-          jarvisBrain.resetConversation(false);
-          jarvisBrain.speakAndListen5Seconds("ครับบอส จาร์วิสออนไลน์พร้อมรับคำสั่งครับ");
-        }
-        return true;
-      }
-
-      // 3) ฟีเจอร์ที่ 3: คำสั่งเจาะจง "ค้นหาชื่อ..." -> ค้นหาในแท็บ ส่งงาน ส.ป.มิเตอร์ โดยตรง
-      function handleDirectNameSearch(transcript) {
-        const match = transcript.match(/(?:ค้นหาชื่อ|หาชื่อ)\s*(.+)$/i);
-        if (!match) return false;
-
-        let targetName = match[1]
-          .replace(/\s*(?:ในระบบ|ในฐานข้อมูล|ด้วย|ครับ|ค่ะ|หน่อย|ให้หน่อย|ที)$/g, '')
-          .trim();
-
-        if (!targetName) {
-          speakOut("กรุณาระบุชื่อผู้ใช้ไฟที่ต้องการค้นหาหลังคำว่า ค้นหาชื่อ ด้วยครับบอส");
-          return true;
-        }
-
-        // สลับไปแท็บที่ 1 (ส่งงาน ส.ป.มิเตอร์) และกรอกชื่อลงช่องค้นหาโดยตรง
-        const searchTabEl = document.getElementById('search-tab');
-        if (searchTabEl && window.bootstrap) {
-          bootstrap.Tab.getOrCreateInstance(searchTabEl).show();
-        }
-
-        const workModeEl = document.getElementById('work-mode');
-        if (workModeEl && workModeEl.value !== 'ucube') {
-          workModeEl.value = 'ucube';
-          if (typeof toggleWorkMode === 'function') toggleWorkMode();
-        }
-
-        const monthSelectEl = document.getElementById('month-select');
-        if (monthSelectEl) monthSelectEl.value = 'ALL';
-
-        const searchInputEl = document.getElementById('search-query');
-        if (searchInputEl) searchInputEl.value = targetName;
-
-        // ตรวจสอบจำนวนรายการที่ตรงกับชื่อในฐานข้อมูลทั้งหมดเพื่อรายงานเสียงตามเงื่อนไข
-        jarvisBrain.ensureData(true, (allData) => {
-          const matches = (allData || []).filter(item => {
-            const nameText = String(item.name || '');
-            return ThaiPhoneticSearch.isMultiTermMatch(nameText, targetName);
-          });
-
-          // ลบกล่องสรุปผลค้นหาชื่อเดิม (ถ้ามี)
-          const oldBox = document.getElementById('jarvis-direct-name-results');
-          if (oldBox) oldBox.remove();
-
-          if (matches.length === 0) {
-            speakOut(`ไม่พบข้อมูลชื่อ <b>${targetName}</b> ในระบบครับบอส`);
-            return;
-          }
-
-          // โหลดรายการแรกเข้าฟอร์มแท็บค้นหาชื่อ / PEA ทันที
-          const first = matches[0];
-          if (monthSelectEl && first.sheetName) monthSelectEl.value = first.sheetName;
-          if (searchInputEl) searchInputEl.value = (first.pea && first.pea !== '-') ? first.pea : first.name;
-          if (typeof searchData === 'function') searchData();
-
-          // แสดงแถบรายการที่พบเหนือฟอร์มในแท็บค้นหา เผื่อกดสลับดูรายการอื่น
-          const listHtml = `
-            <div id="jarvis-direct-name-results" class="glass-card border border-primary mb-3 py-3">
-              <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold text-primary"><i class="bi bi-person-lines-fill me-1"></i>ผลการค้นหาชื่อ "${targetName}" พบ ${matches.length} รายการ</span>
-                <button type="button" class="btn-close" onclick="this.closest('#jarvis-direct-name-results').remove()"></button>
-              </div>
-              <div class="d-flex flex-column gap-2">
-                ${matches.map((m, idx) => `
-                  <div class="p-2 rounded-3 bg-white border d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="small">
-                      <strong>${idx + 1}. ${m.name || '-'}</strong> <span class="badge bg-secondary">${m.sheetName || '-'}</span><br>
-                      <span class="text-danger">สาเหตุ:</span> ${m.reason || '-'} • <span class="text-muted">สถานที่:</span> ${m.location || '-'}
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
-                      onclick="document.getElementById('month-select').value='${m.sheetName || 'ALL'}';document.getElementById('search-query').value='${(m.pea && m.pea !== '-') ? m.pea : m.name}';searchData();">
-                      เปิดใบงานนี้
-                    </button>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-          const searchSection = document.getElementById('search-section');
-          if (searchSection) searchSection.insertAdjacentHTML('afterend', listHtml);
-
-          // เงื่อนไขรายงานเสียง: 1-2 รายการ แจ้ง ชื่อ + สาเหตุ + สถานที่ | 3 รายการขึ้นไป แจ้งเฉพาะจำนวน
-          if (matches.length <= 2) {
-            const spokenDetails = matches.map((m, idx) => {
-              const prefix = matches.length === 2 ? `รายการที่ ${idx + 1} ` : '';
-              return `${prefix}ชื่อ <b>${m.name || '-'}</b> สาเหตุ <b>${m.reason || 'ไม่ระบุ'}</b> สถานที่ <b>${m.location || 'ไม่ระบุ'}</b>`;
-            }).join(' และ ');
-            speakOut(`พบข้อมูลจำนวน <b>${matches.length} รายการ</b>ครับ ${spokenDetails} ครับ`);
-          } else {
-            speakOut(`พบข้อมูลชื่อ <b>${targetName}</b> ทั้งหมดจำนวน <b>${matches.length} รายการ</b>ครับบอส`);
-          }
-        });
-
-        return true;
-      }
       function normalizeThaiDigits(str) {
         const thaiNums = '๐๑๒๓๔๕๖๗๘๙';
         return String(str || '').replace(/[๐-๙]/g, ch => thaiNums.indexOf(ch));
@@ -3832,14 +3804,12 @@ index
       function parseCommand(rawTranscript) {
         const cleanText = normalizeThaiDigits(rawTranscript).replace(/\s+/g, ' ').trim();
 
-        // ปล่อยผ่านคำสั่งเฉพาะทางให้ JarvisOmniAssistant หรือ JarvisVoiceBrain จัดการ
-        const specializedGuard = /(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย|ซ้ำ|ปิดงานที่ซ้ำ|สร้างชีต|เปิดรอบ|นำเข้า|ucube|ยูคิวบ์|แผนที่|เรดาร์|จำลองเข้าใกล้|export|เอ็กซ์เซล|ส่งออก|แนะนำ|ไปไหน|สาเหตุ|พิกัด|gps|รายงานตัว|อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|ทำอะไรได้บ้าง|สถานะภาพรวม|ล้างความจำ|สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก)/i;
+        const specializedGuard = /(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย|ซ้ำ|ปิดงานที่ซ้ำ|สร้างชีต|เปิดรอบ|นำเข้า|ucube|ยูคิวบ์|แผนที่|เรดาร์|จำลองเข้าใกล้|export|เอ็กซ์เซล|ส่งออก|แนะนำ|ไปไหน|สาเหตุ|พิกัด|gps|รายงานตัว|อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|ทำอะไรได้บ้าง|สถานะภาพรวม|ล้างความจำ|สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก|ค้างเกิน|งานค้างเร่งด่วน|sla)/i;
         if (specializedGuard.test(cleanText)) return null;
 
         const isQueryIntent = /(แสดง|ดู|ค้นหา|หา|เช็ค|เช็ก|ตรวจ|ดึง|โชว์|เปิดรายการ|ใบงาน|งานคงเหลือ|ส่งงานแล้ว|เสร็จสมบูรณ์)/.test(cleanText);
         if (!isQueryIntent) return null;
 
-        // 1. วิเคราะห์สถานะ (ส่งค่าภาษาไทยตรงตามสัญญา API ของ Code.gs getDashboardData 100%)
         let apiStatusFilter = 'ทั้งหมด';
         let statusLabel = 'ใบงานทั้งหมด';
 
@@ -3860,7 +3830,6 @@ index
           statusLabel = 'เสร็จสมบูรณ์';
         }
 
-        // 2. วิเคราะห์ชื่อชีตเดือนผ่านคำเชื่อม "ของเดือน..." หรือ "เดือน..."
         const availableSheets = getAvailableMonthSheets();
         let targetMonth = 'ALL';
         let monthLabel = 'ทุกเดือน';
@@ -3908,7 +3877,6 @@ index
           monthLabel = `เดือน ${parseInt(monthNum, 10)} (${targetMonth})`;
         }
 
-        // 3. วิเคราะห์คำค้นหาพื้นที่/ผู้ใช้ไฟ/เลข PEA ผ่านคำเชื่อม "ใน...", "ที่...", "ของคุณ..."
         let searchKeyword = '';
         const locationMatch = cleanText.match(/(?:ใน|ที่|บริเวณ|แถว|ของคุณ|คุณ)\s*(.+)$/);
         if (locationMatch) {
@@ -4027,6 +3995,7 @@ index
         if (!parsed) return false;
 
         syncDashboardControls(parsed);
+        slaAgingManager.resetFilterFlag();
 
         const loader = document.getElementById('dash-loader');
         const listEl = document.getElementById('dashboard-list');
@@ -4038,6 +4007,7 @@ index
 
         globalDashResults = rawRows;
         window.currentDashboardResults = rawRows;
+        slaAgingManager.refreshUrgentSummary(rawRows);
 
         const filteredRows = rawRows.filter(row => matchRowWithKeyword(row, parsed.searchKeyword));
         const bannerHtml = buildVoiceResultBannerHtml(parsed, filteredRows.length);
@@ -4065,7 +4035,7 @@ index
     })();
 
     // ============================================================================
-    // 🌐 J.A.R.V.I.S OMNI-ASSISTANT v6.1 (System Briefing & Zone Weather Safety)
+    // 🌐 J.A.R.V.I.S OMNI-ASSISTANT v6.2 (System Briefing & Zone Weather Safety)
     // ============================================================================
     const JarvisOmniAssistant = (() => {
       function speakOut(htmlText) {
@@ -4078,7 +4048,6 @@ index
         }
       }
 
-      // 1) รายงานตัว, สถานะระบบภาพรวม และความสามารถทั้งหมด
       async function handleStatusAndCapabilityQuery(transcript) {
         const lower = transcript.toLowerCase().trim();
         const isPresenceOrCap = /(จาร์วิส|จาวิส|jarvis).*(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|พร้อมมั้ย|พร้อมไหม|ออนไลน์|รายงานตัว|ทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|มีคำสั่งอะไรบ้าง)/i.test(lower)
@@ -4091,12 +4060,13 @@ index
 
         callAPI('getDashboardData', { month: 'ALL', statusFilter: 'ทั้งหมด' }, (res) => {
           const st = (res && res.stats) ? res.stats : { total: 0, pending: 0, contractor: 0, employee: 0, completed: 0 };
+          const urgentCount = slaAgingManager.refreshUrgentSummary(res.results || []).length;
 
           const cardHtml = `
             <div class="card border-0 shadow-sm rounded-4 mb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f8fafc;">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="badge bg-info text-dark fw-bold"><i class="bi bi-cpu-fill me-1"></i>J.A.R.V.I.S v6.1 ONLINE</span>
+                  <span class="badge bg-info text-dark fw-bold"><i class="bi bi-cpu-fill me-1"></i>J.A.R.V.I.S v6.2 ONLINE</span>
                   <small class="text-info">ฐานข้อมูล ${sheetsCount} เดือน • เรดาร์ GPS: ${radarActive}</small>
                 </div>
                 <div class="row g-2 text-center my-2">
@@ -4107,9 +4077,9 @@ index
                 </div>
                 <div class="d-flex flex-wrap gap-1 mt-2">
                   <button class="btn btn-sm btn-outline-light rounded-pill" onclick="JarvisSmartVoiceRouter.handleVoiceCommand('ดูงานคงเหลือทั้งหมด')">📋 งานคงเหลือ</button>
+                  <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="slaAgingManager.toggleUrgentFilter(true)">🚨 ค้างเกิน 7 วัน (${urgentCount})</button>
                   <button class="btn btn-sm btn-outline-info rounded-pill" onclick="JarvisOmniAssistant.handleWeatherQuery('รายงานสภาพอากาศพื้นที่ปัจจุบัน')">🌦️ อากาศหน้างาน</button>
                   <button class="btn btn-sm btn-outline-warning rounded-pill" onclick="jarvisBrain.handleInput('ตรวจใบงานไม่สมบูรณ์')">🔍 ตรวจงานไม่ครบ</button>
-                  <button class="btn btn-sm btn-outline-success rounded-pill" onclick="jarvisBrain.handleInput('ตรวจงานซ้ำข้ามเดือน')">♻️ เช็กงานซ้ำ</button>
                 </div>
               </div>
             </div>
@@ -4120,13 +4090,12 @@ index
           const listEl = document.getElementById('dashboard-list');
           if (listEl) listEl.insertAdjacentHTML('afterbegin', cardHtml);
 
-          speakOut(`ออนไลน์และพร้อมปฏิบัติงานครับบอส! ขณะนี้ระบบเชื่อมต่อฐานข้อมูล <b>${sheetsCount} เดือน</b> มีใบงานสะสม <b>${st.total} รายการ</b> คงเหลือรอเปลี่ยน <b>${st.pending} รายการ</b> และรอปิดใบสั่ง <b>${st.contractor + st.employee} รายการ</b> บอสสั่งค้นหาข้ามเดือน ตรวจงานไม่สมบูรณ์ เปิดเรดาร์ 500 เมตร หรือเช็กสภาพอากาศรายตำบลได้เลยครับ`);
+          speakOut(`ออนไลน์และพร้อมปฏิบัติงานครับบอส! ขณะนี้ระบบเชื่อมต่อฐานข้อมูล <b>${sheetsCount} เดือน</b> มีใบงานสะสม <b>${st.total} รายการ</b> คงเหลือรอเปลี่ยน <b>${st.pending} รายการ</b> (ค้างเกิน 7 วัน <b>${urgentCount} รายการ</b>) และรอปิดใบสั่ง <b>${st.contractor + st.employee} รายการ</b> บอสสั่งการได้ทันทีครับ`);
         });
 
         return true;
       }
 
-      // 2) พยากรณ์อากาศรายตำบล/อำเภอ + คำเตือนความปลอดภัยหน้างาน กฟภ.
       async function handleWeatherQuery(transcript) {
         const isWeather = /(สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก|อุณหภูมิ|อากาศ.*เป็นไง|อากาศ.*เขต|อากาศ.*ตำบล)/i.test(transcript);
         if (!isWeather) return false;
@@ -4217,12 +4186,6 @@ index
       }
 
       async function handleCommand(transcript) {
-        if (handleWakeCheck(transcript)) return true;
-        if (/(เปิดโหมดพิกัดเรดาร์|พิกัดเรดาร์|เรดาร์\s*500|เปิดเรดาร์)/i.test(transcript)) {
-          fieldGpsRadar.activateVoiceRadar500m();
-          return true;
-        }
-        if (handleDirectNameSearch(transcript)) return true;
         if (await handleStatusAndCapabilityQuery(transcript)) return true;
         if (await handleWeatherQuery(transcript)) return true;
         return false;
@@ -4238,7 +4201,7 @@ index
     }
 
     // =========================================================================
-    // ฟังก์ชันหลักของระบบส่งงาน & Dashboard (ผสาน ThaiPhoneticSearch)
+    // ฟังก์ชันหลักของระบบส่งงาน & Dashboard (ผสานฟีเจอร์ v2.7 ครบทั้ง 3 ระบบ)
     // =========================================================================
     function getDirectImageUrl(url) {
       if (!url) return '';
@@ -4253,7 +4216,7 @@ index
         document.getElementById('status-badge-container').style.display = 'none';
         renderFormUI(new Array(globalHeaders.length).fill(''), 'general', '', '');
         document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-        document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
+        document.getElementById('save-btn').innerHTML = '<i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & บันทึกส่งงาน';
       } else {
         document.getElementById('search-section').style.display = 'block';
         document.getElementById('form-container').style.display = 'none';
@@ -4291,7 +4254,7 @@ index
         if (res.status === 'รอดำเนินการ') {
           statusBadge.className = 'badge rounded-pill bg-danger fs-6 px-4 py-2 shadow-sm';
           document.getElementById('save-btn').className = 'btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-          document.getElementById('save-btn').innerHTML = '<i class="bi bi-cloud-arrow-up"></i> บันทึกส่งงาน';
+          document.getElementById('save-btn').innerHTML = '<i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & บันทึกส่งงาน';
         } else if (res.status === 'เสร็จสมบูรณ์') {
           statusBadge.className = 'badge rounded-pill bg-success fs-6 px-4 py-2 shadow-sm';
           document.getElementById('save-btn').className = 'btn btn-secondary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
@@ -4299,7 +4262,7 @@ index
         } else {
           statusBadge.className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
           document.getElementById('save-btn').className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-          document.getElementById('save-btn').innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
+          document.getElementById('save-btn').innerHTML = '<i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & อัปเดตข้อมูล';
         }
         
         if (res.foundMonth) document.getElementById('month-select').value = res.foundMonth;
@@ -4407,8 +4370,20 @@ index
         </div>
 
         <div class="mb-3">
-          <label class="form-label text-secondary fw-bold"><i class="bi bi-chat-left-text me-1"></i> หมายเหตุ</label>
-          <textarea class="form-control p-2" id="extra-remark" rows="2" placeholder="ระบุหมายเหตุเพิ่มเติมหน้างาน (ถ้ามี)...">${remarkVal}</textarea>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+            <label class="form-label text-secondary fw-bold mb-0"><i class="bi bi-chat-left-text me-1"></i> หมายเหตุหน้างาน</label>
+            <div class="d-flex gap-1">
+              <button type="button" id="btn-voice-memo-rec" class="btn btn-sm btn-outline-primary rounded-pill fw-bold voice-memo-btn"
+                onclick="fieldVoiceMemo.toggleRecord('extra-remark', 'btn-voice-memo-rec')">
+                <i class="bi bi-mic-fill me-1"></i> พูดบันทึกหมายเหตุ
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-bold"
+                onclick="fieldVoiceMemo.readBack('extra-remark')" title="ฟังทวนข้อความหมายเหตุ">
+                <i class="bi bi-volume-up-fill"></i> ฟังทวน
+              </button>
+            </div>
+          </div>
+          <textarea class="form-control p-2" id="extra-remark" rows="2" placeholder="กดปุ่ม 'พูดบันทึกหมายเหตุ' หรือพิมพ์ระบุรายละเอียดหน้างาน (ถ้ามี)...">${remarkVal}</textarea>
         </div>
       `;
 
@@ -4416,8 +4391,7 @@ index
       document.getElementById('form-container').style.display = 'block';
     }
 
-    function saveData() {
-      if (!confirm("⚠️ ยืนยันการบันทึกส่งงานสับเปลี่ยนมิเตอร์ ใช่หรือไม่?")) return;
+    function executeSaveData() {
       const btn = document.getElementById('save-btn');
       btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
       btn.disabled = true;
@@ -4449,7 +4423,7 @@ index
             document.getElementById('status-display').innerText = 'สถานะ: ส่งงานแล้ว';
             document.getElementById('status-display').className = 'badge rounded-pill bg-warning text-dark fs-6 px-4 py-2 shadow-sm';
             btn.className = 'btn btn-primary w-100 mt-4 py-3 fw-bold rounded-pill shadow';
-            btn.innerHTML = '<i class="bi bi-pencil-square"></i> อัปเดตข้อมูล';
+            btn.innerHTML = '<i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & อัปเดตข้อมูล';
           }
           if (res.updatedMonth) document.getElementById('filter-month').value = res.updatedMonth;
           loadDashboard(); 
@@ -4458,6 +4432,10 @@ index
           btn.innerText = 'ลองใหม่';
         }
       });
+    }
+
+    function saveData() {
+      openSafetyPrecheck();
     }
 
     function processPendingWork(peaOrName, sheetName) {
@@ -4611,6 +4589,15 @@ index
           if (item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
           if (item.status === 'พนง. ดำเนินการ') statusBadgeList = '<span class="badge text-white float-end" style="background:#9b59b6;">พนง.ส่งงาน</span>';
 
+          // คำนวณป้ายเตือน SLA Aging (ฟีเจอร์ใหม่ v2.7)
+          let slaBadgeHtml = '';
+          const ageDays = slaAgingManager.computeAgingDays(item);
+          if (item.status !== 'เสร็จสมบูรณ์' && ageDays > slaAgingManager.SLA_LIMIT_DAYS) {
+            slaBadgeHtml = `<span class="sla-urgent-badge ms-1"><i class="bi bi-alarm-fill me-1"></i>ค้าง ${ageDays} วัน</span>`;
+          } else if (item.status !== 'เสร็จสมบูรณ์' && ageDays >= 4) {
+            slaBadgeHtml = `<span class="sla-warning-badge ms-1"><i class="bi bi-clock-history me-1"></i>${ageDays} วัน</span>`;
+          }
+
           let remarkHtml = item.remark && item.remark.trim() !== ''
             ? `<br><strong class="text-primary">หมายเหตุ:</strong> ${item.remark}`
             : '';
@@ -4625,8 +4612,9 @@ index
                 ${checkboxHtml}
                 <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${gpsBadgeHtml} ${statusBadgeList}</h6>
               </div>
-              <div class="mb-2">
+              <div class="mb-2 d-flex flex-wrap align-items-center gap-1">
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-calendar-event"></i> รอบเดือน: ${item.sheetName}</span>
+                ${slaBadgeHtml}
               </div>
               <div class="text-muted small mb-1 ps-2"><strong>ชื่อ:</strong> ${item.name || '-'} <br><strong>สถานที่:</strong> ${item.location || '-'} <br><strong class="text-danger">สาเหตุ:</strong> ${item.reason || '-'}${remarkHtml}</div>
               ${missingAlertHtml}
@@ -4643,6 +4631,7 @@ index
       const month = document.getElementById('filter-month').value;
       const statusFilter = document.getElementById('filter-status').value;
       if (!month) return; 
+      slaAgingManager.resetFilterFlag();
       document.getElementById('dash-search').value = '';
       document.getElementById('dash-loader').style.display = 'block';
       document.getElementById('dashboard-list').innerHTML = '';
@@ -4658,6 +4647,7 @@ index
         document.getElementById('stat-emp').innerText = res.stats.employee; 
         document.getElementById('stat-completed').innerText = res.stats.completed;
 
+        slaAgingManager.refreshUrgentSummary(globalDashResults);
         renderCardsList(globalDashResults);
         fieldGpsRadar.renderWorkOrderPins();
       });
@@ -4710,4 +4700,5 @@ index
   </script>
 </body>
 </html>
-Formatting final response
+Created by Panupong Tosreekaew
+PEA KML
