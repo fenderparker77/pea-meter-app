@@ -1,7 +1,8 @@
 
 
-PEA.
-KML.
+
+ไอคอน HTML
+index
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -379,7 +380,7 @@ KML.
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v2.6</p>
+      <p class="text-muted small">PEA Smart Operation System v2.6 • J.A.R.V.I.S v6.1</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -966,7 +967,7 @@ KML.
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S พร้อม AI สแกนมิเตอร์ v2.6 เรดาร์ GPS 500 เมตร และระบบพ้องเสียงไทยเรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S v6.1 พร้อม Cross-Tab Router, พยากรณ์อากาศหน้างาน, AI สแกนมิเตอร์ v2.6 และเรดาร์ GPS 500 เมตรเรียบร้อยครับ", false);
       }
     }
 
@@ -1063,13 +1064,8 @@ KML.
         });
       });
     }
-
     // =========================================================================
     // 📷 AI สแกนหน่วยมิเตอร์ v2.6 (Multi-Band Dual-Lock + Auto Black-Border Trim)
-    //    - ล็อกเป้า 2 แถบความลึกพร้อมกัน (Band A + Band B) ใต้เลข PEA.No
-    //    - แก้กรอบติดบรรทัดชื่อยี่ห้อ HOLLEY เรียบร้อย
-    //    - รองรับ HOLLEY, IPG, SMART TTC, 15(45)A, 5(15)A และ มิเตอร์ E (LCD)
-    //    - ตัดขอบดำซ้าย-ขวาอัตโนมัติ (Horizontal Projection Profile)
     // =========================================================================
     class SmartMeterOCR {
       constructor() {
@@ -1142,7 +1138,6 @@ KML.
         return { kwhValue: val, formulaNote: `5 หลักเต็ม (${intPart}) = ${val}` };
       }
 
-      // ตัดขอบดำซ้าย-ขวาอัตโนมัติ (Horizontal Projection Profile) เพื่อไม่ให้ขอบพลาสติกดำบังตัวเลข [ 0 0 0 0 2 ]
       autoTrimBlackBorders(sourceCanvas) {
         const ctx = sourceCanvas.getContext('2d');
         const w = sourceCanvas.width;
@@ -1177,7 +1172,6 @@ KML.
         outCtx.imageSmoothingEnabled = true;
         outCtx.drawImage(sourceCanvas, leftX, 0, trimmedW, h, 0, 0, outCanvas.width, outCanvas.height);
 
-        // Contrast Stretch + Adaptive Threshold
         const oData = outCtx.getImageData(0, 0, outCanvas.width, outCanvas.height);
         const p = oData.data;
         let minV = 255, maxV = 0;
@@ -1197,7 +1191,6 @@ KML.
         return outCanvas;
       }
 
-      // หาพิกัดแกน Y ของบรรทัด PEA.No จากคำที่ OCR อ่านได้ เพื่อวาง Band A & Band B ใต้ชื่อยี่ห้อ HOLLEY อย่างแม่นยำ
       findPeaAnchorBottomY(tesseractData, imgHeight) {
         const words = tesseractData?.words || [];
         for (let i = 0; i < words.length; i++) {
@@ -1326,7 +1319,6 @@ KML.
         reader.readAsDataURL(file);
       }
 
-      // ประมวลผลภาพ + สแกน Multi-Band Dual-Lock v2.6 (Band A + Band B ใต้ PEA.No + ตัดขอบดำซ้าย-ขวา)
       async processCapturedCanvas(sourceCanvas, targetInputId, previewId, role) {
         const maxW = 1280;
         let targetW = sourceCanvas.width;
@@ -1368,7 +1360,6 @@ KML.
         try {
           if (!window.Tesseract) throw new Error('ไม่สามารถโหลดโมดูล Tesseract OCR ได้');
 
-          // Pass 1: สแกนทั้งป้ายเพื่อหาตำแหน่ง PEA.No และตรวจจับยี่ห้อ (HOLLEY / IPG / SMART TTC / มิเตอร์ E)
           const fullOcrCanvas = document.createElement('canvas');
           fullOcrCanvas.width = targetW;
           fullOcrCanvas.height = targetH;
@@ -1380,14 +1371,12 @@ KML.
           const fullText = fullRes.data.text || '';
           const lowerFull = fullText.toLowerCase();
 
-          // ตรวจจับยี่ห้อเพื่อปรับระยะกระโดดข้ามบรรทัดชื่อยี่ห้อ (แก้กรอบติดบรรทัด HOLLEY)
           let brandPreset = 'AUTO';
           if (lowerFull.includes('holley')) brandPreset = 'HOLLEY';
           else if (lowerFull.includes('ipg')) brandPreset = 'IPG';
           else if (lowerFull.includes('ttc') || lowerFull.includes('smart')) brandPreset = 'SMART_TTC';
           else if (/electronic|static|lcd/.test(lowerFull)) brandPreset = 'LCD_E';
 
-          // คำนวณพิกัด Band A & Band B ใต้ PEA.No (กระโดดข้ามบรรทัดชื่อยี่ห้อ HOLLEY)
           const peaAnchorY = this.findPeaAnchorBottomY(fullRes.data, targetH);
           const roiX = Math.round(targetW * 0.16);
           const roiW = Math.round(targetW * 0.68);
@@ -1395,7 +1384,6 @@ KML.
 
           let bandAY, bandBY;
           if (peaAnchorY !== null) {
-            // ข้ามบรรทัดชื่อยี่ห้อ HOLLEY ที่อยู่ถัดจาก PEA.No ลงมา 1-2 บรรทัด
             const brandSkipOffset = (brandPreset === 'HOLLEY') ? Math.round(targetH * 0.085) : Math.round(targetH * 0.065);
             bandAY = Math.min(targetH - bandH * 2, Math.max(0, Math.round(peaAnchorY + brandSkipOffset)));
             bandBY = Math.min(targetH - bandH, Math.round(bandAY + bandH * 0.85));
@@ -1417,7 +1405,6 @@ KML.
           const bandACanvas = cropAndTrimBand(bandAY);
           const bandBCanvas = cropAndTrimBand(bandBY);
 
-          // Pass 2: สแกน Band A และ Band B พร้อมกัน (Dual-Lock)
           const [resBandA, resBandB] = await Promise.all([
             Tesseract.recognize(bandACanvas, 'eng'),
             Tesseract.recognize(bandBCanvas, 'eng')
@@ -1447,7 +1434,6 @@ KML.
         }
       }
 
-      // คัดกรองผลจาก Band A + Band B และตัดบรรทัดชื่อยี่ห้อ HOLLEY / IPG / SMART TTC ออก
       extractMeterDataDualLock(fullText, bandAText, bandBText, role, brandPreset) {
         const normalizeOcr = (txt) => (txt || '')
           .replace(/[|lI]/g, '1')
@@ -1466,7 +1452,6 @@ KML.
         let peaCandidates = [];
         let allTokens = [];
 
-        // 1. หาเลข PEA.No (7-13 หลัก)
         const peaLabelRegex = /(?:PEA|NO|S\/N)[.\s:#-]*([0-9OoIl|]{2}[-\s]?[0-9OoIl|]{6,10}|[0-9OoIl|]{7,13})/gi;
         let match;
         while ((match = peaLabelRegex.exec(fullText)) !== null) {
@@ -1476,7 +1461,6 @@ KML.
           }
         }
 
-        // 2. ฟังก์ชันสกัดตัวเลข 4-6 หลักจาก Band A และ Band B (ไม่เอาตัวอักษรชื่อยี่ห้อ HOLLEY)
         const extractRegisterFromBand = (rawBandTxt) => {
           const lines = (rawBandTxt || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
           const found = [];
@@ -1502,7 +1486,6 @@ KML.
         const bandACandidates = extractRegisterFromBand(bandAText);
         const bandBCandidates = extractRegisterFromBand(bandBText);
 
-        // เก็บเลข PEA ยาวๆ จาก fullText ด้วย
         const normFull = normalizeOcr(fullText);
         const longNums = normFull.match(/\b\d{2}-\d{6,10}\b|\b\d{7,13}\b/g) || [];
         longNums.forEach(num => {
@@ -1510,7 +1493,6 @@ KML.
           if (!allTokens.includes(num)) allTokens.push(num);
         });
 
-        // เลือกค่าที่ดีที่สุดจาก Band A และ Band B (ให้ความสำคัญกับเลข 5 หลัก เช่น 00002)
         const combinedReg = [...new Set([...bandACandidates, ...bandBCandidates])];
         combinedReg.sort((a, b) => {
           const lenA = a.replace(/\D/g, '').length === 5 ? 10 : 0;
@@ -1594,7 +1576,6 @@ KML.
           statusHtml += `<div class="text-warning-emphasis fw-bold"><i class="bi bi-info-circle"></i> AI อ่านตัวเลขไม่ชัดเจน สามารถจิ้มเลือกตัวเลขด้านล่างหรือพิมพ์เองได้เลยครับ</div>`;
         }
 
-        // ภาพตัวอย่างแถบ Dual-Lock (Band A + Band B) หลังตัดขอบดำซ้าย-ขวาอัตโนมัติ
         let dualBandVisualHtml = '';
         if (state.bandAPreview || state.bandBPreview) {
           dualBandVisualHtml = `
@@ -1710,7 +1691,6 @@ KML.
           setTimeout(() => this.map.invalidateSize(), 180);
           return;
         }
-        // พิกัดเริ่มต้น อ.เขมราฐ จ.อุบลราชธานี
         this.map = L.map('field-work-map').setView([16.0419, 105.2184], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '&copy; OpenStreetMap PEA Smart Ops'
@@ -1820,7 +1800,6 @@ KML.
           jarvisBrain.speak(text, false);
           return;
         }
-        // พูดแจ้งเตือนแม้ไม่ได้ล็อกอิน Admin เพื่อให้ใช้งานขณะขับรถได้ทันที
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
           const u = new SpeechSynthesisUtterance(text.replace(/<[^>]*>/g, ''));
@@ -1922,7 +1901,6 @@ KML.
         );
       }
 
-      // ปุ่ม "จำลองเข้าใกล้ 300 ม." กดเทสเสียงจาร์วิสจากโต๊ะทำงานได้ทันที
       simulateApproach300m() {
         const mapTabBtn = document.getElementById('map-tab');
         if (mapTabBtn) bootstrap.Tab.getOrCreateInstance(mapTabBtn).show();
@@ -1937,12 +1915,10 @@ KML.
           if (statusLabel) statusLabel.innerText = 'โหมดจำลองเข้าใกล้ 300 เมตร (ทดสอบจากโต๊ะทำงาน)';
 
           if (targetEntry) {
-            // เลื่อนตำแหน่งจำลองห่างออกไป ~300 เมตร (0.0027 องศาละติจูด ≈ 300 เมตร)
             const simLat = targetEntry.coords.lat + 0.0027;
             const simLng = targetEntry.coords.lng;
             this.updateVehiclePosition(simLat, simLng, true);
           } else {
-            // กรณียังไม่มีพิกัดในตัวกรอง สร้างจุดจำลองใน อ.เขมราฐ เพื่อทดสอบเสียงทันที
             const demoLat = 16.0419;
             const demoLng = 105.2184;
             L.marker([demoLat, demoLng], { icon: this.makePinIcon('#e74c3c') })
@@ -2293,9 +2269,8 @@ KML.
     }
 
     const ucubeImporter = new UcubeSmartImporter();
-
     // =========================================================================
-    // 🤖 J.A.R.V.I.S Smart Voice Brain v5.3 (พร้อม ThaiPhoneticSearch & Radar)
+    // 🤖 J.A.R.V.I.S Smart Voice Brain v6.1 (พร้อม Cross-Tab Router & Omni-Assistant)
     // =========================================================================
     class JarvisVoiceBrain {
       constructor() {
@@ -2357,7 +2332,9 @@ KML.
         if (!container) return;
 
         const top = this.getTopFrequentCommands(3);
-        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S ด่วน:</span>`;
+        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S v6.1 ด่วน:</span>`;
+        html += `<button type="button" class="voice-chip" onclick="JarvisOmniAssistant.handleStatusAndCapabilityQuery('รายงานสถานะภาพรวมทั้งหมดของแอป')">📊 สถานะภาพรวมแอป</button>`;
+        html += `<button type="button" class="voice-chip" onclick="JarvisOmniAssistant.handleWeatherQuery('รายงานสภาพอากาศพื้นที่ปัจจุบัน')">🌦️ อากาศหน้างาน</button>`;
         html += `<button type="button" class="voice-chip" onclick="bootstrap.Tab.getOrCreateInstance(document.querySelector('#map-tab')).show()">🗺️ แผนที่ & เรดาร์ 500ม.</button>`;
         html += `<button type="button" class="voice-chip" onclick="fieldGpsRadar.simulateApproach300m()">📡 จำลองเข้าใกล้ 300ม.</button>`;
         html += `<button type="button" class="voice-chip" onclick="jarvisBrain.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่')">➕ สร้างชีตเดือนใหม่</button>`;
@@ -2438,14 +2415,32 @@ KML.
           if ('speechSynthesis' in window) window.speechSynthesis.cancel();
           const hint = this.state.mode === 'AWAITING_CHOICE'
             ? 'พูดเลือกทางเลือก หรือแตะปุ่มด้านล่างได้เลยครับ'
-            : 'เชิญสั่งการได้เลยครับบอส (รองรับคำพ้องเสียง ศรีกัน/สีกัน)';
-          this.showSubtitle('🎙️ J.A.R.V.I.S กำลังฟัง...', hint, 0, this.state.choices);
+            : 'เชิญสั่งการได้เลยครับบอส (รองรับคำเชื่อมข้ามแท็บ, สภาพอากาศรายตำบล และพ้องเสียงไทย)';
+          this.showSubtitle('🎙️ J.A.R.V.I.S v6.1 กำลังฟัง...', hint, 0, this.state.choices);
         };
 
-        this.recognition.onresult = (event) => {
+        this.recognition.onresult = async (event) => {
           this.isListening = false;
-          const transcript = event.results[0][0].transcript.trim();
+          if (!isAdminUser) return;
+
+          const lastIdx = event.results.length - 1;
+          const transcript = event.results[lastIdx][0].transcript.trim();
+          if (!transcript) return;
+
           this.showSubtitle('🗣️ บอสสั่งว่า:', `"${transcript}"`, 5000);
+
+          // ✅ ด่านแรกสุด (ในโหมด IDLE): Omni-Assistant v6.1 & Cross-Tab Semantic Router v6.0
+          if (this.state.mode === 'IDLE') {
+            if (typeof JarvisOmniAssistant !== 'undefined') {
+              const handledByOmni = await JarvisOmniAssistant.handleCommand(transcript);
+              if (handledByOmni) return;
+            }
+            if (typeof JarvisSmartVoiceRouter !== 'undefined') {
+              const handledBySemanticRouter = await JarvisSmartVoiceRouter.handleVoiceCommand(transcript);
+              if (handledBySemanticRouter) return;
+            }
+          }
+
           this.handleInput(transcript);
         };
 
@@ -2605,7 +2600,7 @@ KML.
         return g !== '' && !g.toLowerCase().includes('http') && !g.toLowerCase().includes('goo.gl');
       }
 
-      handleInput(rawText) {
+      async handleInput(rawText) {
         if (!isAdminUser) return;
         const text = rawText.toLowerCase().trim();
         const affirmative = /(ใช่|เอา|เปิด|แสดง|ตกลง|จัดไป|ได้เลย|ดู|นำทาง|ครับ|ค่ะ)/;
@@ -2614,6 +2609,12 @@ KML.
           this.resetConversation(true);
           this.speak("รับทราบครับบอส ยกเลิกคำสั่งเรียบร้อยครับ", false);
           return;
+        }
+
+        // รองรับการเรียก handleInput โดยตรงในโหมด IDLE
+        if (this.state.mode === 'IDLE') {
+          if (typeof JarvisOmniAssistant !== 'undefined' && await JarvisOmniAssistant.handleCommand(rawText)) return;
+          if (typeof JarvisSmartVoiceRouter !== 'undefined' && await JarvisSmartVoiceRouter.handleVoiceCommand(rawText)) return;
         }
 
         // คำสั่งเปิดแผนที่ / เรดาร์ 500 เมตร / จำลองเข้าใกล้ 300 เมตร
@@ -2714,18 +2715,6 @@ KML.
 
         if (/(ไม่สมบูรณ์|ข้อมูลไม่ครบ|ไม่ครบถ้วน|ขาดรูป|ไม่มีรูป|ขาดหน่วย|ไม่มีหน่วย|ข้อมูลขาด|ตกหล่น)/.test(text)) {
           this.analyzeIncompleteByStatusAndMonth(text);
-          return;
-        }
-
-        if (/(รายงานตัวครับ|จาร์วิส|อยู่มั้ย|are you ready|ทำอะไรได้บ้าง|ช่วยด้วย|มีคำสั่งอะไรบ้าง|สั่งอะไรได้บ้าง)/.test(text)) {
-          this.promptChoices(
-            "ครับบอส จาร์วิสพร้อมรับคำสั่งครับ ผมพร้อมช่วยดำเนินการ <b>เปิดแผนที่เรดาร์ 500 ม.</b>, <b> ค้นหาชื่อผู้ใช้ไฟ </b>, <b> สร้างชีตเดือนใหม่ </b> หรือ <b>เปิดหน้านำเข้า UCUBE</b> ได้เลยครับ อยากเริ่มเรื่องไหนก่อนครับ?",
-            [
-              { label: '🗺️ เปิดแผนที่ & เรดาร์ 500ม.', icon: '🗺️', priority: 2, keywords: ['แผนที่', 'เรดาร์'], handler: () => { bootstrap.Tab.getOrCreateInstance(document.querySelector('#map-tab')).show(); this.speak("เปิดแผนที่ใบงานและเรดาร์ 500 เมตรแล้วครับ", false); } },
-              { label: '➕ สร้างชีตเดือนใหม่', icon: '➕', priority: 2, keywords: ['สร้าง', 'เดือนใหม่', 'ชีต'], handler: () => this.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่') },
-              { label: '📥 เปิดหน้านำเข้า UCUBE', icon: '📥', priority: 1, keywords: ['นำเข้า', 'ucube'], handler: () => { bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show(); this.speak("เปิดหน้านำเข้าข้อมูลจาก UCUBE เรียบร้อยครับบอส", false); } }
-            ]
-          );
           return;
         }
 
@@ -2912,7 +2901,7 @@ KML.
           { num: '06', name: 'มิถุนายน (เดือน 6)', keys: ['มิถุนายน', 'มิถุนา', 'มิ.ย.', 'เดือนหก', 'เดือน 6', 'เดือน06', 'เดือน 06'] },
           { num: '05', name: 'พฤษภาคม (เดือน 5)', keys: ['พฤษภาคม', 'พฤษภา', 'พ.ค.', 'เดือนห้า', 'เดือน 5', 'เดือน05', 'เดือน 05'] },
           { num: '04', name: 'เมษายน (เดือน 4)', keys: ['เมษายน', 'เมษา', 'เม.ย.', 'เดือนสี่', 'เดือน 4', 'เดือน04', 'เดือน 04'] },
-          { num: '03', name: 'มีนาคม (เดือน 3)', keys: ['มีนาคม', 'มีนา', 'มี.ค.', 'เดือนสาม', 'เดือน 3', 'เดือน03', 'เดือน 03'] },
+          { num: '03', name: 'มีนาคม (เดือน 3)', keys: ['มีนาคม', 'มีนา', 'มี.ค.', 'เดือนสาม', 'เดือน 3', 'เดือน03', 'เดือน 3'] },
           { num: '02', name: 'กุมภาพันธ์ (เดือน 2)', keys: ['กุมภาพันธ์', 'กุมภา', 'ก.พ.', 'เดือนสอง', 'เดือน 2', 'เดือน02', 'เดือน 02'] },
           { num: '01', name: 'มกราคม (เดือน 1)', keys: ['มกราคม', 'มกรา', 'ม.ค.', 'เดือนหนึ่ง', 'เดือน 1', 'เดือน01', 'เดือน 01'] }
         ];
@@ -3468,7 +3457,6 @@ KML.
         });
       }
 
-      // ค้นหาด้วยระบบเสียงพ้องเสียงภาษาไทย (ThaiPhoneticSearch) เช่น พูด "ศรีกัน" -> เจอ "สีกัน" ทันที
       performSearchAndThink(keyword, isFollowUp) {
         const statusTab = document.querySelector('#status-tab');
         if (statusTab) bootstrap.Tab.getOrCreateInstance(statusTab).show();
@@ -3508,6 +3496,434 @@ KML.
       }
     }
 
+    // ============================================================================
+    // 🧭 J.A.R.V.I.S SMART VOICE SEMANTIC ROUTER v6.0 (Cross-Tab & Connector NLU)
+    // ============================================================================
+    const JarvisSmartVoiceRouter = (() => {
+      const THAI_MONTH_MAP = {
+        'มกราคม': '01', 'มกรา': '01', 'ม.ค.': '01', 'มค': '01',
+        'กุมภาพันธ์': '02', 'กุมภา': '02', 'ก.พ.': '02', 'กพ': '02',
+        'มีนาคม': '03', 'มีนา': '03', 'มี.ค.': '03', 'มีค': '03',
+        'เมษายน': '04', 'เมษา': '04', 'เม.ย.': '04', 'เมย': '04',
+        'พฤษภาคม': '05', 'พฤษภา': '05', 'พ.ค.': '05', 'พค': '05',
+        'มิถุนายน': '06', 'มิถุนา': '06', 'มิ.ย.': '06', 'มิย': '06',
+        'กรกฎาคม': '07', 'กรกฎา': '07', 'ก.ค.': '07', 'กค': '07',
+        'สิงหาคม': '08', 'สิงหา': '08', 'ส.ค.': '08', 'สค': '08',
+        'กันยายน': '09', 'กันยา': '09', 'ก.ย.': '09', 'กย': '09',
+        'ตุลาคม': '10', 'ตุลา': '10', 'ต.ค.': '10', 'ตค': '10',
+        'พฤศจิกายน': '11', 'พฤศจิกา': '11', 'พ.ย.': '11', 'พย': '11',
+        'ธันวาคม': '12', 'ธันวา': '12', 'ธ.ค.': '12', 'ธค': '12'
+      };
+
+      function normalizeThaiDigits(str) {
+        const thaiNums = '๐๑๒๓๔๕๖๗๘๙';
+        return String(str || '').replace(/[๐-๙]/g, ch => thaiNums.indexOf(ch));
+      }
+
+      function getAvailableMonthSheets() {
+        const monthSelect = document.querySelector('#filter-month, #dash-month, #status-month');
+        if (!monthSelect) return [];
+        return Array.from(monthSelect.options)
+          .map(opt => opt.value.trim())
+          .filter(val => /^\d{1,2}\.\d{4}$/.test(val));
+      }
+
+      function parseCommand(rawTranscript) {
+        const cleanText = normalizeThaiDigits(rawTranscript).replace(/\s+/g, ' ').trim();
+
+        // ปล่อยผ่านคำสั่งเฉพาะทางให้ JarvisOmniAssistant หรือ JarvisVoiceBrain จัดการ
+        const specializedGuard = /(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย|ซ้ำ|ปิดงานที่ซ้ำ|สร้างชีต|เปิดรอบ|นำเข้า|ucube|ยูคิวบ์|แผนที่|เรดาร์|จำลองเข้าใกล้|export|เอ็กซ์เซล|ส่งออก|แนะนำ|ไปไหน|สาเหตุ|พิกัด|gps|รายงานตัว|อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|ทำอะไรได้บ้าง|สถานะภาพรวม|ล้างความจำ|สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก)/i;
+        if (specializedGuard.test(cleanText)) return null;
+
+        const isQueryIntent = /(แสดง|ดู|ค้นหา|หา|เช็ค|เช็ก|ตรวจ|ดึง|โชว์|เปิดรายการ|ใบงาน|งานคงเหลือ|ส่งงานแล้ว|เสร็จสมบูรณ์)/.test(cleanText);
+        if (!isQueryIntent) return null;
+
+        // 1. วิเคราะห์สถานะ (ส่งค่าภาษาไทยตรงตามสัญญา API ของ Code.gs getDashboardData 100%)
+        let apiStatusFilter = 'ทั้งหมด';
+        let statusLabel = 'ใบงานทั้งหมด';
+
+        if (/(คงเหลือ|งานค้าง|ยังไม่เปลี่ยน|ยังไม่ได้เปลี่ยน|รอดำเนินการ|เหลือ)/.test(cleanText)) {
+          apiStatusFilter = 'งานคงเหลือ';
+          statusLabel = 'ใบงานคงเหลือ';
+        } else if (/(ผรม|ผู้รับเหมา)/.test(cleanText)) {
+          apiStatusFilter = 'ผรม. ส่งงานแล้ว';
+          statusLabel = 'ผรม. ส่งงานแล้ว';
+        } else if (/(พนง|พนักงาน|ผมต)/.test(cleanText)) {
+          apiStatusFilter = 'พนง. ดำเนินการ';
+          statusLabel = 'พนง. ดำเนินการ';
+        } else if (/(ส่งงานแล้ว|รอปิดใบสั่ง|ยังไม่ปิด)/.test(cleanText)) {
+          apiStatusFilter = 'ส่งงานแล้ว';
+          statusLabel = 'ส่งงานแล้ว (รอปิดใบสั่ง)';
+        } else if (/(เสร็จสมบูรณ์|ปิดใบสั่งแล้ว|เสร็จแล้ว|เรียบร้อย)/.test(cleanText)) {
+          apiStatusFilter = 'เสร็จสมบูรณ์';
+          statusLabel = 'เสร็จสมบูรณ์';
+        }
+
+        // 2. วิเคราะห์ชื่อชีตเดือนผ่านคำเชื่อม "ของเดือน..." หรือ "เดือน..."
+        const availableSheets = getAvailableMonthSheets();
+        let targetMonth = 'ALL';
+        let monthLabel = 'ทุกเดือน';
+        let monthNum = null;
+        let yearNum = null;
+
+        const monthNumMatch = cleanText.match(/(?:ของ\s*)?(?:ประจำ)?เดือน\s*(\d{1,2})(?:\s*(?:ปี|พ\.?ศ\.?|\/)?\s*(\d{2,4}))?/);
+        if (monthNumMatch) {
+          const m = parseInt(monthNumMatch[1], 10);
+          if (m >= 1 && m <= 12) {
+            monthNum = String(m).padStart(2, '0');
+            if (monthNumMatch[2]) {
+              const y = monthNumMatch[2];
+              yearNum = y.length === 2 ? `25${y}` : y;
+            }
+          }
+        } else {
+          for (const [mName, mCode] of Object.entries(THAI_MONTH_MAP)) {
+            if (cleanText.includes(mName)) {
+              monthNum = mCode;
+              const yMatch = cleanText.match(new RegExp(mName.replace('.', '\\.') + '\\s*(?:ปี|พ\\.?ศ\\.?)?\\s*(\\d{2,4})'));
+              if (yMatch) {
+                const y = yMatch[1];
+                yearNum = y.length === 2 ? `25${y}` : y;
+              }
+              break;
+            }
+          }
+        }
+
+        if (/(เดือนนี้|เดือนปัจจุบัน)/.test(cleanText)) {
+          targetMonth = availableSheets[0] || 'ALL';
+          monthLabel = targetMonth === 'ALL' ? 'ทุกเดือน' : `เดือน ${targetMonth}`;
+        } else if (/(เดือนที่แล้ว|เดือนก่อน)/.test(cleanText)) {
+          targetMonth = availableSheets[1] || availableSheets[0] || 'ALL';
+          monthLabel = targetMonth === 'ALL' ? 'ทุกเดือน' : `เดือน ${targetMonth}`;
+        } else if (monthNum) {
+          if (yearNum) {
+            targetMonth = `${monthNum}.${yearNum}`;
+          } else {
+            const foundSheet = availableSheets.find(s => s.startsWith(`${monthNum}.`));
+            const fallbackYear = availableSheets[0] ? availableSheets[0].split('.')[1] : String(new Date().getFullYear() + 543);
+            targetMonth = foundSheet || `${monthNum}.${fallbackYear}`;
+          }
+          monthLabel = `เดือน ${parseInt(monthNum, 10)} (${targetMonth})`;
+        }
+
+        // 3. วิเคราะห์คำค้นหาพื้นที่/ผู้ใช้ไฟ/เลข PEA ผ่านคำเชื่อม "ใน...", "ที่...", "ของคุณ..."
+        let searchKeyword = '';
+        const locationMatch = cleanText.match(/(?:ใน|ที่|บริเวณ|แถว|ของคุณ|คุณ)\s*(.+)$/);
+        if (locationMatch) {
+          let loc = locationMatch[1].trim();
+          loc = loc.replace(/(?:ของ\s*)?(?:ประจำ)?เดือน\s*(?:\d{1,2}|[ก-ฮ\.]+).*$/, '').trim();
+          loc = loc.replace(/\s*(?:ทั้งหมด|ทุกใบงาน|ทุกรายการ|ด้วย|ครับ|ค่ะ|หน่อย)$/g, '').trim();
+          loc = loc.replace(/^(?:เขต|พื้นที่|โซน|หมู่บ้าน|บ้าน|ตำบล|ต\.|อำเภอ|อ\.|คุณ)\s*/, '').trim();
+          searchKeyword = loc;
+        } else {
+          const peaDigits = cleanText.match(/\b\d{7,13}\b/);
+          if (peaDigits) searchKeyword = peaDigits[0];
+        }
+
+        if (!locationMatch && /ทั้งหมด/.test(cleanText)) {
+          searchKeyword = '';
+        }
+
+        return {
+          raw: rawTranscript,
+          apiStatusFilter,
+          statusLabel,
+          targetMonth,
+          monthLabel,
+          searchKeyword
+        };
+      }
+
+      function syncDashboardControls(parsed) {
+        const statusTabEl = document.getElementById('status-tab');
+        if (statusTabEl && window.bootstrap) {
+          bootstrap.Tab.getOrCreateInstance(statusTabEl).show();
+        }
+
+        const statusSelect = document.getElementById('filter-status');
+        if (statusSelect) {
+          const options = Array.from(statusSelect.options).map(o => o.value);
+          if (options.includes(parsed.apiStatusFilter)) {
+            statusSelect.value = parsed.apiStatusFilter;
+          } else {
+            statusSelect.value = 'ทั้งหมด';
+          }
+        }
+
+        const monthSelect = document.getElementById('filter-month');
+        if (monthSelect) {
+          if (!Array.from(monthSelect.options).some(o => o.value === parsed.targetMonth)) {
+            const opt = document.createElement('option');
+            opt.value = parsed.targetMonth;
+            opt.textContent = parsed.targetMonth === 'ALL' ? '-- แสดงทั้งหมด --' : parsed.targetMonth;
+            monthSelect.insertBefore(opt, monthSelect.firstChild);
+          }
+          monthSelect.value = parsed.targetMonth;
+        }
+
+        const searchInput = document.getElementById('dash-search');
+        if (searchInput) {
+          searchInput.value = parsed.searchKeyword;
+        }
+      }
+
+      function matchRowWithKeyword(row, keyword) {
+        if (!keyword) return true;
+        const combinedText = [
+          row.location, row.name, row.pea, row.colF, row.reason, row.operator, row.remark, row.sheetName, row.foundMonth
+        ].filter(Boolean).join(' ');
+
+        if (typeof ThaiPhoneticSearch !== 'undefined' && typeof ThaiPhoneticSearch.isMultiTermMatch === 'function') {
+          return ThaiPhoneticSearch.isMultiTermMatch(combinedText, keyword);
+        }
+        return combinedText.toLowerCase().includes(keyword.toLowerCase().trim());
+      }
+
+      function fetchCrossTabDashboard(targetMonth, apiStatusFilter) {
+        return new Promise((resolve) => {
+          callAPI('getDashboardData', { month: targetMonth, statusFilter: apiStatusFilter }, (res) => {
+            if (res && res.stats) {
+              const setStat = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val ?? 0; };
+              setStat('stat-total', res.stats.total);
+              setStat('stat-pending', res.stats.pending);
+              setStat('stat-contractor', res.stats.contractor);
+              setStat('stat-emp', res.stats.employee);
+              setStat('stat-completed', res.stats.completed);
+            }
+
+            const rawList = (res && Array.isArray(res.results)) ? res.results : [];
+            const normalizedRows = rawList.map(item => ({
+              ...item,
+              sheetName: item.sheetName || item.foundMonth || targetMonth,
+              foundMonth: item.foundMonth || item.sheetName || targetMonth,
+              timestamp: item.timestamp || item.submitTime || ''
+            }));
+            resolve(normalizedRows);
+          });
+        });
+      }
+
+      function buildVoiceResultBannerHtml(parsed, count) {
+        const kwText = parsed.searchKeyword ? ` • พื้นที่/คำค้น: <strong>"${parsed.searchKeyword}"</strong>` : ' • <strong>ทั้งหมด</strong>';
+        return `
+          <div id="jarvis-voice-filter-banner" class="alert alert-info d-flex justify-content-between align-items-center shadow-sm mb-3 rounded-4">
+            <div>
+              <i class="bi bi-mic-fill text-primary me-1"></i>
+              <strong>J.A.R.V.I.S Smart Filter:</strong>
+              สถานะ <span class="badge bg-primary">${parsed.statusLabel}</span>
+              • ช่วงข้อมูล <span class="badge bg-dark">${parsed.monthLabel}</span>
+              ${kwText}
+              • พบ <strong>${count}</strong> รายการ
+            </div>
+            <button type="button" class="btn-close" aria-label="Close" onclick="this.parentElement.remove()"></button>
+          </div>
+        `;
+      }
+
+      async function handleVoiceCommand(transcript) {
+        const parsed = parseCommand(transcript);
+        if (!parsed) return false;
+
+        syncDashboardControls(parsed);
+
+        const loader = document.getElementById('dash-loader');
+        const listEl = document.getElementById('dashboard-list');
+        if (loader) loader.style.display = 'block';
+        if (listEl) listEl.innerHTML = '';
+
+        const rawRows = await fetchCrossTabDashboard(parsed.targetMonth, parsed.apiStatusFilter);
+        if (loader) loader.style.display = 'none';
+
+        globalDashResults = rawRows;
+        window.currentDashboardResults = rawRows;
+
+        const filteredRows = rawRows.filter(row => matchRowWithKeyword(row, parsed.searchKeyword));
+        const bannerHtml = buildVoiceResultBannerHtml(parsed, filteredRows.length);
+
+        if (typeof renderCardsList === 'function') {
+          renderCardsList(filteredRows, bannerHtml);
+        }
+        if (typeof fieldGpsRadar !== 'undefined' && typeof fieldGpsRadar.renderWorkOrderPins === 'function') {
+          fieldGpsRadar.renderWorkOrderPins();
+        }
+
+        const areaSpoken = parsed.searchKeyword ? `ในเขต${parsed.searchKeyword}` : 'ทั้งหมด';
+        const reply = `แสดง${parsed.statusLabel} ของ${parsed.monthLabel} ${areaSpoken} พบจำนวน ${filteredRows.length} รายการครับ`;
+        if (typeof jarvisBrain !== 'undefined') {
+          jarvisBrain.resetConversation(false);
+          jarvisBrain.speak(reply, false);
+        } else if ('speechSynthesis' in window) {
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(reply));
+        }
+
+        return true;
+      }
+
+      return { parseCommand, handleVoiceCommand };
+    })();
+
+    // ============================================================================
+    // 🌐 J.A.R.V.I.S OMNI-ASSISTANT v6.1 (System Briefing & Zone Weather Safety)
+    // ============================================================================
+    const JarvisOmniAssistant = (() => {
+      function speakOut(htmlText) {
+        if (typeof jarvisBrain !== 'undefined') {
+          jarvisBrain.resetConversation(false);
+          jarvisBrain.speak(htmlText, false);
+        } else if ('speechSynthesis' in window) {
+          const plain = htmlText.replace(/<[^>]*>/g, ' ');
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(plain));
+        }
+      }
+
+      // 1) รายงานตัว, สถานะระบบภาพรวม และความสามารถทั้งหมด
+      async function handleStatusAndCapabilityQuery(transcript) {
+        const lower = transcript.toLowerCase().trim();
+        const isPresenceOrCap = /(จาร์วิส|จาวิส|jarvis).*(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|พร้อมมั้ย|พร้อมไหม|ออนไลน์|รายงานตัว|ทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|มีคำสั่งอะไรบ้าง)/i.test(lower)
+          || /^(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|รายงานตัว|คุณทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|รายงานสถานะภาพรวม|เช็คสถานะระบบ|เช็กสถานะระบบ|สรุปภาพรวมแอป)/i.test(lower);
+
+        if (!isPresenceOrCap) return false;
+
+        const sheetsCount = document.querySelectorAll('#filter-month option[value*="."]').length;
+        const radarActive = (typeof fieldGpsRadar !== 'undefined' && fieldGpsRadar.watchId) ? 'ออนไลน์ (รัศมี 500 ม.)' : 'สแตนด์บายพร้อมเปิด';
+
+        callAPI('getDashboardData', { month: 'ALL', statusFilter: 'ทั้งหมด' }, (res) => {
+          const st = (res && res.stats) ? res.stats : { total: 0, pending: 0, contractor: 0, employee: 0, completed: 0 };
+
+          const cardHtml = `
+            <div class="card border-0 shadow-sm rounded-4 mb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f8fafc;">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge bg-info text-dark fw-bold"><i class="bi bi-cpu-fill me-1"></i>J.A.R.V.I.S v6.1 ONLINE</span>
+                  <small class="text-info">ฐานข้อมูล ${sheetsCount} เดือน • เรดาร์ GPS: ${radarActive}</small>
+                </div>
+                <div class="row g-2 text-center my-2">
+                  <div class="col-3"><div class="p-2 rounded-3 bg-white bg-opacity-10"><div class="fw-bold fs-5">${st.total}</div><small>ทั้งหมด</small></div></div>
+                  <div class="col-3"><div class="p-2 rounded-3 bg-danger bg-opacity-25"><div class="fw-bold fs-5 text-warning">${st.pending}</div><small>คงเหลือ</small></div></div>
+                  <div class="col-3"><div class="p-2 rounded-3 bg-primary bg-opacity-25"><div class="fw-bold fs-5 text-info">${st.contractor + st.employee}</div><small>รอปิดสั่ง</small></div></div>
+                  <div class="col-3"><div class="p-2 rounded-3 bg-success bg-opacity-25"><div class="fw-bold fs-5 text-success">${st.completed}</div><small>เสร็จสิ้น</small></div></div>
+                </div>
+                <div class="d-flex flex-wrap gap-1 mt-2">
+                  <button class="btn btn-sm btn-outline-light rounded-pill" onclick="JarvisSmartVoiceRouter.handleVoiceCommand('ดูงานคงเหลือทั้งหมด')">📋 งานคงเหลือ</button>
+                  <button class="btn btn-sm btn-outline-info rounded-pill" onclick="JarvisOmniAssistant.handleWeatherQuery('รายงานสภาพอากาศพื้นที่ปัจจุบัน')">🌦️ อากาศหน้างาน</button>
+                  <button class="btn btn-sm btn-outline-warning rounded-pill" onclick="jarvisBrain.handleInput('ตรวจใบงานไม่สมบูรณ์')">🔍 ตรวจงานไม่ครบ</button>
+                  <button class="btn btn-sm btn-outline-success rounded-pill" onclick="jarvisBrain.handleInput('ตรวจงานซ้ำข้ามเดือน')">♻️ เช็กงานซ้ำ</button>
+                </div>
+              </div>
+            </div>
+          `;
+
+          const statusTabEl = document.getElementById('status-tab');
+          if (statusTabEl && window.bootstrap) bootstrap.Tab.getOrCreateInstance(statusTabEl).show();
+          const listEl = document.getElementById('dashboard-list');
+          if (listEl) listEl.insertAdjacentHTML('afterbegin', cardHtml);
+
+          speakOut(`ออนไลน์และพร้อมปฏิบัติงานครับบอส! ขณะนี้ระบบเชื่อมต่อฐานข้อมูล <b>${sheetsCount} เดือน</b> มีใบงานสะสม <b>${st.total} รายการ</b> คงเหลือรอเปลี่ยน <b>${st.pending} รายการ</b> และรอปิดใบสั่ง <b>${st.contractor + st.employee} รายการ</b> บอสสั่งค้นหาข้ามเดือน ตรวจงานไม่สมบูรณ์ เปิดเรดาร์ 500 เมตร หรือเช็กสภาพอากาศรายตำบลได้เลยครับ`);
+        });
+
+        return true;
+      }
+
+      // 2) พยากรณ์อากาศรายตำบล/อำเภอ + คำเตือนความปลอดภัยหน้างาน กฟภ.
+      async function handleWeatherQuery(transcript) {
+        const isWeather = /(สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก|อุณหภูมิ|อากาศ.*เป็นไง|อากาศ.*เขต|อากาศ.*ตำบล)/i.test(transcript);
+        if (!isWeather) return false;
+
+        const areaMatch = transcript.match(/(?:เขต|พื้นที่|ตำบล|ต\.|อำเภอ|อ\.|จังหวัด|จ\.|แถว|ที่)\s*([ก-๙a-zA-Z0-9.\-]+(?:\s+[ก-๙a-zA-Z0-9.\-]+)?)/);
+        let rawArea = areaMatch ? areaMatch[1].replace(/(ด้วย|ครับ|ค่ะ|หน่อย|นะ)$/g, '').trim() : '';
+        const cleanQuery = rawArea.replace(/^(ตำบล|ต\.|อำเภอ|อ\.|จังหวัด|จ\.)\s*/, '').trim();
+
+        speakOut(`กำลังตรวจสอบสภาพอากาศ${rawArea ? `ในเขต <b>${rawArea}</b>` : ' ณ ตำแหน่งปัจจุบัน'} สักครู่ครับบอส...`);
+
+        try {
+          let lat = null, lon = null, resolvedName = rawArea || 'ตำแหน่งปัจจุบัน';
+
+          if (cleanQuery && !/ปัจจุบัน|ที่นี่/.test(cleanQuery)) {
+            const omGeo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanQuery)}&count=3&language=th&format=json`).then(r => r.json()).catch(() => null);
+            const thHit = omGeo?.results?.find(r => r.country_code === 'TH') || omGeo?.results?.[0];
+            if (thHit) {
+              lat = thHit.latitude;
+              lon = thHit.longitude;
+              resolvedName = `${thHit.name}${thHit.admin1 ? ` จ.${thHit.admin1}` : ''}`;
+            } else {
+              const osmGeo = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQuery + ' ประเทศไทย')}&format=json&limit=1`).then(r => r.json()).catch(() => []);
+              if (osmGeo && osmGeo[0]) {
+                lat = parseFloat(osmGeo[0].lat);
+                lon = parseFloat(osmGeo[0].lon);
+                resolvedName = rawArea;
+              }
+            }
+          }
+
+          if (lat === null || lon === null) {
+            const pos = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 6000 });
+            });
+            lat = pos.coords.latitude;
+            lon = pos.coords.longitude;
+            if (!rawArea) resolvedName = `พิกัดหน้างาน (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+          }
+
+          const wxUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&hourly=precipitation_probability&forecast_days=1&timezone=Asia%2FBangkok`;
+          const wx = await fetch(wxUrl).then(r => r.json());
+          const cur = wx.current;
+          const rainProb = wx.hourly?.precipitation_probability?.[new Date().getHours()] ?? 0;
+
+          const code = cur.weather_code;
+          let desc = 'ท้องฟ้าโปร่ง แดดดี';
+          let safetyNote = '✅ สภาพอากาศเอื้ออำนวยต่อการสับเปลี่ยนมิเตอร์และปฏิบัติงานบนเสาไฟฟ้าครับ';
+          let badgeClass = 'bg-success';
+
+          if ([95, 96, 99].includes(code)) {
+            desc = 'มีพายุฝนฟ้าคะนอง';
+            safetyNote = '🚨 คำเตือนความปลอดภัย กฟภ.: งดปฏิบัติงานบนที่สูงและงดสัมผัสอุปกรณ์ไฟฟ้าแรงต่ำ/แรงสูงชั่วคราวจนกว่าพายุจะสงบครับ';
+            badgeClass = 'bg-danger';
+          } else if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code) || cur.precipitation > 0) {
+            desc = 'มีฝนตก / ละอองฝน';
+            safetyNote = '⚠️ ข้อควรระวังหน้างาน: พื้นผิวเสาและตู้มิเตอร์เปียกชื้น โปรดสวมถุงมือฉนวนไฟฟ้าและตรวจสอบอุปกรณ์ป้องกันไฟดูดก่อนปฏิบัติงานครับ';
+            badgeClass = 'bg-warning text-dark';
+          } else if ([1, 2, 3, 45, 48].includes(code)) {
+            desc = 'มีเมฆบางส่วนถึงเมฆมาก';
+          }
+
+          const wxCard = `
+            <div class="alert alert-light border shadow-sm rounded-4 mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong><i class="bi bi-cloud-sun-fill text-primary me-1"></i>รายงานสภาพอากาศ: ${resolvedName}</strong>
+                <span class="badge ${badgeClass}">${desc}</span>
+              </div>
+              <div class="small text-muted mb-2">
+                🌡️ อุณหภูมิ <strong>${cur.temperature_2m}°C</strong> (รู้สึกเหมือน ${cur.apparent_temperature}°C) •
+                💧 ความชื้น <strong>${cur.relative_humidity_2m}%</strong> •
+                💨 ลม <strong>${cur.wind_speed_10m} กม./ชม.</strong> •
+                ☔ โอกาสฝน <strong>${rainProb}%</strong>
+              </div>
+              <div class="small fw-semibold">${safetyNote}</div>
+            </div>
+          `;
+          const statusTabEl = document.getElementById('status-tab');
+          if (statusTabEl && window.bootstrap) bootstrap.Tab.getOrCreateInstance(statusTabEl).show();
+          const listEl = document.getElementById('dashboard-list');
+          if (listEl) listEl.insertAdjacentHTML('afterbegin', wxCard);
+
+          speakOut(`รายงานสภาพอากาศเขต <b>${resolvedName}</b> ขณะนี้ <b>${desc}</b> อุณหภูมิ <b>${cur.temperature_2m} องศาเซลเซียส</b> ความชื้นสัมพัทธ์ <b>${cur.relative_humidity_2m} เปอร์เซ็นต์</b> โอกาสเกิดฝน <b>${rainProb} เปอร์เซ็นต์</b> ${safetyNote}`);
+        } catch (err) {
+          speakOut(`ขออภัยครับบอส ไม่สามารถดึงพิกัดสภาพอากาศของพื้นที่นี้ได้ในขณะนี้ กรุณาเปิด GPS หรือระบุชื่ออำเภอใกล้เคียงครับ`);
+        }
+
+        return true;
+      }
+
+      async function handleCommand(transcript) {
+        if (await handleStatusAndCapabilityQuery(transcript)) return true;
+        if (await handleWeatherQuery(transcript)) return true;
+        return false;
+      }
+
+      return { handleCommand, handleWeatherQuery, handleStatusAndCapabilityQuery };
+    })();
+
     const jarvisBrain = new JarvisVoiceBrain();
     function toggleJarvis() {
       if (!isAdminUser) return;
@@ -3542,7 +3958,6 @@ KML.
       const rawQuery = document.getElementById('search-query').value.trim();
       if (!rawQuery) { alert('กรุณาระบุข้อมูล'); return; }
 
-      // เทียบเสียงภาษาไทยอัตโนมัติ (เช่น พิมพ์/พูด "ศรีกัน" -> เจอ "สีกัน" ในฐานข้อมูลทันที)
       const hintEl = document.getElementById('search-phonetic-hint');
       const phoneticResolved = ThaiPhoneticSearch.resolveBestSheetQuery(rawQuery);
       const effectiveQuery = phoneticResolved ? phoneticResolved.resolvedQuery : rawQuery;
@@ -3928,7 +4343,7 @@ KML.
 
       callAPI('getDashboardData', { month: month, statusFilter: statusFilter }, function(res) {
         document.getElementById('dash-loader').style.display = 'none';
-        globalDashResults = res.results; 
+        globalDashResults = res.results || []; 
         
         document.getElementById('stat-total').innerText = res.stats.total; 
         document.getElementById('stat-pending').innerText = res.stats.pending; 
@@ -3936,7 +4351,7 @@ KML.
         document.getElementById('stat-emp').innerText = res.stats.employee; 
         document.getElementById('stat-completed').innerText = res.stats.completed;
 
-        renderCardsList(res.results);
+        renderCardsList(globalDashResults);
         fieldGpsRadar.renderWorkOrderPins();
       });
     }
@@ -3988,4 +4403,4 @@ KML.
   </script>
 </body>
 </html>
- โดย นายภานุพงศ์ โทศรีแก้ว/FERN
+Formatting final response
