@@ -309,7 +309,20 @@ index
       display: none;
       backdrop-filter: blur(10px);
     }
-
+/* แถบนับถอยหลังเปิดไมค์รับคำสั่ง 5 วินาที */
+    .jarvis-countdown-wrap {
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .jarvis-countdown-bar {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #00d2ff, #2ecc71);
+      transition: width 0.1s linear;
+    }
     .jarvis-choice-pill {
       font-size: 0.78rem;
       border-radius: 20px;
@@ -1929,6 +1942,102 @@ index
             const infoEl = document.getElementById('radar-nearest-info');
             if (infoEl) infoEl.innerHTML = 'เป้าหมายจำลอง: <b>นายสีกัน พรมดี</b> (PEA 6500076729) • กฟส.เขมราฐ';
             this.speakRadarAlert('แจ้งเตือนเรดาร์ 500 เมตรครับบอส! เข้าใกล้จุดเปลี่ยนมิเตอร์ของ นายสีกัน พรมดี ระยะห่าง 300 เมตร พร้อมปฏิบัติงานครับ');
+
+            // 📡 ฟีเจอร์ที่ 2: เปิดโหมดพิกัดเรดาร์ 500 เมตรผ่านคำสั่งเสียง + รายงานใบงานในรัศมี / ใกล้ที่สุด
+      activateVoiceRadar500m() {
+        const mapTabBtn = document.getElementById('map-tab');
+        if (mapTabBtn) bootstrap.Tab.getOrCreateInstance(mapTabBtn).show();
+
+        setTimeout(() => {
+          this.ensureMap();
+
+          // อันดับแรก: รายงานยืนยันการเปิดโหมดเรดาร์ 500 เมตรทันที
+          jarvisBrain.speak("เปิดโหมดพิกัดเรดาร์ 500 เมตรเรียบร้อยครับ", false);
+
+          // เปิดเรดาร์ติดตามพิกัดสดบนแผนที่ควบคู่ไปด้วย
+          if (this.watchId === null && 'geolocation' in navigator) {
+            const btn = document.getElementById('btn-toggle-gps-radar');
+            const statusLabel = document.getElementById('radar-status-label');
+            if (btn) {
+              btn.className = 'btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm';
+              btn.innerHTML = '<i class="bi bi-stop-circle-fill me-1"></i> หยุดเรดาร์ GPS';
+            }
+            if (statusLabel) statusLabel.innerText = 'กำลังติดตามพิกัดสด (แจ้งเตือนอัตโนมัติในรัศมี 500 ม.)';
+
+            this.watchId = navigator.geolocation.watchPosition(
+              pos => this.updateVehiclePosition(pos.coords.latitude, pos.coords.longitude, false),
+              () => {},
+              { enableHighAccuracy: true, maximumAge: 3000 }
+            );
+          }
+
+          // ดึงข้อมูลใบงานทั้งหมดให้พร้อมก่อนคำนวณระยะทาง
+          jarvisBrain.ensureData(true, () => {
+            this.renderWorkOrderPins();
+
+            if (!('geolocation' in navigator)) {
+              setTimeout(() => {
+                jarvisBrain.speak("อุปกรณ์นี้ไม่รองรับการดึงตำแหน่งพิกัด GPS ครับบอส", false);
+              }, 2600);
+              return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                this.updateVehiclePosition(lat, lng, false);
+
+                // คำนวณระยะห่างใบงานที่มีพิกัด (เน้นงานคงเหลือก่อน หากไม่มีให้ดูทุกสถานะที่มีพิกัด)
+                const allPins = this.getItemsWithCoords();
+                const pendingPins = allPins.filter(e => e.item.status === 'งานคงเหลือ');
+                const targetPool = pendingPins.length > 0 ? pendingPins : allPins;
+
+                const ranked = targetPool
+                  .map(entry => ({
+                    ...entry,
+                    dist: this.getDistanceMeters(lat, lng, entry.coords.lat, entry.coords.lng)
+                  }))
+                  .sort((a, b) => a.dist - b.dist);
+
+                const within500m = ranked.filter(e => e.dist <= this.RADIUS_METERS);
+
+                const formatDist = (m) => m >= 1000
+                  ? `${(m / 1000).toFixed(2)} กิโลเมตร`
+                  : `${Math.round(m)} เมตร`;
+
+                setTimeout(() => {
+                  if (ranked.length === 0) {
+                    jarvisBrain.speak("ขณะนี้ยังไม่มีใบงานที่บันทึกพิกัด GPS ไว้ในฐานข้อมูลครับบอส", false);
+                    return;
+                  }
+
+                  const nearest = ranked[0];
+                  this.focusPin(nearest.coords.lat, nearest.coords.lng);
+
+                  if (within500m.length > 0) {
+                    jarvisBrain.speak(
+                      `พบใบงานในเขตรัศมี 500 เมตร จำนวน <b>${within500m.length} ใบงาน</b>ครับ โดยตำแหน่งใบงานที่อยู่ใกล้ที่สุดคือ คุณ<b>${nearest.item.name || '-'}</b> หมายเลข PEA ${nearest.item.pea || '-'} สถานที่ <b>${nearest.item.location || 'ตามหมุดพิกัด'}</b> ระยะห่าง <b>${formatDist(nearest.dist)}</b> ครับ`,
+                      false
+                    );
+                  } else {
+                    jarvisBrain.speak(
+                      `ไม่พบใบงานในเขตรัศมี 500 เมตรครับ โดยตำแหน่งใบงานที่ใกล้ที่สุด 1 ใบงานคือ คุณ<b>${nearest.item.name || '-'}</b> หมายเลข PEA ${nearest.item.pea || '-'} สถานที่ <b>${nearest.item.location || 'ตามหมุดพิกัด'}</b> ระยะห่าง <b>${formatDist(nearest.dist)}</b> ครับ`,
+                      false
+                    );
+                  }
+                }, 2700);
+              },
+              () => {
+                setTimeout(() => {
+                  jarvisBrain.speak("เครื่องใช้งานยังไม่ได้เปิดตำแหน่งพิกัด GPS ครับบอส กรุณาเปิด Location เพื่อตรวจสอบระยะ 500 เมตรครับ", false);
+                }, 2600);
+              },
+              { enableHighAccuracy: true, timeout: 7000 }
+            );
+          });
+        }, 200);
+      }
           }
         }, 220);
       }
@@ -2487,7 +2596,90 @@ index
           this.recognition.start();
         } catch (e) {}
       }
+// ⏱️ พูดตอบกลับแล้วเปิดไมค์รอรับคำสั่ง 5 วินาทีพร้อมแถบนับถอยหลัง
+      speakAndListen5Seconds(htmlText) {
+        if (!isAdminUser) return;
+        this.clear5sTimers();
 
+        const modeChoices = [
+          { label: 'ส่งงาน ส.ป.มิเตอร์', icon: '📝', keywords: ['ส่งงาน'], handler: () => bootstrap.Tab.getOrCreateInstance(document.querySelector('#search-tab')).show() },
+          { label: 'สถานะใบงาน', icon: '📊', keywords: ['สถานะ'], handler: () => bootstrap.Tab.getOrCreateInstance(document.querySelector('#status-tab')).show() },
+          { label: 'เรดาร์ 500 ม.', icon: '📡', keywords: ['เรดาร์'], handler: () => fieldGpsRadar.activateVoiceRadar500m() },
+          { label: 'นำเข้า UCUBE', icon: '📥', keywords: ['นำเข้า'], handler: () => bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show() }
+        ];
+
+        this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, 0, modeChoices);
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+        const triggerMicCountdown = () => {
+          if (isAdminUser) this.startListeningWith5sCountdown(modeChoices);
+        };
+
+        if (!('speechSynthesis' in window)) {
+          triggerMicCountdown();
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(cleanSpeech);
+        msg.lang = 'th-TH';
+        msg.rate = 1.1;
+
+        let launched = false;
+        const launchOnce = () => {
+          if (launched) return;
+          launched = true;
+          setTimeout(triggerMicCountdown, 250);
+        };
+
+        msg.onend = launchOnce;
+        msg.onerror = launchOnce;
+        setTimeout(launchOnce, 4500); // กันค้างกรณีเบราว์เซอร์บล็อกเสียง
+        window.speechSynthesis.speak(msg);
+      }
+
+      startListeningWith5sCountdown(choiceButtons = []) {
+        if (!isAdminUser || !this.recognition) return;
+        this.clear5sTimers();
+
+        const TOTAL_MS = 5000;
+        const startTime = Date.now();
+
+        this.startListening();
+
+        const renderCountdownUI = () => {
+          const elapsed = Date.now() - startTime;
+          const remainSec = Math.max(0, (TOTAL_MS - elapsed) / 1000);
+          const pct = Math.max(0, Math.min(100, ((TOTAL_MS - elapsed) / TOTAL_MS) * 100));
+
+          this.showSubtitle(
+            `🎙️ เปิดไมค์รอรับคำสั่ง (${remainSec.toFixed(1)} วินาที)...`,
+            `เชิญสั่งเข้าโหมดต่างๆ ได้เลยครับ เช่น <b>"เปิดโหมดพิกัดเรดาร์ 500 เมตร"</b>, <b>"ค้นหาชื่อนายวิทยา"</b> หรือ <b>"ดูงานคงเหลือ"</b>
+             <div class="jarvis-countdown-wrap"><div class="jarvis-countdown-bar" style="width:${pct}%"></div></div>`,
+            0,
+            choiceButtons
+          );
+        };
+
+        renderCountdownUI();
+        this._micInterval = setInterval(renderCountdownUI, 100);
+
+        this._micTimeout = setTimeout(() => {
+          this.clear5sTimers();
+          if (this.isListening && this.recognition) {
+            try { this.recognition.stop(); } catch (e) {}
+          }
+          this.showSubtitle('🤖 J.A.R.V.I.S:', 'หมดเวลาเปิดไมค์ 5 วินาทีครับบอส กดปุ่มไมค์สั่งการได้ตลอดเวลาครับ', 4500);
+        }, TOTAL_MS);
+      }
+
+      clear5sTimers() {
+        if (this._micInterval) { clearInterval(this._micInterval); this._micInterval = null; }
+        if (this._micTimeout) { clearTimeout(this._micTimeout); this._micTimeout = null; }
+      }
       speak(htmlText, expectReply = false, choiceButtons = []) {
         if (!isAdminUser) return;
         this.showSubtitle('🤖 J.A.R.V.I.S:', htmlText, expectReply ? 0 : 11000, choiceButtons);
@@ -3515,6 +3707,115 @@ index
         'ธันวาคม': '12', 'ธันวา': '12', 'ธ.ค.': '12', 'ธค': '12'
       };
 
+      // 0) ฟีเจอร์ที่ 1: คำสั่งเรียก "จาร์วิสอยู่มั้ย" -> ตอบกลับและเปิดไมค์รอ 5 วินาที
+      function handleWakeCheck(transcript) {
+        const lower = transcript.toLowerCase().trim();
+        const isPureWakeCall = /^(?:จาร์วิส|จาวิส|jarvis)?\s*(?:อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|พร้อมมั้ย|พร้อมไหม|ออนไลน์ไหม|อยู่บ่)\s*(?:ครับ|ค่ะ|จ๊ะ|ไหม|มั้ย)?$/i.test(lower)
+          || /^(?:เฮ้\s*)?(?:จาร์วิส|จาวิส|jarvis)$/i.test(lower);
+
+        if (!isPureWakeCall) return false;
+
+        if (typeof jarvisBrain !== 'undefined') {
+          jarvisBrain.resetConversation(false);
+          jarvisBrain.speakAndListen5Seconds("ครับบอส จาร์วิสออนไลน์พร้อมรับคำสั่งครับ");
+        }
+        return true;
+      }
+
+      // 3) ฟีเจอร์ที่ 3: คำสั่งเจาะจง "ค้นหาชื่อ..." -> ค้นหาในแท็บ ส่งงาน ส.ป.มิเตอร์ โดยตรง
+      function handleDirectNameSearch(transcript) {
+        const match = transcript.match(/(?:ค้นหาชื่อ|หาชื่อ)\s*(.+)$/i);
+        if (!match) return false;
+
+        let targetName = match[1]
+          .replace(/\s*(?:ในระบบ|ในฐานข้อมูล|ด้วย|ครับ|ค่ะ|หน่อย|ให้หน่อย|ที)$/g, '')
+          .trim();
+
+        if (!targetName) {
+          speakOut("กรุณาระบุชื่อผู้ใช้ไฟที่ต้องการค้นหาหลังคำว่า ค้นหาชื่อ ด้วยครับบอส");
+          return true;
+        }
+
+        // สลับไปแท็บที่ 1 (ส่งงาน ส.ป.มิเตอร์) และกรอกชื่อลงช่องค้นหาโดยตรง
+        const searchTabEl = document.getElementById('search-tab');
+        if (searchTabEl && window.bootstrap) {
+          bootstrap.Tab.getOrCreateInstance(searchTabEl).show();
+        }
+
+        const workModeEl = document.getElementById('work-mode');
+        if (workModeEl && workModeEl.value !== 'ucube') {
+          workModeEl.value = 'ucube';
+          if (typeof toggleWorkMode === 'function') toggleWorkMode();
+        }
+
+        const monthSelectEl = document.getElementById('month-select');
+        if (monthSelectEl) monthSelectEl.value = 'ALL';
+
+        const searchInputEl = document.getElementById('search-query');
+        if (searchInputEl) searchInputEl.value = targetName;
+
+        // ตรวจสอบจำนวนรายการที่ตรงกับชื่อในฐานข้อมูลทั้งหมดเพื่อรายงานเสียงตามเงื่อนไข
+        jarvisBrain.ensureData(true, (allData) => {
+          const matches = (allData || []).filter(item => {
+            const nameText = String(item.name || '');
+            return ThaiPhoneticSearch.isMultiTermMatch(nameText, targetName);
+          });
+
+          // ลบกล่องสรุปผลค้นหาชื่อเดิม (ถ้ามี)
+          const oldBox = document.getElementById('jarvis-direct-name-results');
+          if (oldBox) oldBox.remove();
+
+          if (matches.length === 0) {
+            speakOut(`ไม่พบข้อมูลชื่อ <b>${targetName}</b> ในระบบครับบอส`);
+            return;
+          }
+
+          // โหลดรายการแรกเข้าฟอร์มแท็บค้นหาชื่อ / PEA ทันที
+          const first = matches[0];
+          if (monthSelectEl && first.sheetName) monthSelectEl.value = first.sheetName;
+          if (searchInputEl) searchInputEl.value = (first.pea && first.pea !== '-') ? first.pea : first.name;
+          if (typeof searchData === 'function') searchData();
+
+          // แสดงแถบรายการที่พบเหนือฟอร์มในแท็บค้นหา เผื่อกดสลับดูรายการอื่น
+          const listHtml = `
+            <div id="jarvis-direct-name-results" class="glass-card border border-primary mb-3 py-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold text-primary"><i class="bi bi-person-lines-fill me-1"></i>ผลการค้นหาชื่อ "${targetName}" พบ ${matches.length} รายการ</span>
+                <button type="button" class="btn-close" onclick="this.closest('#jarvis-direct-name-results').remove()"></button>
+              </div>
+              <div class="d-flex flex-column gap-2">
+                ${matches.map((m, idx) => `
+                  <div class="p-2 rounded-3 bg-white border d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="small">
+                      <strong>${idx + 1}. ${m.name || '-'}</strong> <span class="badge bg-secondary">${m.sheetName || '-'}</span><br>
+                      <span class="text-danger">สาเหตุ:</span> ${m.reason || '-'} • <span class="text-muted">สถานที่:</span> ${m.location || '-'}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill"
+                      onclick="document.getElementById('month-select').value='${m.sheetName || 'ALL'}';document.getElementById('search-query').value='${(m.pea && m.pea !== '-') ? m.pea : m.name}';searchData();">
+                      เปิดใบงานนี้
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          const searchSection = document.getElementById('search-section');
+          if (searchSection) searchSection.insertAdjacentHTML('afterend', listHtml);
+
+          // เงื่อนไขรายงานเสียง: 1-2 รายการ แจ้ง ชื่อ + สาเหตุ + สถานที่ | 3 รายการขึ้นไป แจ้งเฉพาะจำนวน
+          if (matches.length <= 2) {
+            const spokenDetails = matches.map((m, idx) => {
+              const prefix = matches.length === 2 ? `รายการที่ ${idx + 1} ` : '';
+              return `${prefix}ชื่อ <b>${m.name || '-'}</b> สาเหตุ <b>${m.reason || 'ไม่ระบุ'}</b> สถานที่ <b>${m.location || 'ไม่ระบุ'}</b>`;
+            }).join(' และ ');
+            speakOut(`พบข้อมูลจำนวน <b>${matches.length} รายการ</b>ครับ ${spokenDetails} ครับ`);
+          } else {
+            speakOut(`พบข้อมูลชื่อ <b>${targetName}</b> ทั้งหมดจำนวน <b>${matches.length} รายการ</b>ครับบอส`);
+          }
+        });
+
+        return true;
+      }
       function normalizeThaiDigits(str) {
         const thaiNums = '๐๑๒๓๔๕๖๗๘๙';
         return String(str || '').replace(/[๐-๙]/g, ch => thaiNums.indexOf(ch));
@@ -3916,6 +4217,12 @@ index
       }
 
       async function handleCommand(transcript) {
+        if (handleWakeCheck(transcript)) return true;
+        if (/(เปิดโหมดพิกัดเรดาร์|พิกัดเรดาร์|เรดาร์\s*500|เปิดเรดาร์)/i.test(transcript)) {
+          fieldGpsRadar.activateVoiceRadar500m();
+          return true;
+        }
+        if (handleDirectNameSearch(transcript)) return true;
         if (await handleStatusAndCapabilityQuery(transcript)) return true;
         if (await handleWeatherQuery(transcript)) return true;
         return false;
