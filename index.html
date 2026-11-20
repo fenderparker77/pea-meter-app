@@ -1,6 +1,6 @@
-PEAKML
 
 
+PEAKML v2.8
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -369,6 +369,21 @@ PEAKML
       transform: translateY(-1px);
     }
 
+    .jarvis-countdown-wrap {
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 6px 10px;
+      border: 1px solid rgba(0, 210, 255, 0.35);
+    }
+    .jarvis-countdown-bar {
+      height: 6px;
+      background: linear-gradient(90deg, #00d2ff, #10b981);
+      border-radius: 6px;
+      width: 100%;
+      transition: width 0.1s linear;
+    }
+
     .voice-chip {
       font-size: 0.78rem;
       border-radius: 20px;
@@ -422,7 +437,7 @@ PEAKML
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v2.7 • J.A.R.V.I.S v6.2</p>
+      <p class="text-muted small">PEA Smart Operation System v2.8 • J.A.R.V.I.S v6.3</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -1230,7 +1245,7 @@ PEAKML
 
       if (announceVoice) {
         jarvisBrain.unlockAudioEngine();
-        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S v6.2 พร้อมฟีเจอร์ใหม่ v2.7 บันทึกเสียงหน้างาน, แจ้งเตือนงานค้างเร่งด่วน SLA และเช็กลิสต์ความปลอดภัยเรียบร้อยครับ", false);
+        jarvisBrain.speak("ยืนยันตัวตนสำเร็จครับบอส เปิดใช้งานระบบสั่งการอัจฉริยะ J.A.R.V.I.S v6.3 พร้อมฟีเจอร์ใหม่ v2.7 บันทึกเสียงหน้างาน, แจ้งเตือนงานค้างเร่งด่วน SLA และเช็กลิสต์ความปลอดภัยเรียบร้อยครับ", false);
       }
     }
 
@@ -2132,6 +2147,135 @@ PEAKML
         }
       }
 
+      activateRadarAndBriefNearest() {
+        const mapTabBtn = document.getElementById('map-tab');
+        if (mapTabBtn && window.bootstrap) {
+          bootstrap.Tab.getOrCreateInstance(mapTabBtn).show();
+        }
+        setTimeout(() => {
+          this.ensureMap();
+          this.renderWorkOrderPins();
+        }, 180);
+
+        const btn = document.getElementById('btn-toggle-gps-radar');
+        const statusLabel = document.getElementById('radar-status-label');
+        const banner = document.getElementById('radar-telemetry-banner');
+        const distBadge = document.getElementById('radar-distance-badge');
+        const infoEl = document.getElementById('radar-nearest-info');
+
+        if (btn) {
+          btn.className = 'btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm';
+          btn.innerHTML = '<i class="bi bi-stop-circle-fill me-1"></i> หยุดเรดาร์ GPS';
+        }
+        if (statusLabel) {
+          statusLabel.innerText = 'กำลังติดตามพิกัดสด (โหมดเรดาร์ 500 เมตร)';
+        }
+
+        const startWatch = () => {
+          if (this.watchId !== null) {
+            navigator.geolocation.clearWatch(this.watchId);
+            this.watchId = null;
+          }
+          if (!('geolocation' in navigator)) {
+            const msg = 'เปิดโหมดพิกัดเรดาร์ 500 เมตรเรียบร้อยครับบอส แต่เบราว์เซอร์นี้ไม่รองรับ GPS ครับ';
+            if (isAdminUser) jarvisBrain.speak(msg, false);
+            return;
+          }
+
+          if (isAdminUser) {
+            jarvisBrain.speak('เปิดโหมดพิกัดเรดาร์ 500 เมตรเรียบร้อยครับบอส กำลังสแกนพิกัดใบงานรอบตัวครับ', false);
+          }
+
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              this.ensureMap();
+              if (this.userMarker) this.map.removeLayer(this.userMarker);
+              if (this.radarCircle) this.map.removeLayer(this.radarCircle);
+
+              this.userMarker = L.marker([lat, lng], { icon: this.makePinIcon('#00d2ff') })
+                .addTo(this.map)
+                .bindPopup('ตำแหน่งรถปฏิบัติงานปัจจุบัน');
+
+              this.radarCircle = L.circle([lat, lng], {
+                radius: this.RADIUS_METERS,
+                color: '#00d2ff',
+                fillColor: '#00d2ff',
+                fillOpacity: 0.16
+              }).addTo(this.map);
+
+              this.map.setView([lat, lng], 15);
+
+              const pendingWithCoords = this.getItemsWithCoords()
+                .filter(e => e.item.status === 'งานคงเหลือ')
+                .map(e => ({
+                  ...e,
+                  distance: this.getDistanceMeters(lat, lng, e.coords.lat, e.coords.lng)
+                }))
+                .sort((a, b) => a.distance - b.distance);
+
+              if (pendingWithCoords.length === 0) {
+                if (infoEl) infoEl.innerText = 'ไม่พบหมุดงานคงเหลือที่มีพิกัดในฐานข้อมูลครับ';
+                if (distBadge) distBadge.innerText = '-- ม.';
+                this.speakRadarAlert('สแกนพิกัดเรียบร้อยครับบอส ขณะนี้ไม่พบใบงานคงเหลือที่มีพิกัด GPS ในฐานข้อมูลครับ');
+                return;
+              }
+
+              const within500 = pendingWithCoords.filter(e => e.distance <= this.RADIUS_METERS);
+              const nearest = pendingWithCoords[0];
+              const nearestDist = Math.round(nearest.distance);
+              const distText = nearestDist >= 1000
+                ? `${(nearestDist / 1000).toFixed(2)} กิโลเมตร`
+                : `${nearestDist} เมตร`;
+
+              if (distBadge) {
+                distBadge.innerText = nearestDist >= 1000 ? `${(nearestDist / 1000).toFixed(1)} กม.` : `${nearestDist} ม.`;
+              }
+
+              if (within500.length > 0) {
+                if (banner) banner.classList.add('alert-active');
+                this.alertedPeas.add(String(nearest.item.pea || nearest.item.name));
+                if (infoEl) {
+                  infoEl.innerHTML = `พบ <b>${within500.length} ใบงาน</b> ในรัศมี 500 ม. • ใกล้สุด: <b>${nearest.item.name}</b> (PEA ${nearest.item.pea}) • ${nearest.item.location || '-'}`;
+                }
+                this.speakRadarAlert(
+                  `ตรวจพบใบงานคงเหลือในรัศมี 500 เมตร จำนวน <b>${within500.length} รายการ</b>ครับบอส จุดที่ใกล้ที่สุดคือ คุณ<b>${nearest.item.name}</b> หมายเลข PEA <b>${nearest.item.pea}</b> สถานที่ ${nearest.item.location || '-'} ระยะห่าง <b>${distText}</b> ครับ`
+                );
+              } else {
+                if (banner) banner.classList.remove('alert-active');
+                if (infoEl) {
+                  infoEl.innerHTML = `ไม่พบงานในรัศมี 500 ม. • จุดที่ใกล้ที่สุด: <b>${nearest.item.name}</b> (PEA ${nearest.item.pea}) • ${nearest.item.location || '-'}`;
+                }
+                this.speakRadarAlert(
+                  `ไม่พบใบงานคงเหลือในรัศมี 500 เมตรครับบอส แต่จุดที่ใกล้ที่สุด 1 จุดคือ คุณ<b>${nearest.item.name}</b> หมายเลข PEA <b>${nearest.item.pea}</b> สถานที่ ${nearest.item.location || '-'} ระยะห่าง <b>${distText}</b> ครับ`
+                );
+              }
+
+              this.watchId = navigator.geolocation.watchPosition(
+                p => this.updateVehiclePosition(p.coords.latitude, p.coords.longitude, false),
+                () => {},
+                { enableHighAccuracy: true, maximumAge: 3000 }
+              );
+            },
+            () => {
+              this.speakRadarAlert('เปิดโหมดพิกัดเรดาร์ 500 เมตรแล้วครับบอส แต่ไม่สามารถดึงตำแหน่ง GPS ปัจจุบันได้ กรุณาเปิดสิทธิ์ตำแหน่ง (Location) ครับ');
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+          );
+        };
+
+        if (!globalDashResults || globalDashResults.length === 0) {
+          callAPI('getDashboardData', { month: 'ALL', statusFilter: 'ทั้งหมด' }, (res) => {
+            globalDashResults = res.results || [];
+            this.renderWorkOrderPins();
+            startWatch();
+          });
+        } else {
+          startWatch();
+        }
+      }
+
       toggleLiveRadar() {
         const btn = document.getElementById('btn-toggle-gps-radar');
         const statusLabel = document.getElementById('radar-status-label');
@@ -2555,6 +2699,7 @@ PEAKML
         this.recognition = SpeechRecognition ? new SpeechRecognition() : null;
         this.isListening = false;
         this.subtitleTimer = null;
+        this.countdownInterval = null;
         this.initSpeech();
       }
 
@@ -2597,11 +2742,11 @@ PEAKML
         if (!container) return;
 
         const top = this.getTopFrequentCommands(3);
-        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S v6.2 ด่วน:</span>`;
+        let html = `<span class="small text-primary fw-bold"><i class="bi bi-stars"></i> J.A.R.V.I.S v6.3 ด่วน:</span>`;
         html += `<button type="button" class="voice-chip" onclick="JarvisOmniAssistant.handleStatusAndCapabilityQuery('รายงานสถานะภาพรวมทั้งหมดของแอป')">📊 สถานะภาพรวมแอป</button>`;
         html += `<button type="button" class="voice-chip" onclick="slaAgingManager.toggleUrgentFilter(true)">🚨 งานค้างเกิน 7 วัน</button>`;
         html += `<button type="button" class="voice-chip" onclick="JarvisOmniAssistant.handleWeatherQuery('รายงานสภาพอากาศพื้นที่ปัจจุบัน')">🌦️ อากาศหน้างาน</button>`;
-        html += `<button type="button" class="voice-chip" onclick="bootstrap.Tab.getOrCreateInstance(document.querySelector('#map-tab')).show()">🗺️ แผนที่ & เรดาร์ 500ม.</button>`;
+        html += `<button type="button" class="voice-chip" onclick="fieldGpsRadar.activateRadarAndBriefNearest()">📡 เปิดโหมดพิกัดเรดาร์ 500 ม.</button>`;
         html += `<button type="button" class="voice-chip" onclick="fieldGpsRadar.simulateApproach300m()">📡 จำลองเข้าใกล้ 300ม.</button>`;
         html += `<button type="button" class="voice-chip" onclick="jarvisBrain.promptCreateNewMonthSheet('สร้างชีตเดือนใหม่')">➕ สร้างชีตเดือนใหม่</button>`;
         html += `<button type="button" class="voice-chip" onclick="bootstrap.Tab.getOrCreateInstance(document.querySelector('#import-tab')).show()">📥 นำเข้า UCUBE</button>`;
@@ -2676,13 +2821,14 @@ PEAKML
         this.recognition.maxAlternatives = 1;
 
         this.recognition.onstart = () => {
+          this.cancelCountdown();
           this.isListening = true;
           document.getElementById('jarvis-btn')?.classList.add('listening');
           if ('speechSynthesis' in window) window.speechSynthesis.cancel();
           const hint = this.state.mode === 'AWAITING_CHOICE'
             ? 'พูดเลือกทางเลือก หรือแตะปุ่มด้านล่างได้เลยครับ'
             : 'เชิญสั่งการได้เลยครับบอส (รองรับคำเชื่อมข้ามแท็บ, งานค้างเร่งด่วน SLA, สภาพอากาศรายตำบล)';
-          this.showSubtitle('🎙️ J.A.R.V.I.S v6.2 กำลังฟัง...', hint, 0, this.state.choices);
+          this.showSubtitle('🎙️ J.A.R.V.I.S v6.3 กำลังฟัง...', hint, 0, this.state.choices);
         };
 
         this.recognition.onresult = async (event) => {
@@ -2777,7 +2923,44 @@ PEAKML
         window.speechSynthesis.speak(msg);
       }
 
+      cancelCountdown() {
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+          this.countdownInterval = null;
+        }
+      }
+
+      startAutoReopenCountdown(durationSec = 5.0) {
+        if (!isAdminUser) return;
+        this.cancelCountdown();
+        const totalMs = Math.round(durationSec * 1000);
+        const startTime = Date.now();
+
+        const updateUi = () => {
+          const elapsed = Date.now() - startTime;
+          const remainingMs = Math.max(0, totalMs - elapsed);
+          const remainingSec = (remainingMs / 1000).toFixed(1);
+          const pct = Math.max(0, Math.min(100, (remainingMs / totalMs) * 100));
+
+          const secEl = document.getElementById('jarvis-cd-sec');
+          const barEl = document.getElementById('jarvis-cd-bar');
+          if (secEl) secEl.innerText = `${remainingSec}s`;
+          if (barEl) barEl.style.width = `${pct}%`;
+
+          if (remainingMs <= 0) {
+            this.cancelCountdown();
+            if (isAdminUser && !this.isListening) {
+              this.startListening();
+            }
+          }
+        };
+
+        updateUi();
+        this.countdownInterval = setInterval(updateUi, 100);
+      }
+
       resetConversation(clearDupContext = true) {
+        this.cancelCountdown();
         this.state.mode = 'IDLE';
         this.state.choices = [];
         this.state.defaultAllHandler = null;
@@ -3804,7 +3987,7 @@ PEAKML
       function parseCommand(rawTranscript) {
         const cleanText = normalizeThaiDigits(rawTranscript).replace(/\s+/g, ' ').trim();
 
-        const specializedGuard = /(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย|ซ้ำ|ปิดงานที่ซ้ำ|สร้างชีต|เปิดรอบ|นำเข้า|ucube|ยูคิวบ์|แผนที่|เรดาร์|จำลองเข้าใกล้|export|เอ็กซ์เซล|ส่งออก|แนะนำ|ไปไหน|สาเหตุ|พิกัด|gps|รายงานตัว|อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|ทำอะไรได้บ้าง|สถานะภาพรวม|ล้างความจำ|สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก|ค้างเกิน|งานค้างเร่งด่วน|sla)/i;
+        const specializedGuard = /(ไม่สมบูรณ์|ไม่ครบ|ขาดรูป|ขาดหน่วย|ซ้ำ|ปิดงานที่ซ้ำ|สร้างชีต|เปิดรอบ|นำเข้า|ucube|ยูคิวบ์|แผนที่|เรดาร์|โหมดพิกัด|จำลองเข้าใกล้|export|เอ็กซ์เซล|ส่งออก|แนะนำ|ไปไหน|สาเหตุ|พิกัด|gps|รายงานตัว|อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|ทำอะไรได้บ้าง|สถานะภาพรวม|ล้างความจำ|สภาพอากาศ|พยากรณ์อากาศ|ฝนจะตก|ค้างเกิน|งานค้างเร่งด่วน|sla|ค้นหาชื่อ|หาชื่อ|ค้นหาเลข\s*pea|ค้นหา\s*pea)/i;
         if (specializedGuard.test(cleanText)) return null;
 
         const isQueryIntent = /(แสดง|ดู|ค้นหา|หา|เช็ค|เช็ก|ตรวจ|ดึง|โชว์|เปิดรายการ|ใบงาน|งานคงเหลือ|ส่งงานแล้ว|เสร็จสมบูรณ์)/.test(cleanText);
@@ -4035,23 +4218,186 @@ PEAKML
     })();
 
     // ============================================================================
-    // 🌐 J.A.R.V.I.S OMNI-ASSISTANT v6.2 (System Briefing & Zone Weather Safety)
+    // 🌐 J.A.R.V.I.S OMNI-ASSISTANT v6.3 (Wake Countdown, 500m Radar, Search Tab Readout)
     // ============================================================================
     const JarvisOmniAssistant = (() => {
-      function speakOut(htmlText) {
+      function speakOut(htmlText, onDoneCallback = null, autoHideMs = 11000) {
+        if (!isAdminUser) return;
         if (typeof jarvisBrain !== 'undefined') {
           jarvisBrain.resetConversation(false);
-          jarvisBrain.speak(htmlText, false);
-        } else if ('speechSynthesis' in window) {
-          const plain = htmlText.replace(/<[^>]*>/g, ' ');
-          window.speechSynthesis.speak(new SpeechSynthesisUtterance(plain));
+          jarvisBrain.showSubtitle('🤖 J.A.R.V.I.S v6.3:', htmlText, autoHideMs);
         }
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlText;
+        const cleanSpeech = (tempDiv.textContent || tempDiv.innerText || '').trim();
+
+        if (!('speechSynthesis' in window)) {
+          if (typeof onDoneCallback === 'function') onDoneCallback();
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(cleanSpeech);
+        msg.lang = 'th-TH';
+        msg.rate = 1.1;
+
+        let finished = false;
+        const finishOnce = () => {
+          if (finished) return;
+          finished = true;
+          if (typeof onDoneCallback === 'function') onDoneCallback();
+        };
+
+        msg.onend = finishOnce;
+        msg.onerror = finishOnce;
+        window.speechSynthesis.speak(msg);
+      }
+
+      // ฟีเจอร์ 1: Wake-Word & 5s Mic Countdown ("จาร์วิสอยู่มั้ย")
+      function handlePresenceWakeCheck(transcript) {
+        const lower = transcript.toLowerCase().trim();
+        const isWakePresence = /(จาร์วิส|จาวิส|jarvis)\s*(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|อยู่ป่าว|พร้อมมั้ย|พร้อมไหม)/i.test(lower)
+          || /^(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|อยู่ป่าว)\s*(จาร์วิส|จาวิส|jarvis)?$/i.test(lower);
+
+        if (!isWakePresence) return false;
+
+        const countdownHtml = `
+          <div>ครับบอส จาร์วิสออนไลน์พร้อมรับคำสั่งครับ</div>
+          <div class="jarvis-countdown-wrap">
+            <div class="d-flex justify-content-between align-items-center small mb-1">
+              <span class="text-info fw-bold"><i class="bi bi-mic-fill me-1"></i>กำลังเปิดไมค์รับคำสั่งต่ออัตโนมัติใน <span id="jarvis-cd-sec">5.0s</span></span>
+              <button type="button" class="btn btn-sm btn-outline-light py-0 px-2" style="font-size:0.7rem;border-radius:12px;"
+                onclick="jarvisBrain.cancelCountdown();document.getElementById('jarvis-subtitle').style.display='none';">ปิด</button>
+            </div>
+            <div class="w-100 bg-dark rounded-pill overflow-hidden">
+              <div id="jarvis-cd-bar" class="jarvis-countdown-bar"></div>
+            </div>
+          </div>
+        `;
+
+        speakOut(countdownHtml, () => {
+          if (typeof jarvisBrain !== 'undefined') {
+            jarvisBrain.startAutoReopenCountdown(5.0);
+          }
+        }, 0);
+
+        return true;
+      }
+
+      // ฟีเจอร์ 2: Radar 500m Voice Telemetry ("เปิดโหมดพิกัดเรดาร์ 500 เมตร")
+      function handleRadar500mModeCommand(transcript) {
+        const lower = transcript.toLowerCase().trim();
+        const isRadar500Cmd = /(เปิดโหมดพิกัดเรดาร์|โหมดพิกัดเรดาร์|เปิดเรดาร์\s*500|พิกัดเรดาร์\s*500|เรดาร์\s*500\s*เมตร)/i.test(lower);
+        if (!isRadar500Cmd) return false;
+
+        if (typeof jarvisBrain !== 'undefined') {
+          jarvisBrain.resetConversation(false);
+        }
+        fieldGpsRadar.activateRadarAndBriefNearest();
+        return true;
+      }
+
+      // ฟีเจอร์ 3: Direct Name / PEA Search on "ส่งงาน ส.ป.มิเตอร์" Tab ("ค้นหาชื่อ...")
+      async function handleSearchTabPersonOrPeaCommand(transcript) {
+        const cleanText = transcript.replace(/\s+/g, ' ').trim();
+        const match = cleanText.match(/^(?:ช่วย)?(?:ค้นหาชื่อ|หาชื่อ|ค้นหาเลข\s*pea|ค้นหา\s*pea|ค้นหาคุณ|หาคุณ)\s*(.+)$/i);
+        if (!match) return false;
+
+        let extractedTarget = match[1]
+          .replace(/\s*(?:ให้หน่อย|หน่อย|ด้วย|ครับ|ค่ะ|สิ|ที)$/g, '')
+          .trim();
+
+        if (!extractedTarget) return false;
+
+        // สลับไปแท็บ "ส่งงาน ส.ป.มิเตอร์" และกรอกคำค้นทันที
+        const searchTabBtn = document.getElementById('search-tab');
+        if (searchTabBtn && window.bootstrap) {
+          bootstrap.Tab.getOrCreateInstance(searchTabBtn).show();
+        }
+        const workModeEl = document.getElementById('work-mode');
+        if (workModeEl) {
+          workModeEl.value = 'ucube';
+          toggleWorkMode();
+        }
+        const monthSelectEl = document.getElementById('month-select');
+        if (monthSelectEl) monthSelectEl.value = 'ALL';
+
+        const searchInputEl = document.getElementById('search-query');
+        if (searchInputEl) {
+          searchInputEl.value = extractedTarget;
+        }
+
+        // โหลดข้อมูลทุกเดือนมาเทียบเสียงและนับจำนวนรายการที่พบ
+        let allItems = globalDashResults || [];
+        if (allItems.length === 0) {
+          allItems = await new Promise((resolve) => {
+            callAPI('getDashboardData', { month: 'ALL', statusFilter: 'ทั้งหมด' }, (res) => {
+              globalDashResults = (res && res.results) ? res.results : [];
+              resolve(globalDashResults);
+            });
+          });
+        }
+
+        const matchedItems = allItems.filter(it => {
+          const targetPool = `${it.name || ''} ${it.pea || ''}`;
+          return ThaiPhoneticSearch.isMultiTermMatch(targetPool, extractedTarget);
+        });
+
+        const count = matchedItems.length;
+
+        if (count === 0) {
+          if (searchInputEl) searchInputEl.value = extractedTarget;
+          searchData();
+          speakOut(`ไม่พบข้อมูลใบงานที่ตรงกับชื่อ <b>"${extractedTarget}"</b> ในระบบครับบอส`);
+          return true;
+        }
+
+        if (count >= 1 && count <= 2) {
+          const firstItem = matchedItems[0];
+          const bestQuery = (firstItem.pea && firstItem.pea !== '-') ? firstItem.pea : (firstItem.name || extractedTarget);
+          if (searchInputEl) searchInputEl.value = bestQuery;
+          searchData();
+
+          const readoutParts = matchedItems.map((it, idx) => {
+            const prefix = count === 2 ? `รายการที่ ${idx + 1} ` : '';
+            return `${prefix}ชื่อ <b>${it.name || '-'}</b> สาเหตุ <b>${it.reason || 'ไม่ระบุ'}</b> สถานที่ <b>${it.location || 'ไม่ระบุ'}</b>`;
+          });
+
+          speakOut(`พบข้อมูล <b>${count} รายการ</b>ครับบอส ${readoutParts.join(' และ ')} เปิดแบบฟอร์มให้เรียบร้อยครับ`);
+          return true;
+        }
+
+        // พบ 3 รายการขึ้นไป: แจ้งเฉพาะจำนวนรายการที่พบ + แสดงปุ่มเลือกด่วน
+        const quickChoices = matchedItems.slice(0, 4).map(it => ({
+          label: `${it.name || it.pea} (${it.sheetName})`,
+          icon: '📄',
+          priority: 1,
+          keywords: [String(it.name || '').toLowerCase(), String(it.pea || '').toLowerCase()],
+          handler: () => {
+            const q = (it.pea && it.pea !== '-') ? it.pea : it.name;
+            if (searchInputEl) searchInputEl.value = q;
+            if (monthSelectEl && it.sheetName) monthSelectEl.value = it.sheetName;
+            searchData();
+            speakOut(`เปิดใบงานของ <b>${it.name || '-'}</b> สาเหตุ ${it.reason || '-'} สถานที่ ${it.location || '-'} เรียบร้อยครับ`);
+          }
+        }));
+
+        if (typeof jarvisBrain !== 'undefined') {
+          jarvisBrain.promptChoices(
+            `พบข้อมูลที่ตรงกับ <b>"${extractedTarget}"</b> จำนวน <b>${count} รายการ</b>ครับบอส บอสสามารถเลือกรายชื่อด้านล่างเพื่อเปิดฟอร์มส่งงานได้ทันทีครับ`,
+            quickChoices
+          );
+        } else {
+          speakOut(`พบข้อมูลที่ตรงกับ <b>"${extractedTarget}"</b> จำนวน <b>${count} รายการ</b>ครับบอส`);
+        }
+        return true;
       }
 
       async function handleStatusAndCapabilityQuery(transcript) {
         const lower = transcript.toLowerCase().trim();
-        const isPresenceOrCap = /(จาร์วิส|จาวิส|jarvis).*(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|พร้อมมั้ย|พร้อมไหม|ออนไลน์|รายงานตัว|ทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|มีคำสั่งอะไรบ้าง)/i.test(lower)
-          || /^(อยู่มั้ย|อยู่ไหม|อยู่หรือเปล่า|รายงานตัว|คุณทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|รายงานสถานะภาพรวม|เช็คสถานะระบบ|เช็กสถานะระบบ|สรุปภาพรวมแอป)/i.test(lower);
+        const isPresenceOrCap = /(จาร์วิส|จาวิส|jarvis).*(ออนไลน์|รายงานตัว|ทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|มีคำสั่งอะไรบ้าง)/i.test(lower)
+          || /^(รายงานตัว|คุณทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|รายงานสถานะภาพรวม|เช็คสถานะระบบ|เช็กสถานะระบบ|สรุปภาพรวมแอป)/i.test(lower);
 
         if (!isPresenceOrCap) return false;
 
@@ -4066,7 +4412,7 @@ PEAKML
             <div class="card border-0 shadow-sm rounded-4 mb-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #f8fafc;">
               <div class="card-body p-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="badge bg-info text-dark fw-bold"><i class="bi bi-cpu-fill me-1"></i>J.A.R.V.I.S v6.2 ONLINE</span>
+                  <span class="badge bg-info text-dark fw-bold"><i class="bi bi-cpu-fill me-1"></i>J.A.R.V.I.S v6.3 ONLINE</span>
                   <small class="text-info">ฐานข้อมูล ${sheetsCount} เดือน • เรดาร์ GPS: ${radarActive}</small>
                 </div>
                 <div class="row g-2 text-center my-2">
@@ -4186,6 +4532,9 @@ PEAKML
       }
 
       async function handleCommand(transcript) {
+        if (handlePresenceWakeCheck(transcript)) return true;
+        if (handleRadar500mModeCommand(transcript)) return true;
+        if (await handleSearchTabPersonOrPeaCommand(transcript)) return true;
         if (await handleStatusAndCapabilityQuery(transcript)) return true;
         if (await handleWeatherQuery(transcript)) return true;
         return false;
@@ -4700,5 +5049,4 @@ PEAKML
   </script>
 </body>
 </html>
-Created by Panupong Tosreekaew
-PEA KML
+CREAT BY PANUPONG 
