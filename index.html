@@ -1,6 +1,8 @@
 
 
-PEAKML v2.8
+
+ไอคอน TXT
+index_v2.9
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -437,7 +439,7 @@ PEAKML v2.8
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v2.8 • J.A.R.V.I.S v6.3</p>
+      <p class="text-muted small">PEA Smart Operation System v2.9 • J.A.R.V.I.S v6.3</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -514,7 +516,7 @@ PEAKML v2.8
           </div>
           <div class="mt-3">
             <div class="input-group">
-              <input type="text" id="dash-search" class="form-control rounded-start-pill px-4" placeholder="🔍 ค้นหาชื่อ-สกุล/PEA/สถานที่ (ค้นหาจากสถานะ/ชื่อใบงานตามที่ระบุไว้)" onkeyup="filterDashboard()">
+              <input type="text" id="dash-search" class="form-control rounded-start-pill px-4" placeholder="🔍 ค้นหา PEA เดิม-ใหม่ / ชื่อ / สถานที่ / สาเหตุ / หมายเหตุ" onkeyup="filterDashboard()">
               <button class="btn btn-outline-primary rounded-end-pill px-3" type="button" onclick="startVoiceSearchForInput('dash-search', false)" title="พูดค้นหาใบงาน">
                 <i class="bi bi-mic-fill"></i> พูดค้นหา
               </button>
@@ -578,8 +580,9 @@ PEAKML v2.8
           <div id="radar-telemetry-banner" class="radar-telemetry-banner mb-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
               <div>
-                <div class="small text-info fw-bold">
-                  <i class="bi bi-radar me-1"></i> สถานะเรดาร์: <span id="radar-status-label">สแตนด์บาย (รัศมีตรวจจับ 500 เมตร)</span>
+                <div class="small text-info fw-bold d-flex align-items-center flex-wrap gap-1">
+                  <span><i class="bi bi-radar me-1"></i> สถานะเรดาร์: <span id="radar-status-label">สแตนด์บาย (รัศมีตรวจจับ 500 เมตร)</span></span>
+                  <span id="radar-wakelock-badge" class="badge bg-secondary bg-opacity-50 text-white-50 ms-1"><i class="bi bi-moon-stars me-1"></i>กันจอดับปิดอยู่</span>
                 </div>
                 <div class="small mt-1" id="radar-nearest-info">กำลังโหลดพิกัดบ้านผู้ใช้ไฟจากฐานข้อมูล...</div>
               </div>
@@ -1941,6 +1944,132 @@ PEAKML v2.8
         this.watchId = null;
         this.alertedPeas = new Set();
         this.RADIUS_METERS = 500;
+        this.wakeLock = null;
+        this.wakeLockDesired = false;
+        this.initWakeLockVisibilityGuard();
+      }
+
+      initWakeLockVisibilityGuard() {
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && this.wakeLockDesired && !this.wakeLock) {
+            this.acquireWakeLock();
+          }
+        });
+      }
+
+      async acquireWakeLock() {
+        this.wakeLockDesired = true;
+        if (!('wakeLock' in navigator)) {
+          this.updateWakeLockBadge(false, 'เบราว์เซอร์ไม่รองรับกันจอดับ');
+          return;
+        }
+        try {
+          this.wakeLock = await navigator.wakeLock.request('screen');
+          this.updateWakeLockBadge(true);
+          this.wakeLock.addEventListener('release', () => {
+            this.wakeLock = null;
+            if (!this.wakeLockDesired) {
+              this.updateWakeLockBadge(false);
+            }
+          });
+        } catch (err) {
+          this.updateWakeLockBadge(false, 'รอแตะหน้าจอเพื่อล็อกจอสว่าง');
+        }
+      }
+
+      async releaseWakeLock() {
+        this.wakeLockDesired = false;
+        if (this.wakeLock) {
+          try { await this.wakeLock.release(); } catch (e) {}
+          this.wakeLock = null;
+        }
+        this.updateWakeLockBadge(false);
+      }
+
+      updateWakeLockBadge(isLocked, customText = '') {
+        const badgeEl = document.getElementById('radar-wakelock-badge');
+        if (!badgeEl) return;
+        if (isLocked) {
+          badgeEl.className = 'badge bg-success text-white ms-1';
+          badgeEl.innerHTML = '<i class="bi bi-brightness-high-fill me-1"></i>กันจอดับทำงานอยู่';
+        } else if (customText) {
+          badgeEl.className = 'badge bg-warning text-dark ms-1';
+          badgeEl.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${customText}`;
+        } else {
+          badgeEl.className = 'badge bg-secondary bg-opacity-50 text-white-50 ms-1';
+          badgeEl.innerHTML = '<i class="bi bi-moon-stars me-1"></i>กันจอดับปิดอยู่';
+        }
+      }
+
+      async ensureNotificationPermission() {
+        if (!('Notification' in window)) return false;
+        if (Notification.permission === 'granted') return true;
+        if (Notification.permission !== 'denied') {
+          try {
+            const perm = await Notification.requestPermission();
+            return perm === 'granted';
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
+      }
+
+      playAlertChime() {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          const ctx = new AudioCtx();
+          const now = ctx.currentTime;
+          [880, 1174.66].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.16);
+            gain.gain.setValueAtTime(0.22, now + idx * 0.16);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.16 + 0.28);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.16);
+            osc.stop(now + idx * 0.16 + 0.3);
+          });
+        } catch (e) {}
+      }
+
+      async triggerBannerAndVibration(item, distRounded) {
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate([250, 120, 250, 120, 400]); } catch (e) {}
+        }
+        this.playAlertChime();
+
+        const title = `📡 เรดาร์ 500 ม.: ใกล้จุดเปลี่ยนมิเตอร์ (${distRounded} ม.)`;
+        const body = `${item.name || '-'} (PEA ${item.pea || '-'})
+สถานที่: ${item.location || '-'} • สาเหตุ: ${item.reason || '-'}`;
+
+        const granted = await this.ensureNotificationPermission();
+        if (!granted) return;
+
+        try {
+          if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg && reg.showNotification) {
+              await reg.showNotification(title, {
+                body: body,
+                icon: '1000002294.png',
+                badge: '1000002294.png',
+                tag: `pea-radar-${item.pea || item.name}`,
+                renotify: true,
+                vibrate: [250, 120, 250]
+              });
+              return;
+            }
+          }
+          new Notification(title, {
+            body: body,
+            icon: '1000002294.png',
+            tag: `pea-radar-${item.pea || item.name}`
+          });
+        } catch (e) {}
       }
 
       initTabListener() {
@@ -2138,6 +2267,7 @@ PEAKML v2.8
           const peaKey = String(nearest.item.pea || nearest.item.name);
           if (!this.alertedPeas.has(peaKey) || isSimulated) {
             this.alertedPeas.add(peaKey);
+            this.triggerBannerAndVibration(nearest.item, distRounded);
             this.speakRadarAlert(
               `แจ้งเตือนเรดาร์ 500 เมตรครับบอส! เข้าใกล้จุดเปลี่ยนมิเตอร์ของ ${nearest.item.name} หมายเลข PEA ${nearest.item.pea} ระยะห่าง ${distRounded} เมตร สาเหตุ ${nearest.item.reason || 'เปลี่ยนมิเตอร์'} ครับ`
             );
@@ -2170,6 +2300,8 @@ PEAKML v2.8
         if (statusLabel) {
           statusLabel.innerText = 'กำลังติดตามพิกัดสด (โหมดเรดาร์ 500 เมตร)';
         }
+        this.acquireWakeLock();
+        this.ensureNotificationPermission();
 
         const startWatch = () => {
           if (this.watchId !== null) {
@@ -2236,6 +2368,7 @@ PEAKML v2.8
               if (within500.length > 0) {
                 if (banner) banner.classList.add('alert-active');
                 this.alertedPeas.add(String(nearest.item.pea || nearest.item.name));
+                this.triggerBannerAndVibration(nearest.item, nearestDist);
                 if (infoEl) {
                   infoEl.innerHTML = `พบ <b>${within500.length} ใบงาน</b> ในรัศมี 500 ม. • ใกล้สุด: <b>${nearest.item.name}</b> (PEA ${nearest.item.pea}) • ${nearest.item.location || '-'}`;
                 }
@@ -2283,6 +2416,7 @@ PEAKML v2.8
         if (this.watchId !== null) {
           navigator.geolocation.clearWatch(this.watchId);
           this.watchId = null;
+          this.releaseWakeLock();
           if (btn) {
             btn.className = 'btn btn-sm btn-success rounded-pill fw-bold px-3 shadow-sm';
             btn.innerHTML = '<i class="bi bi-crosshair me-1"></i> เปิดเรดาร์ GPS จริง';
@@ -2296,11 +2430,14 @@ PEAKML v2.8
           return;
         }
 
+        this.acquireWakeLock();
+        this.ensureNotificationPermission();
+
         if (btn) {
           btn.className = 'btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm';
           btn.innerHTML = '<i class="bi bi-stop-circle-fill me-1"></i> หยุดเรดาร์ GPS';
         }
-        if (statusLabel) statusLabel.innerText = 'กำลังติดตามพิกัดสด (แจ้งเตือนอัตโนมัติในรัศมี 500 ม.)';
+        if (statusLabel) statusLabel.innerText = 'กำลังติดตามพิกัดสด (กันจอดับ + แจ้งเตือนรัศมี 500 ม.)';
 
         this.watchId = navigator.geolocation.watchPosition(
           pos => this.updateVehiclePosition(pos.coords.latitude, pos.coords.longitude, false),
@@ -4799,43 +4936,100 @@ PEAKML v2.8
       }, 300); 
     }
 
+    let currentDisplayedItems = [];
+
+    function normalizeSearchDigitsAndText(str) {
+      const thaiNums = '๐๑๒๓๔๕๖๗๘๙';
+      return String(str || '')
+        .replace(/[๐-๙]/g, ch => thaiNums.indexOf(ch))
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
     function filterDashboard() {
-      let rawInput = document.getElementById('dash-search').value;
-      let input = rawInput.toLowerCase();
+      const rawInputOriginal = document.getElementById('dash-search')?.value || '';
+      const rawInput = normalizeSearchDigitsAndText(rawInputOriginal);
+      let lowerInput = rawInput.toLowerCase();
       const items = document.querySelectorAll('.dash-item');
       const hintEl = document.getElementById('dash-phonetic-hint');
 
       let isExactMatch = false;
-      if (input.startsWith('"') && input.endsWith('"')) {
+      if (lowerInput.startsWith('"') && lowerInput.endsWith('"') && lowerInput.length >= 2) {
         isExactMatch = true;
-        input = input.substring(1, input.length - 1);
+        lowerInput = lowerInput.substring(1, lowerInput.length - 1);
       }
 
       let visibleCount = 0;
       let phoneticExtraCount = 0;
+      const matchedColumnsSet = new Set();
 
       items.forEach(item => {
-        const text = item.innerText;
-        if (isExactMatch) {
-          const hit = text.toLowerCase().includes(input);
-          item.style.setProperty('display', hit ? 'block' : 'none', 'important');
-          if (hit) visibleCount++;
+        const idxAttr = item.getAttribute('data-dash-idx');
+        const sourceList = (currentDisplayedItems && currentDisplayedItems.length > 0)
+          ? currentDisplayedItems
+          : (globalDashResults || []);
+        const rowObj = (idxAttr !== null && sourceList[Number(idxAttr)])
+          ? sourceList[Number(idxAttr)]
+          : null;
+
+        // กวาดค้นหาครบทุกคอลัมน์สำคัญ: เลข PEA เดิม, เลข PEA ใหม่, ชื่อผู้ใช้ไฟ, สถานที่, สาเหตุ, ผู้ดำเนินการ, หมายเหตุ, รอบเดือน, สถานะ
+        const fieldEntries = rowObj ? [
+          { label: 'เลข PEA เดิม', val: rowObj.pea || '' },
+          { label: 'เลข PEA ใหม่', val: rowObj.colF || '' },
+          { label: 'ชื่อผู้ใช้ไฟ', val: rowObj.name || '' },
+          { label: 'สถานที่', val: rowObj.location || '' },
+          { label: 'สาเหตุ', val: rowObj.reason || '' },
+          { label: 'ผู้ดำเนินการ', val: rowObj.operator || '' },
+          { label: 'หมายเหตุ', val: rowObj.remark || '' },
+          { label: 'รอบเดือน', val: rowObj.sheetName || '' },
+          { label: 'สถานะ', val: rowObj.status || '' }
+        ] : [
+          { label: 'ข้อมูลการ์ด', val: item.innerText || '' }
+        ];
+
+        const combinedSearchPool = normalizeSearchDigitsAndText(
+          fieldEntries.map(f => f.val).filter(Boolean).join(' ') + ' ' + (item.innerText || '')
+        );
+
+        let hit = false;
+        if (!lowerInput) {
+          hit = true;
+        } else if (isExactMatch) {
+          hit = combinedSearchPool.toLowerCase().includes(lowerInput);
         } else {
-          const hit = ThaiPhoneticSearch.isMultiTermMatch(text, rawInput);
-          item.style.setProperty('display', hit ? 'block' : 'none', 'important');
-          if (hit) {
-            visibleCount++;
-            if (rawInput.trim() && !text.toLowerCase().includes(input.trim())) {
-              phoneticExtraCount++;
-            }
+          const directSubstrHit = combinedSearchPool.toLowerCase().includes(lowerInput);
+          const phoneticHit = ThaiPhoneticSearch.isMultiTermMatch(combinedSearchPool, rawInput);
+          hit = directSubstrHit || phoneticHit;
+
+          if (hit && !directSubstrHit) {
+            phoneticExtraCount++;
           }
         }
+
+        if (hit && lowerInput) {
+          fieldEntries.forEach(f => {
+            const normField = normalizeSearchDigitsAndText(f.val);
+            if (!normField) return;
+            if (normField.toLowerCase().includes(lowerInput) || (!isExactMatch && ThaiPhoneticSearch.isMultiTermMatch(normField, rawInput))) {
+              matchedColumnsSet.add(f.label);
+            }
+          });
+        }
+
+        item.style.setProperty('display', hit ? 'block' : 'none', 'important');
+        if (hit) visibleCount++;
       });
 
       if (hintEl) {
-        if (rawInput.trim() && phoneticExtraCount > 0) {
+        if (rawInput) {
+          const colSummary = matchedColumnsSet.size > 0
+            ? ` • ตรงในคอลัมน์: <b>${[...matchedColumnsSet].join(', ')}</b>`
+            : '';
+          const phoneticPart = phoneticExtraCount > 0
+            ? ` • พ้องเสียงไทย (<code>${ThaiPhoneticSearch.normalize(rawInput)}</code>) เพิ่ม <b>${phoneticExtraCount}</b> รายการ`
+            : '';
           hintEl.style.display = 'block';
-          hintEl.innerHTML = `<i class="bi bi-soundwave me-1"></i> ระบบพ้องเสียงไทย (รหัสเสียง: <code>${ThaiPhoneticSearch.normalize(rawInput)}</code>) พบรายการเสียงพ้องเพิ่มเติม <b>${phoneticExtraCount}</b> รายการ`;
+          hintEl.innerHTML = `<i class="bi bi-funnel-fill me-1"></i> พบ <b>${visibleCount}</b> รายการ${colSummary}${phoneticPart}`;
         } else {
           hintEl.style.display = 'none';
         }
@@ -4916,6 +5110,7 @@ PEAKML v2.8
     }
 
     function renderCardsList(itemsArray, headerBannerHtml = '') {
+      currentDisplayedItems = Array.isArray(itemsArray) ? itemsArray : [];
       let html = headerBannerHtml;
       if (!itemsArray || itemsArray.length === 0) {
         html += '<div class="alert alert-secondary text-center rounded-pill">ไม่พบรายการงาน</div>';
@@ -4956,7 +5151,7 @@ PEAKML v2.8
             : '';
 
           html += `
-            <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" style="background: rgba(255,255,255,0.88); backdrop-filter: blur(5px);">
+            <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" data-dash-idx="${idx}" style="background: rgba(255,255,255,0.88); backdrop-filter: blur(5px);">
               <div class="d-flex align-items-center mb-2 border-bottom pb-2">
                 ${checkboxHtml}
                 <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${gpsBadgeHtml} ${statusBadgeList}</h6>
@@ -5049,6 +5244,4 @@ PEAKML v2.8
   </script>
 </body>
 </html>
-
-            
-            CREATED BY PANUPONG 
+Addressing a user's coding needs
