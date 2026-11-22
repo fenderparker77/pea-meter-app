@@ -1,8 +1,8 @@
 
 
 
-ไอคอน TXT
-index_v2.9
+ไอคอน HTML
+index_v3.0
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -422,11 +422,16 @@ index_v2.9
   <!-- 💬 กล่องแสดงคำพูดโต้ตอบ & ทางเลือกด่วน -->
   <div id="jarvis-subtitle" class="jarvis-subtitle-box"></div>
 
-  <!-- 🗺️ ปุ่มนำทางงาน -->
+  <!-- 🗺️ ปุ่มนำทางงาน (Hybrid 500m Radar Navigation) -->
   <div id="route-panel" class="route-panel">
-    <button class="btn btn-primary rounded-pill px-4 py-3 shadow-lg fw-bold" onclick="startRouting()">
-      <i class="bi bi-geo-alt-fill fs-5 me-2"></i> นำทางงาน (<span id="route-count">0</span>)
-    </button>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <button class="btn rounded-pill px-4 py-3 shadow-lg fw-bold text-white" style="background: linear-gradient(135deg, #0f2027, #203a43, #0083b0); border: 2px solid #00d2ff;" onclick="startRouting()">
+        <i class="bi bi-radar fs-5 me-2 text-info"></i> เข้าโหมดเรดาร์นำทาง (<span id="route-count">0</span> จุด)
+      </button>
+      <button class="btn btn-light rounded-pill px-3 py-3 shadow fw-bold border text-success" onclick="openSelectedInGoogleMaps()" title="เปิดเส้นทางรวมใน Google Maps">
+        <i class="bi bi-map-fill"></i>
+      </button>
+    </div>
   </div>
 
   <datalist id="details-list">
@@ -439,7 +444,7 @@ index_v2.9
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v2.9 • J.A.R.V.I.S v6.3</p>
+      <p class="text-muted small">PEA Smart Operation System v3.0 • J.A.R.V.I.S v6.3</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -576,15 +581,29 @@ index_v2.9
             </div>
           </div>
 
+          <!-- แถบแจ้งเตือนโหมดเรดาร์นำทางเฉพาะจุดที่เลือก -->
+          <div id="focused-route-banner" class="alert alert-info border-info rounded-4 py-2 px-3 mb-3 shadow-sm" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="small fw-bold text-dark">
+                <i class="bi bi-signpost-split-fill text-primary me-1"></i>
+                กำลังนำทางด้วยเรดาร์เฉพาะ <span id="focused-route-count" class="badge bg-primary rounded-pill">0</span> จุดที่เลือกจากแท็บสถานะ
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold py-0 px-3" onclick="fieldGpsRadar.clearFocusedRouteMode()">
+                <i class="bi bi-grid-fill me-1"></i>แสดงหมุดทั้งหมด
+              </button>
+            </div>
+          </div>
+
           <!-- แถบสถานะเรดาร์ระยะใกล้ -->
           <div id="radar-telemetry-banner" class="radar-telemetry-banner mb-3">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <div>
+              <div class="flex-grow-1">
                 <div class="small text-info fw-bold d-flex align-items-center flex-wrap gap-1">
                   <span><i class="bi bi-radar me-1"></i> สถานะเรดาร์: <span id="radar-status-label">สแตนด์บาย (รัศมีตรวจจับ 500 เมตร)</span></span>
                   <span id="radar-wakelock-badge" class="badge bg-secondary bg-opacity-50 text-white-50 ms-1"><i class="bi bi-moon-stars me-1"></i>กันจอดับปิดอยู่</span>
                 </div>
                 <div class="small mt-1" id="radar-nearest-info">กำลังโหลดพิกัดบ้านผู้ใช้ไฟจากฐานข้อมูล...</div>
+                <div id="radar-nearest-actions" class="mt-2 d-flex flex-wrap gap-2" style="display:none !important;"></div>
               </div>
               <span id="radar-distance-badge" class="badge bg-dark border border-info text-info fs-6 px-3 py-2 rounded-pill">-- ม.</span>
             </div>
@@ -1939,8 +1958,11 @@ index_v2.9
       constructor() {
         this.map = null;
         this.markers = [];
+        this.routePolyline = null;
+        this.focusedItems = null;
         this.userMarker = null;
         this.radarCircle = null;
+        this.lastVehiclePos = null;
         this.watchId = null;
         this.alertedPeas = new Set();
         this.RADIUS_METERS = 500;
@@ -2105,7 +2127,15 @@ index_v2.9
         }).addTo(this.map);
       }
 
-      makePinIcon(colorHex) {
+      makePinIcon(colorHex, sequenceLabel = '') {
+        if (sequenceLabel) {
+          return L.divIcon({
+            className: 'custom-pea-pin-seq',
+            html: `<div style="background:${colorHex};color:#fff;width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:'Sarabun',sans-serif;">${sequenceLabel}</div>`,
+            iconSize: [26, 26],
+            iconAnchor: [13, 13]
+          });
+        }
         return L.divIcon({
           className: 'custom-pea-pin',
           html: `<div style="background:${colorHex};width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 10px ${colorHex};"></div>`,
@@ -2114,8 +2144,61 @@ index_v2.9
         });
       }
 
+      isFocusedRouteActive() {
+        return Array.isArray(this.focusedItems) && this.focusedItems.length > 0;
+      }
+
+      syncFocusedItemsWithFreshData(freshResults) {
+        if (!this.isFocusedRouteActive() || !Array.isArray(freshResults)) return;
+        this.focusedItems = this.focusedItems.map(oldItem => {
+          const match = freshResults.find(r =>
+            String(r.pea || '').trim() === String(oldItem.pea || '').trim() &&
+            String(r.sheetName || '').trim() === String(oldItem.sheetName || '').trim()
+          );
+          return match || oldItem;
+        });
+      }
+
+      clearFocusedRouteMode() {
+        this.focusedItems = null;
+        if (this.routePolyline && this.map) {
+          this.map.removeLayer(this.routePolyline);
+          this.routePolyline = null;
+        }
+        const fBanner = document.getElementById('focused-route-banner');
+        if (fBanner) fBanner.style.display = 'none';
+        this.renderWorkOrderPins();
+        this.fitAllPins();
+      }
+
+      orderEntriesNearestNeighbor(entries, startPos = null) {
+        if (!entries || entries.length <= 1) return entries || [];
+        const remaining = [...entries];
+        const ordered = [];
+        let curLat = startPos ? startPos.lat : remaining[0].coords.lat;
+        let curLng = startPos ? startPos.lng : remaining[0].coords.lng;
+
+        while (remaining.length > 0) {
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < remaining.length; i++) {
+            const d = this.getDistanceMeters(curLat, curLng, remaining[i].coords.lat, remaining[i].coords.lng);
+            if (d < bestDist) {
+              bestDist = d;
+              bestIdx = i;
+            }
+          }
+          const next = remaining.splice(bestIdx, 1)[0];
+          ordered.push(next);
+          curLat = next.coords.lat;
+          curLng = next.coords.lng;
+        }
+        return ordered;
+      }
+
       getItemsWithCoords() {
-        return (globalDashResults || [])
+        const sourceList = this.isFocusedRouteActive() ? this.focusedItems : (globalDashResults || []);
+        return sourceList
           .map(item => ({ item, coords: this.parseLatLng(item.gps) }))
           .filter(entry => entry.coords !== null);
       }
@@ -2124,34 +2207,60 @@ index_v2.9
         if (!this.map) return;
         this.markers.forEach(m => this.map.removeLayer(m));
         this.markers = [];
+        if (this.routePolyline) {
+          this.map.removeLayer(this.routePolyline);
+          this.routePolyline = null;
+        }
 
-        const validEntries = this.getItemsWithCoords();
+        const isFocused = this.isFocusedRouteActive();
+        const fBanner = document.getElementById('focused-route-banner');
+        const fCountEl = document.getElementById('focused-route-count');
+
+        let validEntries = this.getItemsWithCoords();
+        if (isFocused) {
+          validEntries = this.orderEntriesNearestNeighbor(validEntries, this.lastVehiclePos);
+          if (fBanner) fBanner.style.display = 'block';
+          if (fCountEl) fCountEl.innerText = validEntries.length;
+        } else {
+          if (fBanner) fBanner.style.display = 'none';
+        }
+
         const countEl = document.getElementById('map-pin-count');
         if (countEl) countEl.innerText = validEntries.length;
 
         const cardsContainer = document.getElementById('map-pin-cards');
         let cardsHtml = '';
+        const routeLatLngs = [];
+        if (isFocused && this.lastVehiclePos) {
+          routeLatLngs.push([this.lastVehiclePos.lat, this.lastVehiclePos.lng]);
+        }
 
-        validEntries.forEach(({ item, coords }) => {
+        validEntries.forEach(({ item, coords }, idx) => {
           const isPending = item.status === 'งานคงเหลือ';
           const isDone = item.status === 'เสร็จสมบูรณ์';
           const pinColor = isPending ? '#e74c3c' : (isDone ? '#2ecc71' : '#f39c12');
           const statusBadgeClass = isPending ? 'bg-danger' : (isDone ? 'bg-success' : 'bg-warning text-dark');
+          const seqLabel = isFocused ? String(idx + 1) : '';
 
-          const marker = L.marker([coords.lat, coords.lng], { icon: this.makePinIcon(pinColor) }).addTo(this.map);
+          if (isFocused) {
+            routeLatLngs.push([coords.lat, coords.lng]);
+          }
+
+          const marker = L.marker([coords.lat, coords.lng], { icon: this.makePinIcon(pinColor, seqLabel) }).addTo(this.map);
           const safePea = String(item.pea || '').replace(/'/g, "\\'");
           const safeSheet = String(item.sheetName || '').replace(/'/g, "\\'");
 
           marker.bindPopup(`
-            <div style="font-family:'Sarabun',sans-serif;min-width:190px;">
+            <div style="font-family:'Sarabun',sans-serif;min-width:210px;">
+              ${isFocused ? `<div class="badge bg-info text-dark mb-1">จุดที่ ${idx + 1} ในเส้นทางเรดาร์</div>` : ''}
               <div class="fw-bold text-primary">PEA: ${item.pea || '-'}</div>
               <div class="fw-bold">${item.name || '-'}</div>
               <div class="small text-muted">${item.location || '-'}</div>
               <div class="small text-danger mb-1">${item.reason || '-'}</div>
               <span class="badge ${statusBadgeClass} mb-2">${item.status}</span><br>
-              <div class="d-flex gap-1 mt-1">
-                ${isPending ? `<button class="btn btn-sm btn-primary py-0 px-2" onclick="processPendingWork('${safePea}', '${safeSheet}')">ส่งงาน</button>` : ''}
-                <a href="https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}" target="_blank" class="btn btn-sm btn-outline-success py-0 px-2">นำทาง</a>
+              <div class="d-flex flex-wrap gap-1 mt-1">
+                ${isPending ? `<button class="btn btn-sm btn-primary fw-bold py-1 px-2" onclick="processPendingWork('${safePea}', '${safeSheet}')"><i class="bi bi-camera-fill me-1"></i>ส่งงาน</button>` : ''}
+                <a href="https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}" target="_blank" class="btn btn-sm btn-outline-success fw-bold py-1 px-2"><i class="bi bi-map me-1"></i>Google Maps เฉพาะจุดนี้</a>
               </div>
             </div>
           `);
@@ -2162,14 +2271,26 @@ index_v2.9
               <div class="border rounded-3 p-2 bg-white shadow-sm d-flex justify-content-between align-items-center" style="font-size:0.82rem;cursor:pointer;"
                 onclick="fieldGpsRadar.focusPin(${coords.lat}, ${coords.lng})">
                 <div class="text-truncate pe-2">
-                  <div class="fw-bold text-dark text-truncate">${item.name || '-'} <span class="text-primary">(${item.pea || '-'})</span></div>
+                  <div class="fw-bold text-dark text-truncate">${isFocused ? `<span class="badge bg-primary me-1">${idx + 1}</span>` : ''}${item.name || '-'} <span class="text-primary">(${item.pea || '-'})</span></div>
                   <div class="text-muted small text-truncate">${item.location || '-'}</div>
                 </div>
-                <span class="badge ${statusBadgeClass} rounded-pill shrink-0">${item.status}</span>
+                <div class="d-flex align-items-center gap-1 shrink-0">
+                  <a href="https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}" target="_blank" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill" onclick="event.stopPropagation()" title="เปิด Google Maps เฉพาะจุดนี้"><i class="bi bi-map"></i></a>
+                  <span class="badge ${statusBadgeClass} rounded-pill">${item.status}</span>
+                </div>
               </div>
             </div>
           `;
         });
+
+        if (isFocused && routeLatLngs.length >= 2) {
+          this.routePolyline = L.polyline(routeLatLngs, {
+            color: '#0083b0',
+            weight: 4,
+            opacity: 0.85,
+            dashArray: '10, 8'
+          }).addTo(this.map);
+        }
 
         if (cardsContainer) {
           cardsContainer.innerHTML = cardsHtml || '<div class="col-12 text-center text-muted small py-3">ยังไม่มีรายการที่มีพิกัดตัวเลขในตัวกรองปัจจุบันครับ</div>';
@@ -2178,8 +2299,31 @@ index_v2.9
         const nearestEl = document.getElementById('radar-nearest-info');
         if (nearestEl) {
           const pendingCount = validEntries.filter(e => e.item.status === 'งานคงเหลือ').length;
-          nearestEl.innerText = `พบหมุดทั้งหมด ${validEntries.length} จุด (งานคงเหลือรอเปลี่ยน ${pendingCount} จุด)`;
+          nearestEl.innerText = isFocused
+            ? `โหมดเรดาร์นำทางเฉพาะจุดที่เลือก: ${validEntries.length} จุด (งานคงเหลือ ${pendingCount} จุด)`
+            : `พบหมุดทั้งหมด ${validEntries.length} จุด (งานคงเหลือรอเปลี่ยน ${pendingCount} จุด)`;
         }
+      }
+
+      renderNearestActionButtons(nearestEntry) {
+        const actionsEl = document.getElementById('radar-nearest-actions');
+        if (!actionsEl) return;
+        if (!nearestEntry || !nearestEntry.item || !nearestEntry.coords) {
+          actionsEl.style.setProperty('display', 'none', 'important');
+          actionsEl.innerHTML = '';
+          return;
+        }
+        const item = nearestEntry.item;
+        const coords = nearestEntry.coords;
+        const safePea = String(item.pea || '').replace(/'/g, "\\'");
+        const safeSheet = String(item.sheetName || '').replace(/'/g, "\\'");
+        const isPending = item.status === 'งานคงเหลือ';
+
+        actionsEl.style.removeProperty('display');
+        actionsEl.innerHTML = `
+          ${isPending ? `<button type="button" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-3 py-1" onclick="processPendingWork('${safePea}', '${safeSheet}')"><i class="bi bi-camera-fill me-1"></i>ส่งงานจุดนี้ทันที</button>` : ''}
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}" target="_blank" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1"><i class="bi bi-map me-1"></i>Google Maps เฉพาะจุดนี้</a>
+        `;
       }
 
       focusPin(lat, lng) {
@@ -2219,6 +2363,7 @@ index_v2.9
 
       updateVehiclePosition(lat, lng, isSimulated = false) {
         this.ensureMap();
+        this.lastVehiclePos = { lat, lng };
         if (this.userMarker) this.map.removeLayer(this.userMarker);
         if (this.radarCircle) this.map.removeLayer(this.radarCircle);
 
@@ -2243,6 +2388,7 @@ index_v2.9
         if (pendingWithCoords.length === 0) {
           if (infoEl) infoEl.innerText = 'ไม่มีหมุดงานคงเหลือในบริเวณนี้ครับ';
           if (distBadge) distBadge.innerText = '-- ม.';
+          this.renderNearestActionButtons(null);
           return;
         }
 
@@ -2257,10 +2403,11 @@ index_v2.9
         });
 
         const distRounded = Math.round(minDist);
-        if (distBadge) distBadge.innerText = `${distRounded} ม.`;
+        if (distBadge) distBadge.innerText = distRounded >= 1000 ? `${(distRounded / 1000).toFixed(1)} กม.` : `${distRounded} ม.`;
         if (infoEl) {
           infoEl.innerHTML = `เป้าหมายใกล้สุด: <b>${nearest.item.name}</b> (PEA ${nearest.item.pea}) • ${nearest.item.location || ''}`;
         }
+        this.renderNearestActionButtons(nearest);
 
         if (distRounded <= this.RADIUS_METERS) {
           if (banner) banner.classList.add('alert-active');
@@ -2275,6 +2422,86 @@ index_v2.9
         } else {
           if (banner) banner.classList.remove('alert-active');
         }
+      }
+
+      activateFocusedRouteRadar(selectedItems) {
+        this.focusedItems = Array.isArray(selectedItems) ? selectedItems : [];
+        this.alertedPeas.clear();
+
+        const mapTabBtn = document.getElementById('map-tab');
+        if (mapTabBtn && window.bootstrap) {
+          bootstrap.Tab.getOrCreateInstance(mapTabBtn).show();
+        }
+        setTimeout(() => {
+          this.ensureMap();
+          this.renderWorkOrderPins();
+          this.fitAllPins();
+        }, 180);
+
+        const btn = document.getElementById('btn-toggle-gps-radar');
+        const statusLabel = document.getElementById('radar-status-label');
+        const banner = document.getElementById('radar-telemetry-banner');
+
+        if (btn) {
+          btn.className = 'btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm';
+          btn.innerHTML = '<i class="bi bi-stop-circle-fill me-1"></i> หยุดเรดาร์ GPS';
+        }
+        if (statusLabel) {
+          statusLabel.innerText = `โหมดเรดาร์นำทางเฉพาะจุดที่เลือก (${this.focusedItems.length} จุด • รัศมี 500 ม.)`;
+        }
+        this.acquireWakeLock();
+        this.ensureNotificationPermission();
+
+        if (this.watchId !== null) {
+          navigator.geolocation.clearWatch(this.watchId);
+          this.watchId = null;
+        }
+
+        if (!('geolocation' in navigator)) {
+          this.speakRadarAlert(`เปิดโหมดเรดาร์นำทาง ${this.focusedItems.length} จุดที่เลือกเรียบร้อยครับบอส แต่เบราว์เซอร์นี้ไม่รองรับ GPS ครับ`);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            this.lastVehiclePos = { lat, lng };
+            this.ensureMap();
+            this.renderWorkOrderPins();
+            this.updateVehiclePosition(lat, lng, false);
+
+            const routeEntries = this.getItemsWithCoords()
+              .map(e => ({ ...e, distance: this.getDistanceMeters(lat, lng, e.coords.lat, e.coords.lng) }))
+              .sort((a, b) => a.distance - b.distance);
+
+            if (routeEntries.length > 0) {
+              const nearest = routeEntries[0];
+              const nearestDist = Math.round(nearest.distance);
+              const distText = nearestDist >= 1000
+                ? `${(nearestDist / 1000).toFixed(2)} กิโลเมตร`
+                : `${nearestDist} เมตร`;
+
+              this.renderNearestActionButtons(nearest);
+              if (nearestDist <= this.RADIUS_METERS && banner) {
+                banner.classList.add('alert-active');
+              }
+              this.speakRadarAlert(
+                `เข้าสู่โหมดเรดาร์นำทาง 500 เมตร สำหรับงานที่เลือก <b>${routeEntries.length} จุด</b>เรียบร้อยครับบอส จุดที่ใกล้รถที่สุดคือ คุณ<b>${nearest.item.name}</b> หมายเลข PEA <b>${nearest.item.pea}</b> ระยะห่าง <b>${distText}</b> ครับ`
+              );
+            }
+
+            this.watchId = navigator.geolocation.watchPosition(
+              p => this.updateVehiclePosition(p.coords.latitude, p.coords.longitude, false),
+              () => {},
+              { enableHighAccuracy: true, maximumAge: 3000 }
+            );
+          },
+          () => {
+            this.speakRadarAlert(`เปิดโหมดเรดาร์นำทางสำหรับงานที่เลือก ${this.focusedItems.length} จุดเรียบร้อยครับบอส กรุณาเปิดสิทธิ์ตำแหน่ง (Location) เพื่อให้เรดาร์ติดตามระยะครับ`);
+          },
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
       }
 
       activateRadarAndBriefNearest() {
@@ -5040,23 +5267,64 @@ index_v2.9
       const checkboxes = document.querySelectorAll('.route-cb:checked');
       const count = checkboxes.length;
       const panel = document.getElementById('route-panel');
+      const statusPane = document.getElementById('status-panel');
+      const isStatusActive = !statusPane || statusPane.classList.contains('active');
       document.getElementById('route-count').innerText = count;
-      panel.style.display = count > 0 ? 'block' : 'none';
+      panel.style.display = (count > 0 && isStatusActive) ? 'block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('#myTab button[data-bs-toggle="tab"]').forEach(tabBtn => {
+        tabBtn.addEventListener('shown.bs.tab', () => updateRouteCount());
+      });
+    });
+
+    function getCheckedRouteItems() {
+      const checkboxes = document.querySelectorAll('.route-cb:checked');
+      const selectedItems = [];
+      let hasUrlError = false;
+
+      checkboxes.forEach(cb => {
+        const rawGps = (cb.value || '').trim();
+        if (!rawGps) return;
+        if (rawGps.toLowerCase().includes('http') || rawGps.toLowerCase().includes('goo.gl')) {
+          hasUrlError = true;
+          return;
+        }
+        const idxAttr = cb.getAttribute('data-dash-idx');
+        const idx = idxAttr !== null ? Number(idxAttr) : -1;
+        if (idx >= 0 && Array.isArray(currentDisplayedItems) && currentDisplayedItems[idx]) {
+          selectedItems.push(currentDisplayedItems[idx]);
+        } else {
+          selectedItems.push({ gps: rawGps, name: 'จุดเป้าหมาย', pea: '-', location: '-', status: 'งานคงเหลือ' });
+        }
+      });
+
+      return { selectedItems, hasUrlError };
     }
 
     function startRouting() {
-      const checkboxes = document.querySelectorAll('.route-cb:checked');
-      if (checkboxes.length === 0) return;
+      const { selectedItems, hasUrlError } = getCheckedRouteItems();
+      if (hasUrlError) {
+        alert("⚠️ พิกัดบางอันเป็นลิงก์ (URL) รบกวนแก้ใน Google Sheets ให้เป็นตัวเลขละติจูด, ลองจิจูดครับ");
+        return;
+      }
+      if (selectedItems.length === 0) return;
+      fieldGpsRadar.activateFocusedRouteRadar(selectedItems);
+    }
+
+    function openSelectedInGoogleMaps() {
+      const { selectedItems, hasUrlError } = getCheckedRouteItems();
+      if (hasUrlError) {
+        alert("⚠️ พิกัดบางอันเป็นลิงก์ (URL) รบกวนแก้ใน Google Sheets ครับ");
+        return;
+      }
+      if (selectedItems.length === 0) return;
       let url = "https://www.google.com/maps/dir/Current+Location/";
-      let hasUrlError = false;
-      checkboxes.forEach(cb => {
-        if (cb.value && cb.value.trim() !== '') {
-          let cleanGps = cb.value.trim(); 
-          if (cleanGps.toLowerCase().includes("http") || cleanGps.toLowerCase().includes("goo.gl")) hasUrlError = true;
-          else { cleanGps = cleanGps.replace(/\s/g, ''); url += cleanGps + "/"; }
-        }
+      selectedItems.forEach(item => {
+        const cleanGps = String(item.gps || '').trim().replace(/\s/g, '');
+        if (cleanGps) url += cleanGps + "/";
       });
-      if (hasUrlError) { alert("⚠️ พิกัดบางอันเป็นลิงก์ (URL) รบกวนแก้ใน Google Sheets ครับ"); return; }
       window.open(url, '_blank');
     }
 
@@ -5127,7 +5395,7 @@ index_v2.9
           }
 
           let gpsBadgeHtml = item.gps && item.gps.trim() !== '' ? `<span class="badge bg-info text-dark ms-2 shadow-sm border border-light"><i class="bi bi-geo-alt-fill text-danger"></i> พิกัด</span>` : '';
-          let checkboxHtml = item.gps && item.gps.trim() !== '' ? `<input class="form-check-input route-cb me-3 fs-4 shadow-sm border-secondary" type="checkbox" value="${item.gps}" onchange="updateRouteCount()">` : '';
+          let checkboxHtml = item.gps && item.gps.trim() !== '' ? `<input class="form-check-input route-cb me-3 fs-4 shadow-sm border-secondary" type="checkbox" data-dash-idx="${idx}" value="${item.gps}" onchange="updateRouteCount()">` : '';
           
           let statusBadgeList = '';
           if (item.status === 'ผรม. ส่งงานแล้ว') statusBadgeList = '<span class="badge bg-warning text-dark float-end">ผรม.ส่งงาน</span>';
@@ -5193,6 +5461,7 @@ index_v2.9
 
         slaAgingManager.refreshUrgentSummary(globalDashResults);
         renderCardsList(globalDashResults);
+        fieldGpsRadar.syncFocusedItemsWithFreshData(globalDashResults);
         fieldGpsRadar.renderWorkOrderPins();
       });
     }
@@ -5244,4 +5513,3 @@ index_v2.9
   </script>
 </body>
 </html>
-Addressing a user's coding needs
