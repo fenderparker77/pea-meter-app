@@ -1,8 +1,5 @@
 
-
-
-ไอคอน HTML
-index_v3.0
+PEAKML_v3.1
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -75,7 +72,14 @@ index_v3.0
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     
     .image-preview { max-width: 100%; height: auto; margin-top: 10px; border-radius: 12px; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .detail-img { width: 100%; object-fit: cover; border-radius: 12px; border: 1px solid #ddd; max-height: 360px; }
+    .detail-img-wrap { position: relative; cursor: zoom-in; overflow: hidden; border-radius: 12px; border: 1px solid #ddd; background: #f8f9fa; }
+    .detail-img { width: 100%; object-fit: cover; border-radius: 12px; max-height: 360px; transition: transform 0.25s ease; display: block; }
+    .detail-img-wrap:hover .detail-img { transform: scale(1.03); }
+    .detail-zoom-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(15, 23, 42, 0.82); color: #38bdf8; font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.45); pointer-events: none; backdrop-filter: blur(4px); }
+    #photoLightboxModal { z-index: 1085; }
+    #lightbox-stage { height: 66vh; max-height: 72vh; overflow: hidden; touch-action: none; display: flex; align-items: center; justify-content: center; background: #090d16; cursor: grab; user-select: none; }
+    #lightbox-stage:active { cursor: grabbing; }
+    #lightbox-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.15s ease-out; user-select: none; -webkit-user-drag: none; }
 
     /* กล่องถ่ายภาพและสแกนมิเตอร์แยกฝั่ง PEA.No เก่า / PEA.No ใหม่ / ภาพถ่ายสำรอง */
     .meter-capture-card {
@@ -444,7 +448,7 @@ index_v3.0
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v3.0 • J.A.R.V.I.S v6.3</p>
+      <p class="text-muted small">PEA Smart Operation System v3.1 • J.A.R.V.I.S v6.3</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -824,18 +828,67 @@ index_v3.0
     </div>
   </div>
 
-  <!-- Modal ตรวจสอบข้อมูลเพื่อปิดใบสั่ง -->
+  <!-- Modal ตรวจสอบข้อมูลเพื่อปิดใบสั่ง & ดูรายละเอียดใบงานเสร็จสมบูรณ์ -->
   <div class="modal fade" id="orderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content glass-card border-0">
         <div class="modal-header border-bottom">
-          <h5 class="modal-title fw-bold text-primary"><i class="bi bi-clipboard-check"></i> ตรวจสอบข้อมูลเพื่อปิดใบสั่ง</h5>
+          <h5 class="modal-title fw-bold text-primary" id="orderModalTitle"><i class="bi bi-clipboard-check"></i> ตรวจสอบข้อมูลเพื่อปิดใบสั่ง</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body" id="orderModalBody"></div>
         <div class="modal-footer border-top">
-          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-light rounded-pill px-4" id="btn-cancel-order" data-bs-dismiss="modal">ยกเลิก</button>
           <button type="button" class="btn btn-success rounded-pill px-5 fw-bold shadow" id="btn-close-order" onclick="submitCloseOrder()">ปิดใบสั่ง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔍 Modal ขยายดูรูปถ่ายหน้างานแบบเต็มจอ + ซูม/หมุนภาพได้ชัดเจน -->
+  <div class="modal fade" id="photoLightboxModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content bg-dark text-white border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+        <div class="modal-header border-secondary py-2 px-3">
+          <div>
+            <h6 class="modal-title fw-bold text-info mb-0" id="lightbox-title">
+              <i class="bi bi-zoom-in me-1"></i> ตรวจสอบรูปถ่ายหน้างาน
+            </h6>
+            <small class="text-white-50" id="lightbox-subtitle"></small>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0 position-relative" id="lightbox-stage">
+          <img id="lightbox-img" src="" alt="ขยายรูปถ่ายหน้างาน">
+        </div>
+        <div class="modal-footer border-secondary py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-1">
+            <button type="button" id="btn-lb-prev" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="photoLightbox.stepPhoto(-1)">
+              <i class="bi bi-chevron-left"></i> รูปก่อนหน้า
+            </button>
+            <span id="lightbox-counter" class="badge bg-secondary px-2 py-1">1 / 1</span>
+            <button type="button" id="btn-lb-next" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="photoLightbox.stepPhoto(1)">
+              รูปถัดไป <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+          <div class="d-flex align-items-center flex-wrap gap-1">
+            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="photoLightbox.zoomBy(-0.35)" title="ย่อภาพ">
+              <i class="bi bi-zoom-out"></i> ย่อ
+            </button>
+            <span id="lightbox-zoom-label" class="badge bg-info text-dark px-2 py-1">100%</span>
+            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="photoLightbox.zoomBy(0.35)" title="ขยายภาพ">
+              <i class="bi bi-zoom-in"></i> ขยาย
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="photoLightbox.rotate90()" title="หมุนภาพ 90 องศา">
+              <i class="bi bi-arrow-clockwise"></i> หมุนภาพ
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="photoLightbox.resetTransform()" title="รีเซ็ตขนาดภาพ">
+              <i class="bi bi-aspect-ratio"></i> พอดีจอ
+            </button>
+            <a id="lightbox-drive-link" href="#" target="_blank" class="btn btn-sm btn-success rounded-pill px-3">
+              <i class="bi bi-box-arrow-up-right me-1"></i> เปิดไฟล์เต็ม
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -1176,12 +1229,12 @@ index_v3.0
         const q = String(rawQuery || '').trim();
         if (!q || !globalDashResults || globalDashResults.length === 0) return null;
         const exactHit = globalDashResults.find(it =>
-          `${it.pea} ${it.name}`.toLowerCase().includes(q.toLowerCase())
+          `${it.pea} ${it.colF || ''} ${it.name}`.toLowerCase().includes(q.toLowerCase())
         );
         if (exactHit) return null;
 
         const phoneticHit = globalDashResults.find(it =>
-          this.isMultiTermMatch(`${it.pea} ${it.name}`, q)
+          this.isMultiTermMatch(`${it.pea} ${it.colF || ''} ${it.name}`, q)
         );
         if (!phoneticHit) return null;
         return {
@@ -4284,7 +4337,7 @@ index_v3.0
         if (searchBox) { searchBox.value = keyword; filterDashboard(); }
 
         const matched = (globalDashResults || []).filter(item => {
-          const fullText = `${item.pea} ${item.name} ${item.location} ${item.reason} ${item.status} ${item.sheetName}`;
+          const fullText = `${item.pea} ${item.colF || ''} ${item.name} ${item.location} ${item.reason} ${item.status} ${item.sheetName}`;
           return ThaiPhoneticSearch.isMultiTermMatch(fullText, keyword);
         });
 
@@ -4704,7 +4757,7 @@ index_v3.0
         }
 
         const matchedItems = allItems.filter(it => {
-          const targetPool = `${it.name || ''} ${it.pea || ''}`;
+          const targetPool = `${it.name || ''} ${it.pea || ''} ${it.colF || ''}`;
           return ThaiPhoneticSearch.isMultiTermMatch(targetPool, extractedTarget);
         });
 
@@ -4921,6 +4974,172 @@ index_v3.0
       let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
       return (match && match[1]) ? 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w1000' : url;
     }
+
+    function getHighResImageUrl(url) {
+      if (!url) return '';
+      let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      return (match && match[1]) ? 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w2000' : url;
+    }
+
+    // =========================================================================
+    // 🔍 ระบบขยายดูรูปถ่ายหน้างานแบบเต็มจอ (PhotoLightbox) สำหรับตรวจสอบความถูกต้อง
+    // =========================================================================
+    const photoLightbox = (() => {
+      let gallery = [];
+      let currentIdx = 0;
+      let scale = 1;
+      let rotation = 0;
+      let panX = 0;
+      let panY = 0;
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let initializedEvents = false;
+
+      function applyTransform() {
+        const img = document.getElementById('lightbox-img');
+        const zoomLabel = document.getElementById('lightbox-zoom-label');
+        if (img) {
+          img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale}) rotate(${rotation}deg)`;
+        }
+        if (zoomLabel) {
+          zoomLabel.innerText = `${Math.round(scale * 100)}%`;
+        }
+      }
+
+      function resetTransform() {
+        scale = 1;
+        rotation = 0;
+        panX = 0;
+        panY = 0;
+        applyTransform();
+      }
+
+      function zoomBy(delta) {
+        scale = Math.min(4.0, Math.max(0.5, +(scale + delta).toFixed(2)));
+        if (scale <= 1) {
+          panX = 0;
+          panY = 0;
+        }
+        applyTransform();
+      }
+
+      function rotate90() {
+        rotation = (rotation + 90) % 360;
+        applyTransform();
+      }
+
+      function renderSlide() {
+        if (!gallery || gallery.length === 0) return;
+        const current = gallery[currentIdx];
+        const img = document.getElementById('lightbox-img');
+        const titleEl = document.getElementById('lightbox-title');
+        const subEl = document.getElementById('lightbox-subtitle');
+        const counterEl = document.getElementById('lightbox-counter');
+        const driveLinkEl = document.getElementById('lightbox-drive-link');
+        const prevBtn = document.getElementById('btn-lb-prev');
+        const nextBtn = document.getElementById('btn-lb-next');
+
+        resetTransform();
+        if (titleEl) titleEl.innerHTML = `<i class="bi bi-zoom-in me-1"></i> ${current.label}`;
+        if (subEl) subEl.innerText = current.subtitle || '';
+        if (counterEl) counterEl.innerText = `${currentIdx + 1} / ${gallery.length}`;
+        if (driveLinkEl) driveLinkEl.href = current.rawUrl || current.highResUrl;
+
+        if (prevBtn) prevBtn.disabled = gallery.length <= 1;
+        if (nextBtn) nextBtn.disabled = gallery.length <= 1;
+
+        if (img) {
+          img.onerror = () => {
+            if (current.fallbackUrl && img.src !== current.fallbackUrl) {
+              img.src = current.fallbackUrl;
+            }
+          };
+          img.src = current.highResUrl;
+        }
+      }
+
+      function stepPhoto(dir) {
+        if (!gallery || gallery.length <= 1) return;
+        currentIdx = (currentIdx + dir + gallery.length) % gallery.length;
+        renderSlide();
+      }
+
+      function bindStageEvents() {
+        if (initializedEvents) return;
+        initializedEvents = true;
+        const stage = document.getElementById('lightbox-stage');
+        const img = document.getElementById('lightbox-img');
+        if (!stage || !img) return;
+
+        stage.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          zoomBy(e.deltaY < 0 ? 0.25 : -0.25);
+        }, { passive: false });
+
+        img.addEventListener('dblclick', (e) => {
+          e.preventDefault();
+          if (scale > 1) {
+            resetTransform();
+          } else {
+            scale = 2.2;
+            applyTransform();
+          }
+        });
+
+        stage.addEventListener('mousedown', (e) => {
+          if (scale <= 1) return;
+          isDragging = true;
+          dragStartX = e.clientX - panX;
+          dragStartY = e.clientY - panY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          panX = e.clientX - dragStartX;
+          panY = e.clientY - dragStartY;
+          applyTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+
+        stage.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 1 && scale > 1) {
+            isDragging = true;
+            dragStartX = e.touches[0].clientX - panX;
+            dragStartY = e.touches[0].clientY - panY;
+          }
+        }, { passive: true });
+
+        stage.addEventListener('touchmove', (e) => {
+          if (!isDragging || e.touches.length !== 1) return;
+          panX = e.touches[0].clientX - dragStartX;
+          panY = e.touches[0].clientY - dragStartY;
+          applyTransform();
+        }, { passive: true });
+
+        stage.addEventListener('touchend', () => {
+          isDragging = false;
+        });
+      }
+
+      function setGallery(items) {
+        gallery = Array.isArray(items) ? items : [];
+      }
+
+      function openByKey(key) {
+        const idx = gallery.findIndex(g => g.key === key);
+        if (idx === -1) return;
+        currentIdx = idx;
+        bindStageEvents();
+        renderSlide();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('photoLightboxModal')).show();
+      }
+
+      return { setGallery, openByKey, stepPhoto, zoomBy, rotate90, resetTransform };
+    })();
 
     function toggleWorkMode() {
       const mode = document.getElementById('work-mode').value;
@@ -5173,6 +5392,10 @@ index_v3.0
         .trim();
     }
 
+    function normalizeCompactCode(str) {
+      return normalizeSearchDigitsAndText(str).replace(/[-\s_./]/g, '').toLowerCase();
+    }
+
     function filterDashboard() {
       const rawInputOriginal = document.getElementById('dash-search')?.value || '';
       const rawInput = normalizeSearchDigitsAndText(rawInputOriginal);
@@ -5185,6 +5408,7 @@ index_v3.0
         isExactMatch = true;
         lowerInput = lowerInput.substring(1, lowerInput.length - 1);
       }
+      const compactInput = normalizeCompactCode(lowerInput);
 
       let visibleCount = 0;
       let phoneticExtraCount = 0;
@@ -5199,32 +5423,38 @@ index_v3.0
           ? sourceList[Number(idxAttr)]
           : null;
 
-        // กวาดค้นหาครบทุกคอลัมน์สำคัญ: เลข PEA เดิม, เลข PEA ใหม่, ชื่อผู้ใช้ไฟ, สถานที่, สาเหตุ, ผู้ดำเนินการ, หมายเหตุ, รอบเดือน, สถานะ
+        const peaOldVal = rowObj ? (rowObj.pea || '') : (item.getAttribute('data-pea-old') || '');
+        const peaNewVal = rowObj ? (rowObj.colF || '') : (item.getAttribute('data-pea-new') || '');
+
+        // กวาดค้นหาครบทุกคอลัมน์สำคัญ: คอลัมน์ C (PEA เดิม), คอลัมน์ F (PEA No. ใหม่), ชื่อผู้ใช้ไฟ, สถานที่, สาเหตุ, ผู้ดำเนินการ, หมายเหตุ, รอบเดือน, สถานะ
         const fieldEntries = rowObj ? [
-          { label: 'เลข PEA เดิม', val: rowObj.pea || '' },
-          { label: 'เลข PEA ใหม่', val: rowObj.colF || '' },
-          { label: 'ชื่อผู้ใช้ไฟ', val: rowObj.name || '' },
-          { label: 'สถานที่', val: rowObj.location || '' },
-          { label: 'สาเหตุ', val: rowObj.reason || '' },
-          { label: 'ผู้ดำเนินการ', val: rowObj.operator || '' },
-          { label: 'หมายเหตุ', val: rowObj.remark || '' },
-          { label: 'รอบเดือน', val: rowObj.sheetName || '' },
-          { label: 'สถานะ', val: rowObj.status || '' }
+          { label: 'เลข PEA เดิม (คอลัมน์ C)', val: peaOldVal, isCode: true },
+          { label: 'เลข PEA No. ใหม่ (คอลัมน์ F)', val: peaNewVal, isCode: true },
+          { label: 'ชื่อผู้ใช้ไฟ', val: rowObj.name || '', isCode: false },
+          { label: 'สถานที่', val: rowObj.location || '', isCode: false },
+          { label: 'สาเหตุ', val: rowObj.reason || '', isCode: false },
+          { label: 'ผู้ดำเนินการ', val: rowObj.operator || '', isCode: false },
+          { label: 'หมายเหตุ', val: rowObj.remark || '', isCode: false },
+          { label: 'รอบเดือน', val: rowObj.sheetName || '', isCode: false },
+          { label: 'สถานะ', val: rowObj.status || '', isCode: false }
         ] : [
-          { label: 'ข้อมูลการ์ด', val: item.innerText || '' }
+          { label: 'เลข PEA เดิม (คอลัมน์ C)', val: peaOldVal, isCode: true },
+          { label: 'เลข PEA No. ใหม่ (คอลัมน์ F)', val: peaNewVal, isCode: true },
+          { label: 'ข้อมูลการ์ด', val: item.innerText || '', isCode: false }
         ];
 
         const combinedSearchPool = normalizeSearchDigitsAndText(
           fieldEntries.map(f => f.val).filter(Boolean).join(' ') + ' ' + (item.innerText || '')
         );
+        const compactPool = normalizeCompactCode(`${peaOldVal} ${peaNewVal}`);
 
         let hit = false;
         if (!lowerInput) {
           hit = true;
         } else if (isExactMatch) {
-          hit = combinedSearchPool.toLowerCase().includes(lowerInput);
+          hit = combinedSearchPool.toLowerCase().includes(lowerInput) || (compactInput.length > 0 && compactPool.includes(compactInput));
         } else {
-          const directSubstrHit = combinedSearchPool.toLowerCase().includes(lowerInput);
+          const directSubstrHit = combinedSearchPool.toLowerCase().includes(lowerInput) || (compactInput.length > 0 && compactPool.includes(compactInput));
           const phoneticHit = ThaiPhoneticSearch.isMultiTermMatch(combinedSearchPool, rawInput);
           hit = directSubstrHit || phoneticHit;
 
@@ -5237,7 +5467,8 @@ index_v3.0
           fieldEntries.forEach(f => {
             const normField = normalizeSearchDigitsAndText(f.val);
             if (!normField) return;
-            if (normField.toLowerCase().includes(lowerInput) || (!isExactMatch && ThaiPhoneticSearch.isMultiTermMatch(normField, rawInput))) {
+            const codeMatched = f.isCode && compactInput.length > 0 && normalizeCompactCode(normField).includes(compactInput);
+            if (codeMatched || normField.toLowerCase().includes(lowerInput) || (!isExactMatch && ThaiPhoneticSearch.isMultiTermMatch(normField, rawInput))) {
               matchedColumnsSet.add(f.label);
             }
           });
@@ -5333,27 +5564,97 @@ index_v3.0
       currentOrderRow = item.rowIndex;
       currentOrderSheetName = item.sheetName; 
 
+      const isCompleted = item.status === 'เสร็จสมบูรณ์';
+      const titleEl = document.getElementById('orderModalTitle');
+      const closeBtnEl = document.getElementById('btn-close-order');
+      const cancelBtnEl = document.getElementById('btn-cancel-order');
+
+      if (titleEl) {
+        titleEl.innerHTML = isCompleted
+          ? '<i class="bi bi-check-circle-fill text-success me-1"></i> รายละเอียดใบงาน (เสร็จสมบูรณ์แล้ว)'
+          : '<i class="bi bi-clipboard-check"></i> ตรวจสอบข้อมูลเพื่อปิดใบสั่ง';
+      }
+      if (closeBtnEl) {
+        closeBtnEl.style.display = isCompleted ? 'none' : 'inline-block';
+      }
+      if (cancelBtnEl) {
+        cancelBtnEl.innerText = isCompleted ? 'ปิดหน้าต่าง' : 'ยกเลิก';
+      }
+
       let directPic1 = getDirectImageUrl(item.pic1);
       let directPic2 = getDirectImageUrl(item.pic2);
       let directBackup = getDirectImageUrl(item.backupPic);
 
-      let pic1Html = item.pic1 && item.pic1.startsWith('http') ? `<a href="${item.pic1}" target="_blank"><img src="${directPic1}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพ PEA.No เก่า</div>';
-      let pic2Html = item.pic2 && item.pic2.startsWith('http') ? `<a href="${item.pic2}" target="_blank"><img src="${directPic2}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพ PEA.No ใหม่</div>';
-      let backupHtml = item.backupPic && item.backupPic.startsWith('http') ? `<a href="${item.backupPic}" target="_blank"><img src="${directBackup}" class="detail-img shadow-sm"></a>` : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายสำรอง</div>';
+      const galleryItems = [];
+      if (item.pic1 && item.pic1.startsWith('http')) {
+        galleryItems.push({
+          key: 'pic1',
+          label: 'ภาพถ่าย PEA.No เก่า',
+          subtitle: `${item.name || '-'} • PEA เดิม: ${item.pea || '-'} (หน่วย: ${item.colD || '-'})`,
+          highResUrl: getHighResImageUrl(item.pic1),
+          fallbackUrl: directPic1,
+          rawUrl: item.pic1
+        });
+      }
+      if (item.pic2 && item.pic2.startsWith('http')) {
+        galleryItems.push({
+          key: 'pic2',
+          label: 'ภาพถ่าย PEA.No ใหม่',
+          subtitle: `${item.name || '-'} • PEA ใหม่: ${item.colF || '-'} (หน่วย: ${item.colG || '-'})`,
+          highResUrl: getHighResImageUrl(item.pic2),
+          fallbackUrl: directPic2,
+          rawUrl: item.pic2
+        });
+      }
+      if (item.backupPic && item.backupPic.startsWith('http')) {
+        galleryItems.push({
+          key: 'backupPic',
+          label: 'ภาพถ่ายสำรองหน้างาน',
+          subtitle: `${item.name || '-'} • PEA เดิม: ${item.pea || '-'} • PEA ใหม่: ${item.colF || '-'}`,
+          highResUrl: getHighResImageUrl(item.backupPic),
+          fallbackUrl: directBackup,
+          rawUrl: item.backupPic
+        });
+      }
+      photoLightbox.setGallery(galleryItems);
+
+      let pic1Html = item.pic1 && item.pic1.startsWith('http')
+        ? `<div class="detail-img-wrap shadow-sm" onclick="photoLightbox.openByKey('pic1')" title="คลิกเพื่อขยายดูภาพ PEA.No เก่า"><img src="${directPic1}" class="detail-img"><span class="detail-zoom-badge"><i class="bi bi-zoom-in me-1"></i>กดขยาย</span></div>`
+        : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพ PEA.No เก่า</div>';
+      let pic2Html = item.pic2 && item.pic2.startsWith('http')
+        ? `<div class="detail-img-wrap shadow-sm" onclick="photoLightbox.openByKey('pic2')" title="คลิกเพื่อขยายดูภาพ PEA.No ใหม่"><img src="${directPic2}" class="detail-img"><span class="detail-zoom-badge"><i class="bi bi-zoom-in me-1"></i>กดขยาย</span></div>`
+        : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพ PEA.No ใหม่</div>';
+      let backupHtml = item.backupPic && item.backupPic.startsWith('http')
+        ? `<div class="detail-img-wrap shadow-sm" onclick="photoLightbox.openByKey('backupPic')" title="คลิกเพื่อขยายดูภาพถ่ายสำรอง"><img src="${directBackup}" class="detail-img"><span class="detail-zoom-badge"><i class="bi bi-zoom-in me-1"></i>กดขยาย</span></div>`
+        : '<div class="text-muted small border p-4 rounded bg-light">ไม่มีภาพถ่ายสำรอง</div>';
+
+      const statusPillHtml = isCompleted
+        ? '<span class="badge bg-success rounded-pill px-3 py-1"><i class="bi bi-check-circle-fill me-1"></i>เสร็จสมบูรณ์แล้ว</span>'
+        : `<span class="badge bg-warning text-dark rounded-pill px-3 py-1">${item.status || 'รอตรวจสอบ'}</span>`;
 
       let html = `
         <div class="p-2 modal-custom-text">
-          <div class="row mb-3"><div class="col-12"><span class="fw-bold me-2 text-primary">ชื่อ</span> : ${item.name || '-'}</div></div>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 pb-2 border-bottom">
+            <div><span class="fw-bold me-2 text-primary">ชื่อ</span> : ${item.name || '-'}</div>
+            <div>${statusPillHtml}</div>
+          </div>
           <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.เดิม</span> : ${item.pea || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colD || '-'}</div></div>
           <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">PEA.ใหม่</span> : ${item.colF || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">หน่วย</span> : ${item.colG || '-'}</div></div>
           <div class="row mb-3"><div class="col-6"><span class="fw-bold me-2 text-primary">สาเหตุ</span> : ${item.reason || '-'}</div><div class="col-6"><span class="fw-bold me-2 text-primary">ผู้ดำเนินงาน</span> : ${item.operator || '-'}</div></div>
-          <div class="row mb-4"><div class="col-12"><span class="fw-bold me-2 text-primary">หมายเหตุ</span> : ${item.remark || '-'}</div></div>
+          <div class="row mb-3"><div class="col-12"><span class="fw-bold me-2 text-primary">สถานที่</span> : ${item.location || '-'} <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">รอบเดือน: ${item.sheetName || '-'}</span></div></div>
+          <div class="row mb-3"><div class="col-12"><span class="fw-bold me-2 text-primary">หมายเหตุ</span> : ${item.remark || '-'}</div></div>
+          <div class="alert alert-info py-2 px-3 small rounded-3 mb-2">
+            <i class="bi bi-zoom-in me-1"></i> แตะที่รูปถ่ายด้านล่างทุกรูปเพื่อขยายเต็มจอ ซูมเข้า-ออก และหมุนภาพตรวจสอบความถูกต้องได้ชัดเจนครับ
+          </div>
           <div class="row text-center mt-2 g-2">
             <div class="col-4"><p class="fw-bold mb-2 small">PEA.No เก่า</p>${pic1Html}</div>
             <div class="col-4"><p class="fw-bold mb-2 small">PEA.No ใหม่</p>${pic2Html}</div>
             <div class="col-4"><p class="fw-bold mb-2 small">ภาพถ่ายสำรอง</p>${backupHtml}</div>
           </div>
-          ${item.timestamp ? `<div class="mt-3 text-center"><span class="badge bg-secondary rounded-pill py-2 px-3 shadow-sm">ส่งงานเมื่อ: ${item.timestamp}</span></div>` : ''}
+          <div class="mt-3 text-center d-flex justify-content-center flex-wrap gap-2">
+            ${item.timestamp ? `<span class="badge bg-secondary rounded-pill py-2 px-3 shadow-sm">ส่งงานเมื่อ: ${item.timestamp}</span>` : ''}
+            ${item.closeTime ? `<span class="badge bg-success rounded-pill py-2 px-3 shadow-sm">ปิดใบสั่งเมื่อ: ${item.closeTime}</span>` : ''}
+          </div>
         </div>
       `;
       document.getElementById('orderModalBody').innerHTML = html;
@@ -5391,9 +5692,13 @@ index_v3.0
             const safeEncoded = encodeURIComponent(JSON.stringify(item)).replace(/'/g, '%27');
             actionHtml = `<button class="btn btn-sm btn-warning text-dark fw-bold w-100 mt-3 shadow-sm rounded-pill" onclick="viewCompletedWork('${safeEncoded}')">ตรวจสอบ / ปิดใบสั่ง</button>`;
           } else if (item.status === 'เสร็จสมบูรณ์') {
-            actionHtml = `<div class="bg-success text-white text-center w-100 p-2 mt-3 fs-6 shadow-sm rounded-pill"><i class="bi bi-check-circle-fill"></i> เสร็จสมบูรณ์แล้ว</div>`;
+            const safeEncoded = encodeURIComponent(JSON.stringify(item)).replace(/'/g, '%27');
+            actionHtml = `<button type="button" class="btn btn-sm btn-success text-white fw-bold w-100 mt-3 p-2 fs-6 shadow-sm rounded-pill" onclick="viewCompletedWork('${safeEncoded}')"><i class="bi bi-check-circle-fill me-1"></i> เสร็จสมบูรณ์แล้ว <span class="badge bg-white text-success ms-1"><i class="bi bi-eye-fill me-1"></i>ดูรายละเอียด/รูปภาพ</span></button>`;
           }
 
+          let newPeaBadgeHtml = (item.colF && String(item.colF).trim() !== '' && String(item.colF).trim() !== '-')
+            ? `<span class="badge bg-success-subtle text-success border border-success-subtle ms-1"><i class="bi bi-arrow-right-circle-fill me-1"></i>PEA ใหม่: ${item.colF}</span>`
+            : '';
           let gpsBadgeHtml = item.gps && item.gps.trim() !== '' ? `<span class="badge bg-info text-dark ms-2 shadow-sm border border-light"><i class="bi bi-geo-alt-fill text-danger"></i> พิกัด</span>` : '';
           let checkboxHtml = item.gps && item.gps.trim() !== '' ? `<input class="form-check-input route-cb me-3 fs-4 shadow-sm border-secondary" type="checkbox" data-dash-idx="${idx}" value="${item.gps}" onchange="updateRouteCount()">` : '';
           
@@ -5419,10 +5724,10 @@ index_v3.0
             : '';
 
           html += `
-            <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" data-dash-idx="${idx}" style="background: rgba(255,255,255,0.88); backdrop-filter: blur(5px);">
+            <div class="list-group-item mb-3 rounded-4 shadow-sm border-0 dash-item" data-dash-idx="${idx}" data-pea-old="${item.pea || ''}" data-pea-new="${item.colF || ''}" style="background: rgba(255,255,255,0.88); backdrop-filter: blur(5px);">
               <div class="d-flex align-items-center mb-2 border-bottom pb-2">
                 ${checkboxHtml}
-                <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${gpsBadgeHtml} ${statusBadgeList}</h6>
+                <h6 class="mb-0 fw-bold text-primary flex-grow-1"><i class="bi bi-person-badge"></i> PEA: ${item.pea || '-'} ${newPeaBadgeHtml} ${gpsBadgeHtml} ${statusBadgeList}</h6>
               </div>
               <div class="mb-2 d-flex flex-wrap align-items-center gap-1">
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-calendar-event"></i> รอบเดือน: ${item.sheetName}</span>
@@ -5513,3 +5818,4 @@ index_v3.0
   </script>
 </body>
 </html>
+CREATED BY Panupong Tosreekaew.
