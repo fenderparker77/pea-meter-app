@@ -1,5 +1,4 @@
-
-PEAKML_v3.1
+PEAKML METER_v3.2
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -448,70 +447,27 @@ PEAKML_v3.1
     <div class="text-center mb-4 mt-3">
       <img src="1000002294.png" alt="PEA Meter Logo" class="app-logo">
       <h2 class="app-title mt-2">ระบบรับ-ส่งงาน เปลี่ยนมิเตอร์</h2>
-      <p class="text-muted small">PEA Smart Operation System v3.1 • J.A.R.V.I.S v6.3</p>
+      <p class="text-muted small">PEA Smart Operation System v3.2 • J.A.R.V.I.S v6.3</p>
     </div>
     
     <ul class="nav nav-tabs" id="myTab" role="tablist">
-      <li class="nav-item"><button class="nav-link active" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-panel" type="button">ส่งงาน ส.ป.มิเตอร์</button></li>
-      <li class="nav-item"><button class="nav-link" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-panel" type="button">สถานะใบงาน</button></li>
-      <li class="nav-item"><button class="nav-link" id="map-tab" data-bs-toggle="tab" data-bs-target="#map-panel" type="button"><i class="bi bi-geo-alt-fill me-1"></i>แผนที่ & เรดาร์</button></li>
-      <li class="nav-item"><button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-panel" type="button"><i class="bi bi-cloud-upload-fill me-1"></i>นำเข้า UCUBE</button></li>
+      <li class="nav-item"><button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status-panel" type="button">สถานะใบงาน</button></li>
+      <li class="nav-item"><button class="nav-link" id="map-tab" data-bs-toggle="tab" data-bs-target="#map-panel" type="button"><i class="bi bi-geo-alt-fill me-1"></i>พิกัดเรดาร์ 500 เมตร</button></li>
+      <li class="nav-item"><button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search-panel" type="button">ส่งงานสับเปลี่ยนมิเตอร์</button></li>
+      <li class="nav-item"><button class="nav-link" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-panel" type="button"><i class="bi bi-cloud-upload-fill me-1"></i>นำเข้า UQ</button></li>
     </ul>
 
     <div class="tab-content mt-3">
       <!-- ===================================================================== -->
-      <!-- แท็บที่ 1: ส่งงาน                                                      -->
+      <!-- แท็บที่ 1: สถานะใบงาน (หน้าเริ่มต้น)                                   -->
       <!-- ===================================================================== -->
-      <div class="tab-pane fade show active" id="search-panel" role="tabpanel">
-        <div class="glass-card">
-          <label class="form-label fw-bold text-secondary">รูปแบบการส่งงาน:</label>
-          <select id="work-mode" class="form-select mb-3" onchange="toggleWorkMode()">
-            <option value="ucube">1. จากใบงาน UCUBE</option>
-            <option value="general">2. ส.ป.มิเตอร์ ทั่วไป</option>
-          </select>
-
-          <div id="search-section">
-            <label class="form-label fw-bold text-secondary">เลือกเดือน (แผ่นงาน):</label>
-            <select id="month-select" class="form-select mb-3"></select>
-            
-            <label class="form-label fw-bold text-secondary">ค้นหาใบงาน :</label>
-            <div class="input-group">
-              <input type="text" id="search-query" class="form-control" placeholder="ระบุ PEA หรือ ชื่อผู้ใช้ไฟฟ้า" onkeyup="if(event.key==='Enter') searchData()">
-              <button class="btn btn-outline-primary" type="button" onclick="startVoiceSearchForInput('search-query', true)" title="พูดค้นหาชื่อผู้ใช้ไฟ">
-                <i class="bi bi-mic-fill"></i>
-              </button>
-              <button class="btn btn-primary px-4" onclick="searchData()"><i class="bi bi-search"></i> ค้นหา</button>
-            </div>
-            <div id="search-phonetic-hint" class="phonetic-hint-bar"></div>
-          </div>
-        </div>
-
-        <div id="search-loader" class="loader"></div>
-        
-        <div id="form-container" style="display:none;">
-          <div class="text-center mb-3" id="status-badge-container">
-            <span id="status-display" class="badge rounded-pill fs-6 px-4 py-2 shadow-sm"></span>
-          </div>
-          <form id="data-form" class="glass-card">
-            <input type="hidden" id="row-index">
-            <div id="dynamic-fields"></div>
-            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow" onclick="openSafetyPrecheck()">
-              <i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & บันทึกส่งงาน
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <!-- ===================================================================== -->
-      <!-- แท็บที่ 2: สถานะใบงาน                                                 -->
-      <!-- ===================================================================== -->
-      <div class="tab-pane fade" id="status-panel" role="tabpanel">
+      <div class="tab-pane fade show active" id="status-panel" role="tabpanel">
         <div class="glass-card">
           <div class="row">
             <div class="col-6">
               <label class="form-label fw-bold text-secondary">สถานะ:</label>
               <select id="filter-status" class="form-select" onchange="loadDashboard()">
-                <option value="ทั้งหมด" selected>ทั้งหมด</option>
+                <option value="ทั้งหมด" selected>-- แสดงทั้งหมด --</option>
                 <option value="งานคงเหลือ">งานคงเหลือ</option>
                 <option value="ผรม. ส่งงานแล้ว">ผรม. ส่งงานแล้ว</option>
                 <option value="พนง. ดำเนินการ">พนง. ดำเนินการ</option>
@@ -531,6 +487,9 @@ PEAKML_v3.1
               </button>
             </div>
             <div id="dash-phonetic-hint" class="phonetic-hint-bar"></div>
+            <div class="form-text text-muted mt-2 px-2 py-2 rounded-3" style="font-size: 0.78rem; line-height: 1.45; background: rgba(63, 43, 150, 0.04); border: 1px dashed rgba(63, 43, 150, 0.2);">
+              <i class="bi bi-info-circle-fill text-primary me-1"></i>หมายเหตุ: แสดงผลลัพธ์ตามสถานะและชื่อใบงานที่ระบุ ในแท็บด้านบน หากต้องการค้นหาแบบครอบคลุม ให้เลือก--แสดงทั้งหมด-- ทั้ง 2แท็บ
+            </div>
           </div>
 
           <!-- 🚨 แถบตัวกรองด่วนงานค้างเร่งด่วน SLA (ฟีเจอร์ใหม่ v2.7) -->
@@ -559,14 +518,17 @@ PEAKML_v3.1
               <div class="col-6"><div class="stat-card bg-pending" onclick="showTableModal('งานคงเหลือ')"><h6 class="mb-1 text-white-50">คงเหลือ <i class="bi bi-table ms-1"></i></h6><h3 id="stat-pending" class="fw-bold mb-0">0</h3></div></div>
               <div class="col-6"><div class="stat-card bg-completed" onclick="showTableModal('เสร็จสมบูรณ์')"><h6 class="mb-1 text-white-50">เสร็จสมบูรณ์ <i class="bi bi-table ms-1"></i></h6><h3 id="stat-completed" class="fw-bold mb-0">0</h3></div></div>
               <div class="col-6"><div class="stat-card bg-contractor" onclick="showTableModal('ผรม. ส่งงานแล้ว')"><h6 class="mb-1 text-white-50">ผรม. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-contractor" class="fw-bold mb-0 text-dark">0</h3></div></div>
-              <div class="col-6"><div class="stat-card bg-emp" onclick="showTableModal('พนง. ดำเนินการ')"><h6 class="mb-1 text-white-50">พนง. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-emp" class="fw-bold mb-0">0</h3></div></div>
+              <div class="col-6"><div class="stat-card bg-emp" onclick="showTableModal('พนง. ดำเนินการ')"><h6 class="mb-1 text-white-50">พนง. ส่งงาน <i class="bi bi-table ms-1"></i></h6><h3 id="stat-emp" class="fw-bold mb-0 text-dark">0</h3></div></div>
+            </div>
+            <div class="form-text text-muted mt-2 px-2 py-2 rounded-3" style="font-size: 0.78rem; line-height: 1.45; background: rgba(255, 255, 255, 0.55); border: 1px dashed rgba(63, 43, 150, 0.2);">
+              <i class="bi bi-info-circle-fill text-primary me-1"></i>หมายเหตุ: รายละเอียดภายในแดชบอร์ดจะแสดงเฉพาะสถานะที่ระบุไว้ หากต้องการ export หรือสรุป ข้อมูลประจำเดือน ให้ระบุ สถานะ--ทั้งหมด-- แล้วเลือกเดือนที่เราต้องการครับ
             </div>
           </div>
         </div>
       </div>
 
       <!-- ===================================================================== -->
-      <!-- แท็บที่ 3: แผนที่ใบงาน & เรดาร์ GPS แจ้งเตือน 500 เมตร                  -->
+      <!-- แท็บที่ 2: พิกัดเรดาร์ 500 เมตร                                       -->
       <!-- ===================================================================== -->
       <div class="tab-pane fade" id="map-panel" role="tabpanel">
         <div class="glass-card">
@@ -626,6 +588,49 @@ PEAKML_v3.1
             </div>
             <div id="map-pin-cards" class="row g-2" style="max-height: 260px; overflow-y: auto;"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- แท็บที่ 3: ส่งงานสับเปลี่ยนมิเตอร์                                     -->
+      <!-- ===================================================================== -->
+      <div class="tab-pane fade" id="search-panel" role="tabpanel">
+        <div class="glass-card">
+          <label class="form-label fw-bold text-secondary">รูปแบบการส่งงาน:</label>
+          <select id="work-mode" class="form-select mb-3" onchange="toggleWorkMode()">
+            <option value="ucube">1. จากใบงาน UCUBE</option>
+            <option value="general">2. ส.ป.มิเตอร์ ทั่วไป</option>
+          </select>
+
+          <div id="search-section">
+            <label class="form-label fw-bold text-secondary">เลือกเดือน (แผ่นงาน):</label>
+            <select id="month-select" class="form-select mb-3"></select>
+            
+            <label class="form-label fw-bold text-secondary">ค้นหาใบงาน :</label>
+            <div class="input-group">
+              <input type="text" id="search-query" class="form-control" placeholder="ระบุ PEA หรือ ชื่อผู้ใช้ไฟฟ้า" onkeyup="if(event.key==='Enter') searchData()">
+              <button class="btn btn-outline-primary" type="button" onclick="startVoiceSearchForInput('search-query', true)" title="พูดค้นหาชื่อผู้ใช้ไฟ">
+                <i class="bi bi-mic-fill"></i>
+              </button>
+              <button class="btn btn-primary px-4" onclick="searchData()"><i class="bi bi-search"></i> ค้นหา</button>
+            </div>
+            <div id="search-phonetic-hint" class="phonetic-hint-bar"></div>
+          </div>
+        </div>
+
+        <div id="search-loader" class="loader"></div>
+        
+        <div id="form-container" style="display:none;">
+          <div class="text-center mb-3" id="status-badge-container">
+            <span id="status-display" class="badge rounded-pill fs-6 px-4 py-2 shadow-sm"></span>
+          </div>
+          <form id="data-form" class="glass-card">
+            <input type="hidden" id="row-index">
+            <div id="dynamic-fields"></div>
+            <button type="button" id="save-btn" class="btn btn-success w-100 mt-4 py-3 fw-bold rounded-pill shadow" onclick="openSafetyPrecheck()">
+              <i class="bi bi-shield-check"></i> ตรวจสอบความปลอดภัย & บันทึกส่งงาน
+            </button>
+          </form>
         </div>
       </div>
 
@@ -5818,4 +5823,4 @@ PEAKML_v3.1
   </script>
 </body>
 </html>
-CREATED BY Panupong Tosreekaew.
+CREATED BY Panupong Tosreekaew
